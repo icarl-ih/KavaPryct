@@ -1,0 +1,37 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace KavaPryct.Services
+{
+    public enum Giro
+    {
+        Ingreso = 1,
+        Egreso = 2
+    }
+
+    public enum MetodosPago
+    {
+        Efectivo = 1,
+        Transferencia = 2,
+        Tarjeta = 3,
+        Otro = 0
+    }
+
+    public enum RolEmpleo
+    {
+        Terapeuta = 1,
+        Administrativo = 2,
+        Empleado = 3
+    }
+
+    public enum UltimoGradoEstudios
+    {
+        Secundaria = 1,
+        Preparatoria = 2,
+        Licenciatura = 3,
+        Posgrado = 4
+    }
+}
