@@ -5,6 +5,8 @@ using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
+using System.Text.Json.Serialization;
+
 namespace KavaPryct.Components.Models
 {
     public class CitasModel
@@ -54,37 +56,74 @@ namespace KavaPryct.Components.Models
         [JsonPropertyName("updatedAt")]
         public DateTime UpdatedAt { get; set; }
 
-        // --------- Propiedades calculadas para UI (no se serializan) ---------
-
-        [JsonIgnore]
-        public DateTime StartUtc => FechaIni?.Iso.Kind == DateTimeKind.Utc
-            ? FechaIni.Iso
-            : DateTime.SpecifyKind(FechaIni?.Iso ?? default, DateTimeKind.Utc);
-
-        [JsonIgnore]
-        public DateTime EndUtc => FechaFin?.Iso.Kind == DateTimeKind.Utc
-            ? FechaFin.Iso
-            : DateTime.SpecifyKind(FechaFin?.Iso ?? default, DateTimeKind.Utc);
-
-        [JsonIgnore]
-        public DateTime StartLocal => ConvertUtcToMonterrey(StartUtc);
-
-        [JsonIgnore]
-        public DateTime EndLocal => ConvertUtcToMonterrey(EndUtc);
-
-        public static DateTime ConvertUtcToMonterrey(DateTime utc)
+        // ----------------- Helpers de zona horaria -----------------
+        private static TimeZoneInfo GetTz()
         {
-            try
-            {
-                // IANA en Android/iOS/Linux; en Windows podrías mapear con TZConvert si falla
-                var tz = TimeZoneInfo.FindSystemTimeZoneById("America/Monterrey");
-                return TimeZoneInfo.ConvertTimeFromUtc(utc, tz);
-            }
+            try { return TimeZoneInfo.FindSystemTimeZoneById("America/Chihuahua"); } // IANA
             catch
             {
-                // Fallback razonable
-                return utc.ToLocalTime();
+                try { return TimeZoneInfo.FindSystemTimeZoneById("Mountain Standard Time (Mexico)"); } // Windows
+                catch
+                {
+                    try { return TimeZoneInfo.FindSystemTimeZoneById("America/Monterrey"); } // IANA alterna
+                    catch { return TimeZoneInfo.Local; }
+                }
+            }
+        }
+
+        private static DateTime ToLocalFromUtc(DateTime utc)
+        {
+            if (utc == default) return default;
+            var tz = GetTz();
+            var u = utc.Kind == DateTimeKind.Utc ? utc : DateTime.SpecifyKind(utc, DateTimeKind.Utc);
+            return TimeZoneInfo.ConvertTimeFromUtc(u, tz);
+        }
+
+        private static DateTime ToUtcFromLocal(DateTime local)
+        {
+            if (local == default) return default;
+            var tz = GetTz();
+            // El picker entrega "local" sin info de zona → úsalo como Unspecified
+            var unspecified = DateTime.SpecifyKind(local, DateTimeKind.Unspecified);
+            return TimeZoneInfo.ConvertTimeToUtc(unspecified, tz);
+        }
+
+        // ----------------- Propiedades calculadas para UI -----------------
+        [JsonIgnore]
+        public DateTime StartUtc =>
+            FechaIni?.Iso == default ? default :
+            (FechaIni.Iso.Kind == DateTimeKind.Utc ? FechaIni.Iso : DateTime.SpecifyKind(FechaIni.Iso, DateTimeKind.Utc));
+
+        [JsonIgnore]
+        public DateTime EndUtc =>
+            FechaFin?.Iso == default ? default :
+            (FechaFin.Iso.Kind == DateTimeKind.Utc ? FechaFin.Iso : DateTime.SpecifyKind(FechaFin.Iso, DateTimeKind.Utc));
+
+        [JsonIgnore]
+        public DateTime StartLocal
+        {
+            get => ToLocalFromUtc(StartUtc);
+            set
+            {
+                var utc = ToUtcFromLocal(value);
+                (FechaIni ??= new FechaModel()).Iso = utc;
+
+                // Si no hay fin o quedó antes/igual, fijar +1 hora
+                if (FechaFin == null || FechaFin.Iso <= utc)
+                    (FechaFin ??= new FechaModel()).Iso = utc.AddHours(1);
+            }
+        }
+
+        [JsonIgnore]
+        public DateTime EndLocal
+        {
+            get => ToLocalFromUtc(EndUtc);
+            set
+            {
+                var utc = ToUtcFromLocal(value);
+                (FechaFin ??= new FechaModel()).Iso = utc;
             }
         }
     }
 }
+

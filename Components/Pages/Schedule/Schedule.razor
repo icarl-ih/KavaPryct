@@ -1,159 +1,309 @@
 ﻿@page "/schedule"
-
-@using AppointmentPlanner.Data;
-@using AppointmentPlanner.Models;
+@* ----------------------------- USING & INYECCIONES ----------------------------- *@
+@using AppointmentPlanner.Data
+@using AppointmentPlanner.Models
+@using Syncfusion.Blazor.Calendars
 @using Syncfusion.Blazor.Data
 @using Syncfusion.Blazor.Navigations
 @using Syncfusion.Blazor.Notifications
-@using Syncfusion.Blazor.Schedule;
+@using Syncfusion.Blazor.Schedule
 @using Syncfusion.Blazor.DropDowns
 @using Syncfusion.Blazor.Inputs
 @using Syncfusion.Blazor.Popups
-@using Microsoft.JSInterop;
-@using KavaPryct.Components.Models;
-@using KavaPryct.Services;
+@using Microsoft.JSInterop
+@using KavaPryct.Components.Models
+@using KavaPryct.Services
+
 @inject EmpleadoRemoteService EmployeService
 @inject CitasService CitasService
-@implements IDisposable;
+@inject AppointmentService Service
+@inject IJSRuntime JsRuntime
 
-@if(isDataLoaded){
-<div class="planner-calendar">
-    <div class="drag-sample-wrapper droppable">
-        <div class="col-lg-9 col-md-9 col-sm-9" style="padding: 0px">
-            <div class="schedule-container e-droppable">
-                <SfSchedule ID="schedule" TValue="CitasModel" @ref="scheduleObj" Width="100%" Height="800px" EnableAutoRowHeight="true" CssClass="doctor-appointment-planner" ShowWeekend="false" StartHour="@startHour" EndHour="@endHour" @bind-SelectedDate="@currentDate" WorkDays="@workDay" FirstDayOfWeek="@calendarDayOfWeek" @bind-CurrentView="@sceduleView" QuickInfoOnSelectionEnd = "true" ShowQuickInfo="true">
-                        @* <ScheduleQuickInfoTemplates>
-                            <FooterTemplate>
+@implements IDisposable
+
+@* ----------------------------- UI ----------------------------- *@
+@if (isDataLoaded)
+{
+    <div class="planner-calendar">
+        <div class="drag-sample-wrapper droppable">
+            <div class="col-lg-9 col-md-9 col-sm-9" style="padding:0">
+                <div class="schedule-container e-droppable">
+                    <SfSchedule ID="schedule"
+                                TValue="CitasModel"
+                                @ref="scheduleObj"
+                                Width="100%" Height="800px"
+                                EnableAutoRowHeight="true"
+                                CssClass="doctor-appointment-planner"
+                                ShowWeekend="false"
+                                StartHour="@startHour"
+                                EndHour="@endHour"
+                                @bind-SelectedDate="@currentDate"
+                                WorkDays="@workDay"
+                                FirstDayOfWeek="@calendarDayOfWeek"
+                                @bind-CurrentView="@sceduleView">
+
+                        <ScheduleEvents TValue="CitasModel"
+                                        OnPopupOpen="OnPopupOpen"
+                                        OnCellClick="OnCellClick"
+                                        OnActionBegin="OnActionBegin"
+                                        ActionCompleted="OnActionComplete">
+                        </ScheduleEvents>
+
+                        <ScheduleWorkHours Start="08:00" End="20:00"></ScheduleWorkHours>
+
+                        <ScheduleEventSettings DataSource="@scheduleEventData"
+                                               ResourceColorField="@resourceColorField"
+                                               AllowEditFollowingEvents="@editUpcoming">
+                            <ScheduleField>
+                                <FieldId        Name="ObjectId"></FieldId> 
+                                <FieldSubject Name="PacienteNombre"></FieldSubject>
+                                <FieldStartTime Name="StartLocal" Title="Desde"></FieldStartTime>
+                                <FieldEndTime Name="EndLocal" Title="Hasta"></FieldEndTime>
+                                @* No pedimos End; lo calculamos a +1h *@
+                                <FieldDescription Name="MotivoConsulta" Title="Motivo de Consulta"></FieldDescription>
+                            </ScheduleField>
+                        </ScheduleEventSettings>
+                        <ScheduleTemplates>
+                            <EditorTemplate>
                                 @{
-                                    var appt = context as Hospital;
+                                    var c = context as CitasModel;
                                 }
-                                @if (appt is not null)
-                                {
-                                    <div class="qi-footer flex gap-2">
-                                        <button class="e-btn e-primary" @onclick="() => CerrarYCobrar(appt)">Cerrar y Cobrar</button>
-                                        <button class="e-btn" @onclick="() => AbrirReagendar(appt)">Reagendar</button>
-                                    </div>
-                                }
-
-                                @if (mostrarDialogoReagendar)
-                                {
-                                    <div class="dialog-bg">
-                                        <div class="dialog">
-                                            <h4>Reagendar</h4>
-                                            <input type="datetime-local" @bind="nuevoInicio" />
-                                            <input type="datetime-local" @bind="nuevoFin" />
-                                            <div class="flex gap-2">
-                                                <button class="e-btn e-primary" @onclick="ConfirmarReagendo">Guardar</button>
-                                                <button class="e-btn e-flat" @onclick="() => mostrarDialogoReagendar = false">Cancelar</button>
-                                            </div>
+                                <div class="e-editor">
+                                    <div class="e-row">
+                                        <div class="e-col-6">
+                                            <label>Nombre completo</label>
+                                            <SfTextBox @bind-Value="c.PacienteNombre"></SfTextBox>
+                                        </div>
+                                        <div class="e-col-3">
+                                            <label>Edad</label>
+                                            <SfNumericTextBox TValue="int" @bind-Value="c.PacienteEdad" Min="0" Max="120"></SfNumericTextBox>
+                                        </div>
+                                        <div class="e-col-3">
+                                            <label>Teléfono</label>
+                                            <SfNumericTextBox @bind-Value="c.PacienteCelular"></SfNumericTextBox>
                                         </div>
                                     </div>
-                                }
-                            </FooterTemplate>
-                        </ScheduleQuickInfoTemplates>*@
-                    <ScheduleEvents TValue="CitasModel" OnPopupOpen="OnPopupOpen" ></ScheduleEvents>
-                    <ScheduleWorkHours Start="08:00" End="21:00"></ScheduleWorkHours>
-                    <ScheduleEventSettings DataSource="@scheduleEventData" ResourceColorField="@resourceColorField" AllowEditFollowingEvents="@editUpcoming">
-                        <ScheduleField>
-                            <FieldSubject Name="PacienteNombre"></FieldSubject>
-                                <FieldStartTime Name="StartLocal" Title="From"></FieldStartTime>
-                                <FieldEndTime Name="EndLocal" Title="To"></FieldEndTime>
-                                <FieldDescription Name="MotivoConsulta" Title="Motivo de Consulta"></FieldDescription>
-                        </ScheduleField>
-                    </ScheduleEventSettings>
-                    
-                    <ScheduleTimeScale Enable="true" Interval="@this.viewInterval"></ScheduleTimeScale>
-                   @* <ScheduleResources>
-                        <ScheduleResource TItem="Specialization" TValue="int?" DataSource="@specialistCategory" Field="DepartmentId" Title="Department" Name="Departments" TextField="Text" IdField="DepartmentId" ColorField="Color"></ScheduleResource>
-                        <ScheduleResource TItem="Doctor" TValue="int" DataSource="@resourceDataSource" Query="@queryData" Field="DoctorId" Title="Consultation" Name="Doctors" TextField="Name" IdField="Id" ColorField="Color" GroupIDField="DepartmentId" WorkDaysField="AvailableDays" StartHourField="StartHour" EndHourField="EndHour"></ScheduleResource>
-                    </ScheduleResources>*@
-                    <ScheduleViews>
-                        <ScheduleView Option="@View.Day"></ScheduleView>
-                        <ScheduleView Option="@View.Week"></ScheduleView>
-                        <ScheduleView Option="@View.Month"></ScheduleView>
-                        <ScheduleView Option="@View.TimelineDay">
-                            <ScheduleViewGroup EnableCompactView="false" Resources="@resourceGroup"></ScheduleViewGroup>
-                        </ScheduleView>
-                        <ScheduleView Option="@View.TimelineWeek">
-                            <ScheduleViewGroup EnableCompactView="false" Resources="@resourceGroup"></ScheduleViewGroup>
-                        </ScheduleView>
-                        <ScheduleView Option="@View.TimelineWorkWeek">
-                            <ScheduleViewGroup EnableCompactView="false" Resources="@resourceGroup"></ScheduleViewGroup>
-                        </ScheduleView>
-                        <ScheduleView Option="@View.TimelineMonth">
-                            <ScheduleViewGroup EnableCompactView="false" Resources="@resourceGroup"></ScheduleViewGroup>
-                        </ScheduleView>
-                    </ScheduleViews>
-                    <ScheduleTemplates>
-                        <DateHeaderTemplate>
-                            <div class="e-custom-date-header date-text" title="@(getDateHeaderText((context as TemplateContext).Date))">@(getDateHeaderText((context as TemplateContext).Date).ToUpper())</div>
-                        </DateHeaderTemplate>
-                    </ScheduleTemplates>
-                </SfSchedule> 
-            </div>
-        </div>
-        <div class="col-lg-3 col-md-3 col-sm-3 treeview-container-wrapper">
-            <div class="treeview-container">
-                <div>
-                    <SfDropDownList @ref="ddlObj" Placeholder="Choose Specialist" Width="220px" TItem="EmpleadosModel" PopupHeight="auto" DataSource="@resourceDataSource" TValue="int?" CssClass="planner-dropdown" ShowClearButton="true">
-                      @*   <DropDownListEvents TItem="Doctor" TValue="int?" ValueChange="onValueChange"></DropDownListEvents>
-                        <DropDownListFieldSettings Text="Name" Value="Id"></DropDownListFieldSettings>
-                        <DropDownListTemplates TItem="Doctor">
-                            <ItemTemplate>
-                                <div class="specialist-item">
-                                    <img class="value" src="css/appoinment/assets/images/@((context as Doctor).Text).png" alt="doctor" />
-                                    <div class="doctor-details">
-                                        <div class="name">Dr.@((context as Doctor).Name)</div>
-                                        <div class="designation">@((context as Doctor).Designation)</div>
-                                    </div>
-                                </div>
-                            </ItemTemplate>
-                            <FooterTemplate>
-                                <div class="add-doctor">
-                                    <div class="e-icon-add e-icons"></div><div class="add-doctor-text">
-                                        <NavLink Match="NavLinkMatch.Prefix" href="@($"doctors")">Add New Doctor</NavLink>
-                                    </div>
-                                </div>
-                            </FooterTemplate>
-                        </DropDownListTemplates> *@
-                    </SfDropDownList> 
-                </div>
-                <div class="title-container">
-                    <h2 class="title-text">Waiting List</h2>
-                </div>
-            @* <SfTreeView TValue="WaitingList" LoadOnDemand="false" CssClass="treeview-external-drag" AllowDragAndDrop="true">
-                <TreeViewFieldsSettings Id="Id" Text="Name" DataSource="@waitingList"></TreeViewFieldsSettings>
-                <TreeViewEvents TValue="WaitingList" OnNodeDragStop="NodeDragStop"></TreeViewEvents>
-                <TreeViewTemplates TValue="WaitingList">
-                    <NodeTemplate>
-                        <div id="waiting">
-                            <div id="waitdetails">
-                                <div id="waitlist">@((context as WaitingList).Name)</div>
-                                <div id="event-time">@(getEventTime((context as WaitingList)))</div>
-                                <div id="waitcategory">
-                                    @(getDepartmentName((context as WaitingList).DepartmentId)) - @(getTreatmentDetail((context as WaitingList)))
-                                </div>
-                            </div>
-                            <div id="item-icon-container">
-                                <span class="item-icon icon-reorder"></span>
-                            </div>
-                        </div>
-                    </NodeTemplate>
-                </TreeViewTemplates>
-            </SfTreeView> *@
 
+                                    <div class="e-row">
+                                        <div class="e-col-4">
+                                            <label>Tipo de paciente</label>
+                                            <SfDropDownList TItem="KeyValuePair<int,string>" TValue="int"
+                                                            DataSource="@tipoPacienteOptions"
+                                                            @bind-Value="c.PacienteTypeId"
+                                                            PopupHeight="220px">
+                                                <DropDownListFieldSettings Text="Value" Value="Key"></DropDownListFieldSettings>
+                                            </SfDropDownList>
+                                        </div>
+                                        <div class="e-col-8">
+                                            <label>Motivo de consulta</label>
+                                            <SfTextBox @bind-Value="c.MotivoConsulta" Multiline="true"></SfTextBox>
+                                        </div>
+                                        
+                                    </div>
+                                    <div class="e-row">
+                                        <div class="e-col-8">
+                                            <label>Costo</label>
+                                            <SfNumericTextBox @bind-Value="c.Amount"></SfNumericTextBox>
+                                        </div>
+                                        <div class="e-col-4">
+                                            <label>Estatus de la Cita</label>
+                                            <SfDropDownList TItem="KeyValuePair<int,string>" TValue="int"
+                                                            DataSource="@EstatusCita" @bind-Value="c.StatusCitaId"
+                                                            PopupHeight="220px">
+                                                <DropDownListFieldSettings Text="Value" Value="Key"></DropDownListFieldSettings>
+                                            </SfDropDownList>
+                                        </div>
+                                    </div>
+
+                                    <div class="e-row">
+                                        <div class="e-col-6">
+                                            <label>Fecha y hora de inicio</label>
+                                            <SfDateTimePicker @bind-Value="c.StartLocal"></SfDateTimePicker>
+                                        </div>
+                                        <div class="e-col-6">
+                                            <label>Terapeuta</label>
+                                            <SfDropDownList TItem="EmpleadosModel" TValue="string"
+                                                            DataSource="@resourceDataSource"
+                                                            @bind-Value="c.PsicoObjectId"
+                                                            PopupHeight="260px">
+                                                <DropDownListFieldSettings Text="PrimerNombre" Value="ObjectId"></DropDownListFieldSettings>
+                                            </SfDropDownList>
+                                        </div>
+                                    </div>
+                                    <div class="e-row e-justify-content-end e-mt-2">
+                                        <button class="e-btn e-secondary e-small" @onclick="() => AbrirReagendar(c)">Reagendar</button>
+                                        <button class="e-btn e-success e-small e-ml-2" @onclick="() => MarcarConfirmar(c)">Confirmar</button>
+                                    </div>
+                                </div>
+                                
+                            </EditorTemplate>
+
+                            <DateHeaderTemplate>
+                                <div class="e-custom-date-header date-text"
+                                     title="@(getDateHeaderText((context as TemplateContext).Date))">
+                                    @(getDateHeaderText((context as TemplateContext).Date).ToUpper())
+                                </div>
+                            </DateHeaderTemplate>
+                        </ScheduleTemplates>
+                        <ScheduleTimeScale Enable="true" Interval="@viewInterval"></ScheduleTimeScale>
+                        <ScheduleResources>
+                            <ScheduleResource TItem="EmpleadosModel" TValue="string"
+                                              DataSource="@resourceDataSource"
+                                              Field="PsicoObjectId"
+                                              Title="Terapeuta"
+                                              Name="Terapeutas"
+                                              TextField="NombreCorto"
+                                              IdField="ObjectId"
+                                              ColorField="Color">
+                            </ScheduleResource>
+                        </ScheduleResources>
+                        @* Sombreado de break del terapeuta activo (si tu modelo de horarios lo provee) *@
+                        <ScheduleSpecialTimeRegions>
+                            @if (semanaHoras is not null)
+                            {
+                                @foreach (var h in semanaHoras)
+                                {
+                                    if (h.Enable && h.BreakStart.HasValue && h.BreakEnd.HasValue)
+                                    {
+                                        <ScheduleSpecialTimeRegion StartTime="@h.BreakStart.Value"
+                                                                   EndTime="@h.BreakEnd.Value"
+                                                                   IsReadOnly = "true"
+                                                                   CssClass="e-break">
+                                        </ScheduleSpecialTimeRegion>
+                                    }
+                                }
+                            }
+                        </ScheduleSpecialTimeRegions>
+
+                        <ScheduleViews>
+                            <ScheduleView Option="@View.Day"></ScheduleView>
+                            <ScheduleView Option="@View.Week"></ScheduleView>
+                            <ScheduleView Option="@View.Month"></ScheduleView>
+                            <ScheduleView Option="@View.TimelineDay">
+                                <ScheduleViewGroup EnableCompactView="false" Resources="@resourceGroup"></ScheduleViewGroup>
+                            </ScheduleView>
+                            <ScheduleView Option="@View.TimelineWeek">
+                                <ScheduleViewGroup EnableCompactView="false" Resources="@resourceGroup"></ScheduleViewGroup>
+                            </ScheduleView>
+                            <ScheduleView Option="@View.TimelineWorkWeek">
+                                <ScheduleViewGroup EnableCompactView="false" Resources="@resourceGroup"></ScheduleViewGroup>
+                            </ScheduleView>
+                            <ScheduleView Option="@View.TimelineMonth">
+                                <ScheduleViewGroup EnableCompactView="false" Resources="@resourceGroup"></ScheduleViewGroup>
+                            </ScheduleView>
+                        </ScheduleViews>
+
+                        
+                    </SfSchedule>
+                </div>
+            </div>
+
+            <div class="col-lg-3 col-md-3 col-sm-3 treeview-container-wrapper">
+                <div class="treeview-container">
+                    <div>
+                        @* Selector de terapeuta (Empleado). Value = ObjectId *@
+                        <SfDropDownList TItem="EmpleadosModel"
+                                        TValue="string"
+                                        @ref="ddlObj"
+                                        Placeholder="Elige terapeuta"
+                                        Width="220px"
+                                        DataSource="@resourceDataSource"
+                                        CssClass="planner-dropdown"
+                                        ShowClearButton="true">
+                            <DropDownListFieldSettings Text="NombreCorto" Value="ObjectId"></DropDownListFieldSettings>
+                            <DropDownListEvents TItem="EmpleadosModel" TValue="string" ValueChange="OnEmpleadoChange"></DropDownListEvents>
+
+                            <DropDownListTemplates TItem="EmpleadosModel">
+                                <ItemTemplate>
+                                    @{
+                                        var emp = context as EmpleadosModel;
+                                    }
+                                    <div class="specialist-item">
+                                        <div class="doctor-details">
+                                            <div class="name">@(emp?.NombreCorto)</div>
+                                        </div>
+                                    </div>
+                                </ItemTemplate>
+                            </DropDownListTemplates>
+                        </SfDropDownList>
+                    </div>
+
+                    <div class="title-container">
+                        <h2 class="title-text">Waiting List</h2>
+                    </div>
+
+                    @* ---------- TREEVIEW: todas las citas con StatusCitaId == 1 ---------- *@
+                    <SfTreeView TValue="CitasModel"
+                                LoadOnDemand="false"
+                                CssClass="treeview-external-drag"
+                                AllowDragAndDrop="true">
+                        <TreeViewFieldsSettings Id="ObjectId"
+                                                Text="PacienteNombre"
+                                                DataSource="@waitingList">
+                        </TreeViewFieldsSettings>
+                        <TreeViewEvents TValue="CitasModel" OnNodeDragStop="NodeDragStop"></TreeViewEvents>
+                        <TreeViewTemplates TValue="CitasModel">
+                            <NodeTemplate>
+                                @{
+                                    var c = context as CitasModel;
+                                }
+                                <div id="waiting">
+                                    <div id="waitdetails">
+                                        <div id="waitlist">@c?.PacienteNombre</div>
+                                        <div id="event-time">@getEventTime(c)</div>
+                                        <div id="waitcategory">@c?.MotivoConsulta</div>
+                                    </div>
+                                    <div id="item-icon-container">
+                                        <span class="item-icon icon-reorder"></span>
+                                    </div>
+                                </div>
+                            </NodeTemplate>
+                        </TreeViewTemplates>
+                    </SfTreeView>
+                </div>
             </div>
         </div>
     </div>
-</div>
+    @if (dialogReagendarVisible)
+    {
+        <SfDialog @bind-Visible="dialogReagendarVisible"
+                  IsModal="true"
+                  Width="420px"
+                  ShowCloseIcon="true"
+                  Header="Reagendar">
+            <div class="e-mb-3">
+                <label>Nueva fecha/hora</label>
+                <SfDateTimePicker @bind-Value="nuevoInicio" />
+            </div>
+            <div>
+                <label>Termina</label>
+                <SfDateTimePicker @bind-Value="nuevoFin" />
+            </div>
+            <div class="e-d-flex e-justify-content-end e-mt-3">
+                <button class="e-btn e-flat" @onclick="() => dialogReagendarVisible = false">Cancelar</button>
+                <button class="e-btn e-primary e-ml-2" @onclick="ConfirmarReagendo">Guardar</button>
+            </div>
+        </SfDialog>
+    }
+    @if (dialogEsperaVisible)
+    {
+        <SfDialog Visible="true" IsModal="true" Width="460px" Header="Enviar a lista de espera"
+                  ShowCloseIcon="true" >
+            <p>La cita está en estado <b>Asignada</b> por lo que la cita se mostrará en Lista de Espera</p>
+            
+        </SfDialog>
+    }
+
+
 }
-else{
+else
+{
     <div class="planner-dashboard-skeleton">
         <div class="appointments-skeleton">
-            <SfSkeleton Shape="Syncfusion.Blazor.Notifications.SkeletonType.Rectangle" Height="780px" Width="90%"></SfSkeleton><br/>
+            <SfSkeleton Shape="Syncfusion.Blazor.Notifications.SkeletonType.Rectangle" Height="780px" Width="90%"></SfSkeleton><br />
         </div>
         <div class="activities-skeleton">
-            @for(int i=0; i < 10; i++)
+            @for (int i = 0; i < 10; i++)
             {
                 <SfSkeleton Shape="Syncfusion.Blazor.Notifications.SkeletonType.Rectangle" Height="3%" Width="80%"></SfSkeleton>
                 <br />
@@ -163,332 +313,371 @@ else{
         </div>
     </div>
 }
-
+<style>
+    .e-break {
+        background: rgba(255, 99, 71, .15);
+    }
+</style>
 @code {
-    // private async Task CerrarYCobrar(Hospital appt)
-    // {
-    //     // Ajusta tu modelo según lo que manejes
-    //     appt.Status = "Cerrada";
-    //     appt.Paid = true;
-    //     await GuardarCitaAsync(appt);
-    //     StateHasChanged(); // refresca la UI
-    // }
-
-    // private void AbrirReagendar(Hospital appt)
-    // {
-    //     citaAReagendar = appt;
-    //     nuevoInicio = appt.StartTime;
-    //     nuevoFin = appt.EndTime;
-    //     mostrarDialogoReagendar = true;
-    // }
-
-    // private async Task ConfirmarReagendo()
-    // {
-    //     if (citaAReagendar is null) return;
-    //     citaAReagendar.StartTime = nuevoInicio;
-    //     citaAReagendar.EndTime = nuevoFin;
-    //     await GuardarCitaAsync(citaAReagendar);
-    //     mostrarDialogoReagendar = false;
-    //     StateHasChanged();
-    // }
+    // ----------------- REFERENCIAS Y ESTADO -----------------
     SfSchedule<CitasModel> scheduleObj { get; set; }
-    private Hospital? citaAReagendar;
-    private bool mostrarDialogoReagendar;
-    private DateTime nuevoInicio;
-    private DateTime nuevoFin;
-    [Inject]
-    protected IJSRuntime JsRuntime { get; set; }
-    [Inject]
-    protected AppointmentService Service { get; set; }
-    private bool editUpcoming = false;
-
-    private bool openDialog { get; set; } = false;
-    private int viewInterval { get; set; } = 60;
-    private int calendarDayOfWeek { get; set; } = 1;
-    private string resourceColorField { get; set; }
-    private DateTime currentDate { get; set; }
-
-    SfDropDownList<int?, EmpleadosModel> ddlObj { get; set; }
-
-    private List<CitasModel> scheduleEventData { get; set; }
-
-    private string[] resourceGroup { get; set; } = new string[] { "Terapeutas" };
-
-    private string startHour { get; set; }
-    private string endHour { get; set; }
-    private int[] workDay { get; set; } = new int[] { 0, 1, 2, 3, 4, 5, 6 };
-    private Calendar workHours { get; set; }
-
-    private View sceduleView { get; set; }
-
-    private List<Specialization> specialistCategory { get; set; }
-    private List<EmpleadosModel> resourceDataSource { get; set; }
-
-    private List<WaitingList> waitingList { get; set; }
-
-
-    private Query queryData { get; set; }
-    private List<EmpleadosModel> activeDoctorData { get; set; }
+    SfDropDownList<string, EmpleadosModel> ddlObj { get; set; }
+    private bool dialogReagendarVisible;
+    private CitasModel? editando;
+    private DateTime nuevoInicio, nuevoFin;
     private bool isDataLoaded;
+    private bool editUpcoming = false;
+    private int viewInterval = 60;
+    private int calendarDayOfWeek = 1; // Lunes
+    private string resourceColorField;
+    private DateTime currentDate;
+    private string startHour;
+    private string endHour;
+    private int[] workDay = new int[] { 0, 1, 2, 3, 4, 5, 6 }; // Domingo..Sábado
+    private View sceduleView;
+    private List<EmpleadosModel> Psicos = new List<EmpleadosModel>();
+    private List<CitasModel> scheduleEventData = new();
+    private List<EmpleadosModel> resourceDataSource = new();
+    private string[] resourceGroup { get; set; }
+    // Empleado activo y sus horarios (TIPOS definidos en tu carpeta Models)
+    private EmpleadosModel empleadoActivo;
+    private WorkHours horasEmpleadoActivo;                 // Reglas base (por día, definido en tus Models)
+    private List<AnchoredWorkDay> semanaHoras;             // Reglas ancladas a la semana visible (definido en tus Models)
+    private List<KeyValuePair<int, string>> tipoPacienteOptions =>
+    Enum.GetValues(typeof(TipoPaciente))
+        .Cast<TipoPaciente>()
+        .Select(e => new KeyValuePair<int, string>((int)e, e.ToString()))
+        .ToList();
 
-    protected override void OnInitialized()
+    private List<KeyValuePair<int, string>> EstatusCita => Enum.GetValues(typeof(EstatusCita))
+                                                                .Cast<EstatusCita>().Select(c => new KeyValuePair<int, string>((int)c, c.ToString())).ToList();
+
+    // Waiting list: TODAS las citas con StatusCitaId == 1 (filtrada desde scheduleEventData)
+    private List<CitasModel> waitingList = new();
+
+    // ----------------- CICLO DE VIDA -----------------
+    protected override async Task OnInitializedAsync()
     {
-        var empleados = EmployeService.GetAllEmpleadosAsync();
-        sceduleView = (View)Enum.Parse(typeof(View), (Service.CalendarSettings.CurrentView as string));
+        // Config calendario desde tu servicio
+        sceduleView = (View)Enum.Parse(typeof(View), Service.CalendarSettings.CurrentView as string);
         currentDate = Service.StartDate;
-        this.viewInterval = Service.CalendarSettings.Interval;
-        this.calendarDayOfWeek = Service.CalendarSettings.FirstDayOfWeek;
-        this.resourceColorField = Service.CalendarSettings.BookingColor;
-        this.waitingList = Service.WaitingLists;
-        this.resourceDataSource = empleados;
-        this.specialistCategory = Service.Specializations;
-        this.startHour = Service.CalendarSettings.Calendar.Start;
-        this.endHour = Service.CalendarSettings.Calendar.End;
+        viewInterval = Service.CalendarSettings.Interval;
+        calendarDayOfWeek = Service.CalendarSettings.FirstDayOfWeek;
+        resourceColorField = Service.CalendarSettings.BookingColor;
+        startHour = Service.CalendarSettings.Calendar.Start;
+        endHour = Service.CalendarSettings.Calendar.End;
+
+        // Empleados (terapeutas)
+        resourceDataSource = await EmployeService.GetAllPsicosAsync();
+        resourceGroup = new[] { "Terapeutas" };
     }
 
-    private string getEventTime(WaitingList data)
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        return Service.GetFormatDate(data.StartTime, "MMM d") + ", " + Service.GetFormatDate(data.StartTime, "h:mm tt") + "-" + Service.GetFormatDate(data.EndTime, "h:mm tt");
+        if (firstRender)
+        {
+            await LoadData();
+        }
     }
 
-    private string getDepartmentName(int id)
+    private async Task LoadData()
     {
-        Specialization specData = this.specialistCategory.Where(item => item.DepartmentId.Equals(id)).FirstOrDefault();
-        return specData.Text.ToUpper();
+        // Trae todas las citas inicialmente (sin filtro)
+        var citas = await CitasService.GetAllCitasAsync();
+        scheduleEventData = citas?.OrderBy(c => c.StartLocal).ToList() ?? new();
+
+        // Waiting list = todas con StatusCitaId == 1
+        RefreshWaitingListFromCurrent();
+
+        // Sin terapeuta seleccionado al inicio
+        empleadoActivo = null;
+        horasEmpleadoActivo = null;
+        semanaHoras = null;
+
+        isDataLoaded = true;
+        StateHasChanged();
+    }
+    private void MarcarConfirmar(CitasModel c)
+    {
+        // tu regla de negocio al “confirmar”
+        // ej. StatusCitaId = 2 (confirmada), o bandera temporal:
+        c.StatusCitaId = 2;
     }
 
+    private void AbrirReagendar(CitasModel c)
+    {
+        dialogReagendarVisible = true;
+        editando = c;
+        nuevoInicio = c.StartLocal;
+        nuevoFin = c.EndLocal == default ? c.StartLocal.AddHours(1) : c.EndLocal;
+    }
+    private async Task ConfirmarReagendo()
+    {
+        if (editando is null) return;
+        editando.StartLocal = nuevoInicio;
+        editando.EndLocal = nuevoFin <= nuevoInicio ? nuevoInicio.AddHours(1) : nuevoFin;
+        dialogReagendarVisible = false;
+        // no guardamos aquí; el usuario sigue y presiona Save del editor
+        await InvokeAsync(StateHasChanged);
+    }
+    // ----------------- EVENTOS UI -----------------
+    // Mejor Task que void para poder hacer awaits si luego los necesitas
+    public Task OnPopupOpen(PopupOpenEventArgs<CitasModel> args)
+    {
+        if (args.Type == PopupType.Editor)
+        {
+            var c = args.Data ?? new CitasModel();
+            bool esNuevo = string.IsNullOrEmpty(c.ObjectId); // sin id => creación
+
+            if (esNuevo)
+            {
+                // defaults requeridos
+                if (c.StatusCitaId == 0)
+                    c.StatusCitaId = 1;
+
+                // prefija terapeuta si tienes uno activo seleccionado
+                if (string.IsNullOrEmpty(c.PsicoObjectId) && empleadoActivo is not null)
+                    c.PsicoObjectId = empleadoActivo.ObjectId;
+
+                // fechas: si no hay inicio, usa la celda/fecha seleccionada
+                if (c.StartLocal == default)
+                    c.StartLocal = scheduleObj.SelectedDate;
+
+                // fin = inicio + 1 hora si falta o es inválido
+                if (c.EndLocal == default || c.EndLocal <= c.StartLocal)
+                    c.EndLocal = c.StartLocal.AddHours(1);
+
+                // puedes setear otros campos por defecto aquí (tipo de paciente, etc.)
+                if (c.PacienteTypeId == 0)
+                    c.PacienteTypeId = (int)TipoPaciente.Individual;
+            }
+
+            // No hagas args.Cancel = true aquí (quieres mostrar el editor)
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private bool dialogEsperaVisible;
+    private CitasModel? pendiente;
+    public void OnActionBegin(ActionEventArgs<CitasModel> args)
+    {
+        if ((args.ActionType == ActionType.EventCreate || args.ActionType == ActionType.EventChange)
+        && (args.AddedRecords?.Count > 0 || args.ChangedRecords?.Count > 0))
+        {
+            var c = args.AddedRecords?.FirstOrDefault() ?? args.ChangedRecords!.First();
+            // Si viene con Status 1 (pendiente) mostramos el diálogo de “Lista de espera”
+            if (c.StatusCitaId == 1)
+            {
+                /* args.Cancel = true; */       // detenemos el Save interno
+                pendiente = c;
+                dialogEsperaVisible = true;
+            }
+            else
+            {
+                // aquí puedes aplicar defaults como +1h si hace falta
+                if (c.EndLocal == default || c.EndLocal <= c.StartLocal)
+                    c.EndLocal = c.StartLocal.AddHours(1);
+            }
+        }
+
+        // Edición de una cita existente: si cambian Start, mantenemos +1h (opcional)
+        if (args.ActionType == ActionType.EventChange && (args.ChangedRecords?.Count > 0))
+        {
+            foreach (var c in args.ChangedRecords)
+            {
+                if (c.StartLocal != default && c.EndLocal != default && c.EndLocal <= c.StartLocal)
+                {
+                    var endCalc = c.StartLocal.AddHours(1);
+                    c.FechaIni ??= new FechaModel { Iso = c.StartLocal };
+                    c.FechaFin = new FechaModel { Iso = endCalc };
+                }
+            }
+        }
+    }
+    public async void OnActionComplete(ActionEventArgs<CitasModel> args)
+    {
+        if ((args.ActionType == ActionType.EventCreate || args.ActionType == ActionType.EventChange)
+        && (args.AddedRecords?.Count > 0 || args.ChangedRecords?.Count > 0))
+        {
+            foreach (var c in args.AddedRecords)
+            {
+
+                await CitasService.CreateCitaAsync(c);
+
+
+
+                // Llama a tu servicio para POST -> /classes/Citas
+            }  
+            foreach(var c in args.ChangedRecords)
+            {
+                await CitasService.UpdateCitaAsync(c);
+
+            }
+            await OnInitializedAsync();
+
+        }
+        else if (args.ActionType == ActionType.ViewNavigate || args.ActionType == ActionType.DateNavigate)
+        {
+            UpdateBreakHours(scheduleObj.SelectedDate);
+            StateHasChanged();
+        }
+    }
+    private async void OnCellClick(CellClickEventArgs args)
+    {
+        var nuevo = new CitasModel
+        {
+            PacienteTypeId = (int)TipoPaciente.Individual, // default
+            StatusCitaId = 1,                             // requerido
+            StartLocal = args.StartTime,                // tu setter ajusta FechaIni.Iso
+            EndLocal = args.StartTime.AddHours(1),
+            PsicoObjectId = empleadoActivo?.ObjectId       // si tienes uno seleccionado
+        };
+
+        await scheduleObj.OpenEditorAsync(nuevo, CurrentAction.Add);
+    }
+    private async void OnEmpleadoChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<string, EmpleadosModel> args)
+    {
+        if (string.IsNullOrEmpty(args?.Value))
+        {
+            // Sin filtro por terapeuta → todas las citas
+            empleadoActivo = null;
+            horasEmpleadoActivo = null;
+            semanaHoras = null;
+
+            var citas = await CitasService.GetAllCitasAsync();
+            scheduleEventData = citas?.OrderBy(c => c.StartLocal).ToList() ?? new();
+
+            workDay = new int[] {  1, 2, 3, 4, 5};
+
+            // refresca waiting list
+            RefreshWaitingListFromCurrent();
+
+            StateHasChanged();
+            return;
+        }
+
+        // Empleado activo
+        empleadoActivo = resourceDataSource.FirstOrDefault(e => e.ObjectId == args.Value);
+
+        // Trae WorkHours del empleado (si no tienes backend aún, aplica defaults desde tu servicio/Models)
+        horasEmpleadoActivo = await EmployeService.GetWorkHoursByEmpleadoAsync(empleadoActivo.ObjectId);
+
+        // Anclar a la semana visible y ajustar días laborales del calendario
+        UpdateBreakHours(currentDate);
+        workDay = horasEmpleadoActivo?.Rules?.Where(r => r.Enable).Select(r => (int)r.Day).Distinct().OrderBy(x => x).ToArray()
+                  ?? new int[] { 0, 1, 2, 3, 4, 5, 6 };
+
+        // Filtrar citas por terapeuta (CitasModel.PsicoObjectId)
+        var todas = await CitasService.GetAllCitasAsync();
+        scheduleEventData = todas?
+            .Where(c => c.PsicoObjectId == empleadoActivo.ObjectId)
+            .OrderBy(c => c.StartLocal)
+            .ToList() ?? new();
+
+        // Waiting list según el nuevo conjunto
+        RefreshWaitingListFromCurrent();
+
+        StateHasChanged();
+    }
+    public async void NodeDragStop(DragAndDropEventArgs args)
+    {
+        args.Cancel = true;
+
+        var cellData = await scheduleObj.GetTargetCellAsync((int)args.Left, (int)args.Top);
+        if (cellData is null) return;
+
+        var nodeId = args.DraggedNodeData?.Id?.ToString();
+        var src = waitingList?.FirstOrDefault(x => x.ObjectId == nodeId);
+        if (src is null) return; // si tu waitingList no es CitasModel, adapta aquí
+
+        // Fechas: ancla a la celda
+        src.StartLocal = cellData.StartTime;
+        src.EndLocal = (cellData.EndTime > cellData.StartTime)
+                         ? cellData.EndTime
+                         : cellData.StartTime.AddHours(1);
+
+        // Terapeuta desde el renglón de recurso (si hay agrupación por "Terapeutas")
+        try
+        {
+            var resInfo = scheduleObj.GetResourceByIndex(cellData.GroupIndex);
+            var gd = resInfo?.GroupData;
+            if (gd is not null)
+            {
+                var prop = gd.GetType().GetProperty("ObjectId") ?? gd.GetType().GetProperty("Id");
+                var terapeutaId = prop?.GetValue(gd)?.ToString();
+                if (!string.IsNullOrWhiteSpace(terapeutaId))
+                    src.PsicoObjectId = terapeutaId;
+            }
+        }
+        catch { /* ignore, usamos fallback si aplica */ }
+
+        // Fallback: terapeuta activo
+        if (string.IsNullOrWhiteSpace(src.PsicoObjectId) && empleadoActivo is not null)
+            src.PsicoObjectId = empleadoActivo.ObjectId;
+
+        // Quita de la waiting list visualmente
+        waitingList?.RemoveAll(x => x.ObjectId == src.ObjectId);
+
+        // UPSERT en el datasource del Scheduler preservando el ObjectId
+        if (scheduleEventData is null) scheduleEventData = new();
+        var idx = scheduleEventData.FindIndex(x => x.ObjectId == src.ObjectId);
+        if (idx >= 0) scheduleEventData[idx] = src;
+        else scheduleEventData.Add(src);
+
+        // Abre el editor en modo EDICIÓN (no alta) para NO duplicar
+        await scheduleObj.OpenEditorAsync(src, CurrentAction.Save);
+    }
+
+
+    // ----------------- HELPERS UI -----------------
     private string getDateHeaderText(DateTime? date)
+        => Service.GetFormatDate((DateTime)date, "ddd, MMMM d");
+
+    private string getEventTime(CitasModel c)
+        => $"{Service.GetFormatDate(c.StartLocal, "MMM d")}, {Service.GetFormatDate(c.StartLocal, "h:mm tt")}-{Service.GetFormatDate(c.EndLocal, "h:mm tt")}";
+
+    private void RefreshWaitingListFromCurrent()
     {
-        return Service.GetFormatDate((DateTime)date, "ddd, MMMM d");
+        waitingList = (scheduleEventData ?? new())
+            .Where(c => c.StatusCitaId == 1)
+            .OrderBy(c => c.StartLocal)
+            .ToList();
     }
 
-    private string getTreatmentDetail(WaitingList data)
+    // ----------------- HORARIOS: ANCLAR A SEMANA VISIBLE (usa tus modelos) -----------------
+    private void UpdateBreakHours(DateTime current)
     {
-        if (data.Treatment != null)
+        if (horasEmpleadoActivo?.Rules is null || horasEmpleadoActivo.Rules.Count == 0)
         {
-            return data.Treatment;
+            semanaHoras = null;
+            return;
         }
-        else
+
+        var weekStart = Service.GetWeekFirstDate(current).Date;
+
+        // Construimos los AnchoredWorkDay usando TUS clases en Models
+        semanaHoras = horasEmpleadoActivo.Rules.Select(r =>
         {
-            return "CHECKUP";
-        }
-    }
+            int delta = ((int)r.Day - (int)weekStart.DayOfWeek + 7) % 7;
+            DateTime date = weekStart.AddDays(delta);
 
-
-    public void OnPopupOpen(PopupOpenEventArgs<CitasModel> args)
-    {
-        args.Cancel = args.Type == PopupType.QuickInfo && args.Data.ObjectId != null;
-    }
-
-    // public void OnActionBegin(Syncfusion.Blazor.Schedule.ActionEventArgs<Hospital> args)
-    // {
-    //     if (args.ActionType == ActionType.EventCreate && args.AddedRecords.Count > 0)
-    //     {
-    //         foreach(Hospital Data in args.AddedRecords)
-    //         {
-    //             Random random = new Random();
-    //             Data.PatientId = Data.PatientId == 0 ? random.Next(1, Service.Patients.Max(p => p.Id)) : Data.PatientId;
-    //         }
-    //     }
-    // }
-    private void onValueChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, Doctor> args)
-    {
-        if (args.Value != null)
-        {
-            // refreshDataSource((int)args.ItemData.DepartmentId, args.ItemData.Id.ToString());
-        }
-        else
-        {
-            // setDefaultData();
-        }
-    }
-    // private void refreshDataSource(int deptId, string doctorId)
-    // {
-    //     List<Doctor> filterItem = Service.Doctors.Where(item => item.Id.Equals(Int32.Parse(doctorId))).ToList();
-    //     activeDoctorData = filterItem;
-    //     workDay = filterItem[0].AvailableDays;
-    //     workHours = new Calendar { Start = filterItem[0].StartHour, End = filterItem[0].EndHour };
-    //     queryData = new Query().Where(new WhereFilter() { Field = "Id", Operator = "equal", value = Int32.Parse(doctorId) });
-    //     if (filterItem.Any())
-    //     {
-    //         updateBreakHours(scheduleObj.SelectedDate);
-    //         scheduleEventData = generateEvents(activeDoctorData[0]);
-    //     }
-    //     else
-    //     {
-    //         scheduleEventData = Service.Hospitals;
-    //     }
-    //     this.updateWaitingList((int)deptId);
-    // }
-
-    private void updateWaitingList(int? deptId)
-    {
-        var filteredData = Service.WaitingLists;
-        if (deptId != null)
-        {
-            filteredData = filteredData.Where(item => item.DepartmentId.Equals(deptId)).ToList();
-        }
-        waitingList = filteredData;
-    }
-
-    // private void setDefaultData()
-    // {
-    //     specialistCategory = Service.Specializations;
-    //     resourceDataSource = Service.Doctors;
-
-    //     queryData = new Query();
-
-    //     scheduleEventData = await CitasService.GetAllCitasAsync();
-    //     updateWaitingList(null);
-    //     startHour = Service.CalendarSettings.Calendar.Start;
-    //     endHour = Service.CalendarSettings.Calendar.End;
-    //     workDay = new int[] { 0, 1, 2, 3, 4, 5, 6 };
-    //     workHours = Service.CalendarSettings.Calendar;
-    //     activeDoctorData = new List<Doctor>();
-    // }
-    private List<Hospital> generateEvents(Doctor activeData)
-    {
-        List<Hospital> filteredEvents = new List<Hospital>();
-
-        List<Hospital> datas = Service.Hospitals.Where(item => item.DoctorId == activeData.Id).ToList();
-
-        datas.ForEach((ele) => filteredEvents.Add(ele));
-
-        activeData.WorkDays.ForEach((ele) =>
-        {
-            if (ele.State != "RemoveBreak")
+            return new AnchoredWorkDay
             {
-                int id = (filteredEvents.Any()) ? filteredEvents.Select(item => item.Id).Max() + 1 : 0;
-
-                filteredEvents.Add(new Hospital() { Id = id, Name = "Break Time", StartTime = (DateTime)ele.BreakStartHour, EndTime = (DateTime)ele.BreakEndHour, DoctorId = activeData.Id });
-            }
-            if (ele.Enable)
-            {
-                string shiftValue = (string)activeData.DutyTiming;
-                List<Hospital> createData = new List<Hospital>();
-                var workend = (DateTime)ele.WorkEndHour;
-                var workstart = (DateTime)ele.WorkStartHour;
-                if (shiftValue == "Shift1")
-                {
-                    createData.Add(new Hospital() { StartTime = new DateTime(workstart.Year, workstart.Month, workstart.Day, 17, 0, 0), EndTime = new DateTime(workend.Year, workend.Month, workend.Day, 21, 0, 0) });
-                }
-                else if (shiftValue == "Shift2")
-                {
-                    createData.Add(new Hospital() { StartTime = new DateTime(workstart.Year, workstart.Month, workstart.Day, 8, 0, 0), EndTime = new DateTime(workend.Year, workend.Month, workend.Day, 10, 0, 0) });
-                    createData.Add(new Hospital() { StartTime = new DateTime(workstart.Year, workstart.Month, workstart.Day, 19, 0, 0), EndTime = new DateTime(workend.Year, workend.Month, workend.Day, 21, 0, 0) });
-                }
-                else
-                {
-                    createData.Add(new Hospital() { StartTime = new DateTime(workstart.Year, workstart.Month, workstart.Day, 8, 0, 0), EndTime = new DateTime(workend.Year, workend.Month, workend.Day, 12, 0, 0) });
-                }
-                createData.ForEach((item) =>
-                {
-                    int id = filteredEvents.Select(data => data.Id).Max() + 1;
-
-                    filteredEvents.Add(new Hospital() { Id = id, Name = "Off Work", IsBlock = true, StartTime = (DateTime)item.StartTime, EndTime = (DateTime)item.EndTime, DoctorId = activeData.Id });
-                });
-            }
-        });
-        return filteredEvents;
+                Day = r.Day,
+                WorkStart = date.Date + r.WorkStart,
+                WorkEnd = date.Date + r.WorkEnd,
+                BreakStart = r.BreakStart.HasValue ? date.Date + r.BreakStart.Value : (DateTime?)null,
+                BreakEnd = r.BreakEnd.HasValue ? date.Date + r.BreakEnd.Value : (DateTime?)null,
+                Enable = r.Enable
+            };
+        }).ToList();
     }
-    private void updateBreakHours(DateTime currentDate)
-    {
-        List<DateTime> currentViewDates = new List<DateTime>();
-        DateTime firstDayOfWeek = Service.GetWeekFirstDate(currentDate);
-        DateTime startDate = firstDayOfWeek;
-        DateTime endDate = firstDayOfWeek.AddDays(7);
-        do
-        {
-            currentViewDates.Add(startDate);
-            startDate = startDate.AddDays(1);
-        } while (startDate.AddDays(startDate.Day) != endDate.AddDays(endDate.Day));
-        currentViewDates.ForEach((item) =>
-        {
-            activeDoctorData[0].WorkDays.ForEach((dayItem) =>
-            {
-                DateTime dd = (DateTime)dayItem.BreakStartHour;
 
-                if (dd.DayOfWeek == item.DayOfWeek)
-                {
-                    dayItem.BreakStartHour = resetDateValue((DateTime)dayItem.BreakStartHour, item);
-                    dayItem.BreakEndHour = resetDateValue((DateTime)dayItem.BreakEndHour, item);
-                    dayItem.WorkStartHour = resetDateValue((DateTime)dayItem.WorkStartHour, item);
-                    dayItem.WorkEndHour = resetDateValue((DateTime)dayItem.WorkEndHour, item);
-                }
-            });
-        });
-    }
-    private DateTime resetDateValue(DateTime date, DateTime item)
-    {
-        return date = item;
-    }
-    // public async void NodeDragStop(DragAndDropEventArgs args)
-    // {
-    //     args.Cancel = true;
-    //     CellClickEventArgs cellData = await scheduleObj.GetTargetCellAsync((int)args.Left, (int)args.Top);
-    //     if (cellData != null)
-    //     {
-    //         var resourceDetails = scheduleObj.GetResourceByIndex(cellData.GroupIndex);
-    //         WaitingList TreeData = waitingList.Where(data => data.Id.ToString() == args.DraggedNodeData.Id).First();
-    //         Hospital eventData;
-    //         if (resourceDetails != null)
-    //         {
-    //             eventData = new Hospital
-    //             {
-    //                 Name = TreeData.Name,
-    //                 StartTime = cellData.StartTime,
-    //                 EndTime = cellData.EndTime,
-    //                 IsAllDay = cellData.IsAllDay,
-    //                 Symptoms = TreeData.Disease,
-    //                 PatientId = TreeData.PatientId,
-    //                 DepartmentId = resourceDetails.GroupData.DepartmentId,
-    //                 DoctorId = resourceDetails.GroupData.DoctorId
-    //             };
-    //         }
-    //         else
-    //         {
-    //             eventData = new Hospital
-    //             {
-    //                 Name = TreeData.Name,
-    //                 StartTime = cellData.StartTime,
-    //                 EndTime = cellData.EndTime,
-    //                 IsAllDay = cellData.IsAllDay,
-    //                 Symptoms = TreeData.Disease,
-    //                 PatientId = TreeData.PatientId,
-    //                 DepartmentId = TreeData.DepartmentId,
-    //                 DoctorId = Int32.Parse(args.DraggedNodeData.Id)
-    //             };
-    //         }
-    //         if (TreeData != null)
-    //         {
-    //             waitingList.Remove(TreeData);
-    //         }
-    //         await this.scheduleObj.OpenEditorAsync(eventData, CurrentAction.Add);
-    //     }
-    // }
-
+    // ----------------- DISPOSE -----------------
     public void Dispose()
     {
         scheduleObj = null;
         ddlObj = null;
-    }
-
-    private async void LoadData()
-    {
-        var citas = await CitasService.GetAllCitasAsync();
-        this.scheduleEventData = citas;
-        this.workHours = Service.CalendarSettings.Calendar;
-        this.queryData = new Query();
-        await Task.Delay(100);
-        isDataLoaded = true;
-        StateHasChanged();
-    }
-
-    protected override void OnAfterRender(bool firstRender)
-    {
-    if (firstRender)
-        {
-        LoadData();
-        }
     }
 }

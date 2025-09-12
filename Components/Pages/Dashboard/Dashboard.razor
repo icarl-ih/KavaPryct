@@ -52,16 +52,8 @@
     </div>
     <ExpPieChart @ref="PieChartRef" Render="@Render" ExpenseData="@ExpenseData"></ExpPieChart>
     <div>
-        <div>
-            <div class="line-chart-area">
-                <ExpLineChart @ref="lineChart" Render="@Render" LineChartData="@LineChartData"></ExpLineChart>
-            </div>
-            <div class="column-chart-area">
-                <ExpColumnChart @ref="columnChart" Render="@Render" ColChartIncomeData="@ColChartIncomeData" ColChartExpenseData="@ColChartExpenseData"></ExpColumnChart>
-            </div>
-        </div>
-        <ExpGrid Render="@Render" RecentExpenseData="@RecentExpenseData" ExpenseGridCreated="@(() => { ShowSpinner = false; StateHasChanged(); })"></ExpGrid>
-     </div>    
+       <ExpGrid Render="@Render" RecentExpenseData="@RecentExpenseData" ExpenseGridCreated="@(() => { ShowSpinner = false; StateHasChanged(); })"></ExpGrid>
+    </div>    
 </div>
 
 

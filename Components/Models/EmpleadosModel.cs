@@ -17,6 +17,24 @@ namespace KavaPryct.Components.Models
 
         [JsonPropertyName("Nombres")]
         public string Nombres { get; set; }
+        [JsonIgnore]
+        public string PrimerNombre => ObtenerPrimerToken(Nombres);
+
+        // (opcional) útil si quieres “Nombre + Apellido”
+        [JsonIgnore]
+        public string NombreCorto => string.IsNullOrWhiteSpace(PrimerNombre) ? string.Empty : $"{PrimerNombre} {A_Paterno}".Trim();
+
+        private static string ObtenerPrimerToken(string? texto)
+        {
+            if (string.IsNullOrWhiteSpace(texto)) return string.Empty;
+
+            // Quita espacios repetidos y toma el primer “token” por espacio
+            var span = texto.AsSpan().Trim();
+            int idx = span.IndexOf(' ');
+            var first = (idx >= 0 ? span[..idx] : span).ToString();
+
+            return first;
+        }
 
         [JsonPropertyName("A_Paterno")]
         public string A_Paterno { get; set; }
@@ -106,8 +124,6 @@ namespace KavaPryct.Components.Models
     public class FechaModel
     {
         [JsonPropertyName("__type")]
-        
-
         public string Type { get; set; } = "Date";
         [JsonPropertyName("iso")]
         public DateTime Iso {  get; set; }
