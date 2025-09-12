@@ -1,4 +1,4 @@
-﻿@page "/doctors"
+﻿@page "/psicos"
 
 @using AppointmentPlanner.Data;
 @using AppointmentPlanner.Models;
@@ -7,8 +7,10 @@
 @using Syncfusion.Blazor.Inputs
 @using Syncfusion.Blazor.Notifications
 @using Syncfusion.Blazor.Popups
-
+@using KavaPryct.Services
+@using KavaPryct.Components.Models
 @inject NavigationManager UriHelper
+@inject EmpleadoRemoteService EmpleadoService
 
 @if(isDataLoaded){
 <div class="deleted-msg">
@@ -17,7 +19,7 @@
 <div id="doctors" class="doctors-wrapper">
     <header>
         <div class="module-title">
-            <div class="title">DOCTORS LIST</div>
+            <div class="title">Terapeutas</div>
             <div class="underline"></div>
         </div>
         <div class="add-doctor" @onclick="@onAddDoctor">
@@ -48,32 +50,43 @@
             <SfButton CssClass="e-normal" @onclick="@onAddDoctor" IsPrimary="true">Add New Doctor</SfButton>
         </div>
         <div class="specialist-display">
-            @foreach (var data in filteredDoctors)
+            @foreach (var data in empleados)
             {
-                <div class="e-cards specialist-item" id="Specialist_@(data.Id)" @onclick="@(e => onSpecialistClick(e, data.Id))">
+                <div class="e-cards specialist-item" id="Specialist_@(data.ObjectId)" @onclick="@(e => onSpecialistClick(e, data.ObjectId))">
                     <div class="e-card-content">
                         <div class="specialist-image">
-                            <img class="profile" src="css/appoinment/assets/images/@(data.Text).png" alt="doctor" />
-                            <span class="availability @data.Availability"></span>
+@*                             <img class="profile" src="css/appoinment/assets/images/@(data.Text).png" alt="doctor" /> *@
+                            <span></span>
                         </div>
                     </div>
                     <div class="specialist-detail">
-                        <div class="name">
-                            Dr. @data.Name
-                        </div>
-                        <div class="education">
-                            @(data.Education != null ? data.Education.ToUpper(): "")
-                        </div>
-                        <div class="specialist-experience">
-                            <div class="specialization">
-                                <span class="label-text">Designation</span>
-                                <span class="specialization-text">@data.Designation</span>
+                        @foreach(var std in estudios)
+                        {
+                            <div class="name">
+                                <span>@((std.Posgrados?.Any() ?? false)? string.Join(", ", std.Posgrados.Select(p => p.Abrv.ToUpperInvariant())): std.Abrv) @data.Nombres @data.A_Materno @data.A_Paterno</span>
                             </div>
-                            <div class="experience">
-                                <span class="label-text">Experience</span>
-                                <span class="specialization-text">@data.Experience</span>
-                            </div>
-                        </div>
+                                
+                            if (data.EstudiosObjectId == std.ObjectId)
+                            {
+                                <div class="education">
+                                    @(std.Id != 0 ? std.Nombre.ToUpper() : "")
+                                </div>
+                            }
+
+                            if (std.ClavePosgrado)
+                            {
+                                <div class="specialist-experience">
+                                    <div class="specialization">
+                                        <span class="label-text">Especialización</span>
+                                        <span class="specialization-text">
+                                            @((std.Posgrados?.Any() ?? false)
+                                                                            ? string.Join(", ", std.Posgrados.Select(p => p.Nombre.ToUpperInvariant()))
+                                                                            : "SIN ESPECIALIZACIÓN (POSGRADO)")
+                                        </span>
+                                    </div>
+                                </div>
+                            }
+                        }
                     </div>
                 </div>
             }
@@ -203,6 +216,8 @@ else
 
     SfDropDownList<string, Specialization> specObj { get; set; }
     private List<Doctor> filteredDoctors { get; set; }
+    private List<EmpleadosModel> empleados = new List<EmpleadosModel>();
+    private List<EstudiosModel> estudios = new List<EstudiosModel>();
     private SfMaskedTextBox maskObj { get; set; }
 
     private List<Specialization> specializationData { get; set; }
@@ -273,7 +288,7 @@ else
         return new Doctor { StartHour = startHour, EndHour = endHour };
     }
 
-    private void onSpecialistClick(Microsoft.AspNetCore.Components.Web.MouseEventArgs args, int Id)
+    private void onSpecialistClick(Microsoft.AspNetCore.Components.Web.MouseEventArgs args, string Id)
     {
         UriHelper.NavigateTo("doctors/doctorsdetails/" + Id);
     }
@@ -303,7 +318,8 @@ else
     private async void LoadData()
     {
         this.dutyTimings = Service.DutyTimings;
-        this.filteredDoctors = Service.Doctors;
+        this.empleados = await EmpleadoService.GetAllEmpleadosAsync();
+        this.estudios = await EmpleadoService.GetEstudiosWithPosgradosAsync();
         await Task.Delay(500);
         isDataLoaded = true;
         StateHasChanged();

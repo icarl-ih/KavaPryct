@@ -1,5 +1,6 @@
 ﻿using AppointmentPlanner.Data;
 using ExpenseTracker.Service;
+using KavaPryct.Services;
 using Microsoft.Extensions.Logging;
 using Syncfusion.Blazor;
 
@@ -22,6 +23,7 @@ namespace KavaPryct
             builder.Services.AddMauiBlazorWebView();
             builder.Services.AddScoped<AppointmentService>();
             builder.Services.AddScoped<ExpenseDataService>();
+            builder.Services.AddSingleton<EmpleadoRemoteService>();
 
 
 #if DEBUG

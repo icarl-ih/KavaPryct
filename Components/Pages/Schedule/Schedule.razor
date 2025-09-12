@@ -10,6 +10,10 @@
 @using Syncfusion.Blazor.Inputs
 @using Syncfusion.Blazor.Popups
 @using Microsoft.JSInterop;
+@using KavaPryct.Components.Models;
+@using KavaPryct.Services;
+@inject EmpleadoRemoteService EmployeService
+@inject CitasService CitasService
 @implements IDisposable;
 
 @if(isDataLoaded){
@@ -17,22 +21,52 @@
     <div class="drag-sample-wrapper droppable">
         <div class="col-lg-9 col-md-9 col-sm-9" style="padding: 0px">
             <div class="schedule-container e-droppable">
-                <SfSchedule ID="schedule" TValue="Hospital" @ref="scheduleObj" Width="100%" Height="800px" EnableAutoRowHeight="true" CssClass="doctor-appointment-planner" ShowWeekend="false" StartHour="@startHour" EndHour="@endHour" @bind-SelectedDate="@currentDate" WorkDays="@workDay" FirstDayOfWeek="@calendarDayOfWeek" @bind-CurrentView="@sceduleView">
-                    <ScheduleEvents TValue="Hospital" OnPopupOpen="OnPopupOpen" OnActionBegin="OnActionBegin"></ScheduleEvents>
+                <SfSchedule ID="schedule" TValue="CitasModel" @ref="scheduleObj" Width="100%" Height="800px" EnableAutoRowHeight="true" CssClass="doctor-appointment-planner" ShowWeekend="false" StartHour="@startHour" EndHour="@endHour" @bind-SelectedDate="@currentDate" WorkDays="@workDay" FirstDayOfWeek="@calendarDayOfWeek" @bind-CurrentView="@sceduleView" QuickInfoOnSelectionEnd = "true" ShowQuickInfo="true">
+                        @* <ScheduleQuickInfoTemplates>
+                            <FooterTemplate>
+                                @{
+                                    var appt = context as Hospital;
+                                }
+                                @if (appt is not null)
+                                {
+                                    <div class="qi-footer flex gap-2">
+                                        <button class="e-btn e-primary" @onclick="() => CerrarYCobrar(appt)">Cerrar y Cobrar</button>
+                                        <button class="e-btn" @onclick="() => AbrirReagendar(appt)">Reagendar</button>
+                                    </div>
+                                }
+
+                                @if (mostrarDialogoReagendar)
+                                {
+                                    <div class="dialog-bg">
+                                        <div class="dialog">
+                                            <h4>Reagendar</h4>
+                                            <input type="datetime-local" @bind="nuevoInicio" />
+                                            <input type="datetime-local" @bind="nuevoFin" />
+                                            <div class="flex gap-2">
+                                                <button class="e-btn e-primary" @onclick="ConfirmarReagendo">Guardar</button>
+                                                <button class="e-btn e-flat" @onclick="() => mostrarDialogoReagendar = false">Cancelar</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </FooterTemplate>
+                        </ScheduleQuickInfoTemplates>*@
+                    <ScheduleEvents TValue="CitasModel" OnPopupOpen="OnPopupOpen" ></ScheduleEvents>
                     <ScheduleWorkHours Start="08:00" End="21:00"></ScheduleWorkHours>
                     <ScheduleEventSettings DataSource="@scheduleEventData" ResourceColorField="@resourceColorField" AllowEditFollowingEvents="@editUpcoming">
                         <ScheduleField>
-                            <FieldSubject Name="Name"></FieldSubject>
-                            <FieldStartTime Name="StartTime" Title="From"></FieldStartTime>
-                            <FieldEndTime Name="EndTime" Title="To"></FieldEndTime>
-                            <FieldDescription Name="Symptoms" Title="Symptoms"></FieldDescription>
+                            <FieldSubject Name="PacienteNombre"></FieldSubject>
+                                <FieldStartTime Name="StartLocal" Title="From"></FieldStartTime>
+                                <FieldEndTime Name="EndLocal" Title="To"></FieldEndTime>
+                                <FieldDescription Name="MotivoConsulta" Title="Motivo de Consulta"></FieldDescription>
                         </ScheduleField>
                     </ScheduleEventSettings>
+                    
                     <ScheduleTimeScale Enable="true" Interval="@this.viewInterval"></ScheduleTimeScale>
-                    <ScheduleResources>
+                   @* <ScheduleResources>
                         <ScheduleResource TItem="Specialization" TValue="int?" DataSource="@specialistCategory" Field="DepartmentId" Title="Department" Name="Departments" TextField="Text" IdField="DepartmentId" ColorField="Color"></ScheduleResource>
                         <ScheduleResource TItem="Doctor" TValue="int" DataSource="@resourceDataSource" Query="@queryData" Field="DoctorId" Title="Consultation" Name="Doctors" TextField="Name" IdField="Id" ColorField="Color" GroupIDField="DepartmentId" WorkDaysField="AvailableDays" StartHourField="StartHour" EndHourField="EndHour"></ScheduleResource>
-                    </ScheduleResources>
+                    </ScheduleResources>*@
                     <ScheduleViews>
                         <ScheduleView Option="@View.Day"></ScheduleView>
                         <ScheduleView Option="@View.Week"></ScheduleView>
@@ -55,14 +89,14 @@
                             <div class="e-custom-date-header date-text" title="@(getDateHeaderText((context as TemplateContext).Date))">@(getDateHeaderText((context as TemplateContext).Date).ToUpper())</div>
                         </DateHeaderTemplate>
                     </ScheduleTemplates>
-                </SfSchedule>
+                </SfSchedule> 
             </div>
         </div>
         <div class="col-lg-3 col-md-3 col-sm-3 treeview-container-wrapper">
             <div class="treeview-container">
                 <div>
-                    <SfDropDownList @ref="ddlObj" Placeholder="Choose Specialist" Width="220px" TItem="Doctor" PopupHeight="auto" DataSource="@resourceDataSource" TValue="int?" CssClass="planner-dropdown" ShowClearButton="true">
-                        <DropDownListEvents TItem="Doctor" TValue="int?" ValueChange="onValueChange"></DropDownListEvents>
+                    <SfDropDownList @ref="ddlObj" Placeholder="Choose Specialist" Width="220px" TItem="EmpleadosModel" PopupHeight="auto" DataSource="@resourceDataSource" TValue="int?" CssClass="planner-dropdown" ShowClearButton="true">
+                      @*   <DropDownListEvents TItem="Doctor" TValue="int?" ValueChange="onValueChange"></DropDownListEvents>
                         <DropDownListFieldSettings Text="Name" Value="Id"></DropDownListFieldSettings>
                         <DropDownListTemplates TItem="Doctor">
                             <ItemTemplate>
@@ -81,13 +115,13 @@
                                     </div>
                                 </div>
                             </FooterTemplate>
-                        </DropDownListTemplates>
-                    </SfDropDownList>
+                        </DropDownListTemplates> *@
+                    </SfDropDownList> 
                 </div>
                 <div class="title-container">
                     <h2 class="title-text">Waiting List</h2>
                 </div>
-            <SfTreeView TValue="WaitingList" LoadOnDemand="false" CssClass="treeview-external-drag" AllowDragAndDrop="true">
+            @* <SfTreeView TValue="WaitingList" LoadOnDemand="false" CssClass="treeview-external-drag" AllowDragAndDrop="true">
                 <TreeViewFieldsSettings Id="Id" Text="Name" DataSource="@waitingList"></TreeViewFieldsSettings>
                 <TreeViewEvents TValue="WaitingList" OnNodeDragStop="NodeDragStop"></TreeViewEvents>
                 <TreeViewTemplates TValue="WaitingList">
@@ -106,7 +140,8 @@
                         </div>
                     </NodeTemplate>
                 </TreeViewTemplates>
-            </SfTreeView>
+            </SfTreeView> *@
+
             </div>
         </div>
     </div>
@@ -130,9 +165,37 @@ else{
 }
 
 @code {
+    // private async Task CerrarYCobrar(Hospital appt)
+    // {
+    //     // Ajusta tu modelo según lo que manejes
+    //     appt.Status = "Cerrada";
+    //     appt.Paid = true;
+    //     await GuardarCitaAsync(appt);
+    //     StateHasChanged(); // refresca la UI
+    // }
 
-    SfSchedule<Hospital> scheduleObj { get; set; }
+    // private void AbrirReagendar(Hospital appt)
+    // {
+    //     citaAReagendar = appt;
+    //     nuevoInicio = appt.StartTime;
+    //     nuevoFin = appt.EndTime;
+    //     mostrarDialogoReagendar = true;
+    // }
 
+    // private async Task ConfirmarReagendo()
+    // {
+    //     if (citaAReagendar is null) return;
+    //     citaAReagendar.StartTime = nuevoInicio;
+    //     citaAReagendar.EndTime = nuevoFin;
+    //     await GuardarCitaAsync(citaAReagendar);
+    //     mostrarDialogoReagendar = false;
+    //     StateHasChanged();
+    // }
+    SfSchedule<CitasModel> scheduleObj { get; set; }
+    private Hospital? citaAReagendar;
+    private bool mostrarDialogoReagendar;
+    private DateTime nuevoInicio;
+    private DateTime nuevoFin;
     [Inject]
     protected IJSRuntime JsRuntime { get; set; }
     [Inject]
@@ -145,11 +208,11 @@ else{
     private string resourceColorField { get; set; }
     private DateTime currentDate { get; set; }
 
-    SfDropDownList<int?, Doctor> ddlObj { get; set; }
+    SfDropDownList<int?, EmpleadosModel> ddlObj { get; set; }
 
-    private List<Hospital> scheduleEventData { get; set; }
+    private List<CitasModel> scheduleEventData { get; set; }
 
-    private string[] resourceGroup { get; set; } = new string[] { "Departments", "Doctors" };
+    private string[] resourceGroup { get; set; } = new string[] { "Terapeutas" };
 
     private string startHour { get; set; }
     private string endHour { get; set; }
@@ -159,24 +222,25 @@ else{
     private View sceduleView { get; set; }
 
     private List<Specialization> specialistCategory { get; set; }
-    private List<Doctor> resourceDataSource { get; set; }
+    private List<EmpleadosModel> resourceDataSource { get; set; }
 
     private List<WaitingList> waitingList { get; set; }
 
 
     private Query queryData { get; set; }
-    private List<Doctor> activeDoctorData { get; set; }
+    private List<EmpleadosModel> activeDoctorData { get; set; }
     private bool isDataLoaded;
 
     protected override void OnInitialized()
     {
+        var empleados = EmployeService.GetAllEmpleadosAsync();
         sceduleView = (View)Enum.Parse(typeof(View), (Service.CalendarSettings.CurrentView as string));
         currentDate = Service.StartDate;
         this.viewInterval = Service.CalendarSettings.Interval;
         this.calendarDayOfWeek = Service.CalendarSettings.FirstDayOfWeek;
         this.resourceColorField = Service.CalendarSettings.BookingColor;
         this.waitingList = Service.WaitingLists;
-        this.resourceDataSource = Service.Doctors;
+        this.resourceDataSource = empleados;
         this.specialistCategory = Service.Specializations;
         this.startHour = Service.CalendarSettings.Calendar.Start;
         this.endHour = Service.CalendarSettings.Calendar.End;
@@ -211,51 +275,51 @@ else{
     }
 
 
-    public void OnPopupOpen(PopupOpenEventArgs<Hospital> args)
+    public void OnPopupOpen(PopupOpenEventArgs<CitasModel> args)
     {
-        args.Cancel = args.Type == PopupType.QuickInfo && args.Data.Id < 1;
+        args.Cancel = args.Type == PopupType.QuickInfo && args.Data.ObjectId != null;
     }
 
-    public void OnActionBegin(Syncfusion.Blazor.Schedule.ActionEventArgs<Hospital> args)
-    {
-        if (args.ActionType == ActionType.EventCreate && args.AddedRecords.Count > 0)
-        {
-            foreach(Hospital Data in args.AddedRecords)
-            {
-                Random random = new Random();
-                Data.PatientId = Data.PatientId == 0 ? random.Next(1, Service.Patients.Max(p => p.Id)) : Data.PatientId;
-            }
-        }
-    }
+    // public void OnActionBegin(Syncfusion.Blazor.Schedule.ActionEventArgs<Hospital> args)
+    // {
+    //     if (args.ActionType == ActionType.EventCreate && args.AddedRecords.Count > 0)
+    //     {
+    //         foreach(Hospital Data in args.AddedRecords)
+    //         {
+    //             Random random = new Random();
+    //             Data.PatientId = Data.PatientId == 0 ? random.Next(1, Service.Patients.Max(p => p.Id)) : Data.PatientId;
+    //         }
+    //     }
+    // }
     private void onValueChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int?, Doctor> args)
     {
         if (args.Value != null)
         {
-            refreshDataSource((int)args.ItemData.DepartmentId, args.ItemData.Id.ToString());
+            // refreshDataSource((int)args.ItemData.DepartmentId, args.ItemData.Id.ToString());
         }
         else
         {
-            setDefaultData();
+            // setDefaultData();
         }
     }
-    private void refreshDataSource(int deptId, string doctorId)
-    {
-        List<Doctor> filterItem = Service.Doctors.Where(item => item.Id.Equals(Int32.Parse(doctorId))).ToList();
-        activeDoctorData = filterItem;
-        workDay = filterItem[0].AvailableDays;
-        workHours = new Calendar { Start = filterItem[0].StartHour, End = filterItem[0].EndHour };
-        queryData = new Query().Where(new WhereFilter() { Field = "Id", Operator = "equal", value = Int32.Parse(doctorId) });
-        if (filterItem.Any())
-        {
-            updateBreakHours(scheduleObj.SelectedDate);
-            scheduleEventData = generateEvents(activeDoctorData[0]);
-        }
-        else
-        {
-            scheduleEventData = Service.Hospitals;
-        }
-        this.updateWaitingList((int)deptId);
-    }
+    // private void refreshDataSource(int deptId, string doctorId)
+    // {
+    //     List<Doctor> filterItem = Service.Doctors.Where(item => item.Id.Equals(Int32.Parse(doctorId))).ToList();
+    //     activeDoctorData = filterItem;
+    //     workDay = filterItem[0].AvailableDays;
+    //     workHours = new Calendar { Start = filterItem[0].StartHour, End = filterItem[0].EndHour };
+    //     queryData = new Query().Where(new WhereFilter() { Field = "Id", Operator = "equal", value = Int32.Parse(doctorId) });
+    //     if (filterItem.Any())
+    //     {
+    //         updateBreakHours(scheduleObj.SelectedDate);
+    //         scheduleEventData = generateEvents(activeDoctorData[0]);
+    //     }
+    //     else
+    //     {
+    //         scheduleEventData = Service.Hospitals;
+    //     }
+    //     this.updateWaitingList((int)deptId);
+    // }
 
     private void updateWaitingList(int? deptId)
     {
@@ -267,21 +331,21 @@ else{
         waitingList = filteredData;
     }
 
-    private void setDefaultData()
-    {
-        specialistCategory = Service.Specializations;
-        resourceDataSource = Service.Doctors;
+    // private void setDefaultData()
+    // {
+    //     specialistCategory = Service.Specializations;
+    //     resourceDataSource = Service.Doctors;
 
-        queryData = new Query();
+    //     queryData = new Query();
 
-        scheduleEventData = Service.Hospitals;
-        updateWaitingList(null);
-        startHour = Service.CalendarSettings.Calendar.Start;
-        endHour = Service.CalendarSettings.Calendar.End;
-        workDay = new int[] { 0, 1, 2, 3, 4, 5, 6 };
-        workHours = Service.CalendarSettings.Calendar;
-        activeDoctorData = new List<Doctor>();
-    }
+    //     scheduleEventData = await CitasService.GetAllCitasAsync();
+    //     updateWaitingList(null);
+    //     startHour = Service.CalendarSettings.Calendar.Start;
+    //     endHour = Service.CalendarSettings.Calendar.End;
+    //     workDay = new int[] { 0, 1, 2, 3, 4, 5, 6 };
+    //     workHours = Service.CalendarSettings.Calendar;
+    //     activeDoctorData = new List<Doctor>();
+    // }
     private List<Hospital> generateEvents(Doctor activeData)
     {
         List<Hospital> filteredEvents = new List<Hospital>();
@@ -358,50 +422,50 @@ else{
     {
         return date = item;
     }
-    public async void NodeDragStop(DragAndDropEventArgs args)
-    {
-        args.Cancel = true;
-        CellClickEventArgs cellData = await scheduleObj.GetTargetCellAsync((int)args.Left, (int)args.Top);
-        if (cellData != null)
-        {
-            var resourceDetails = scheduleObj.GetResourceByIndex(cellData.GroupIndex);
-            WaitingList TreeData = waitingList.Where(data => data.Id.ToString() == args.DraggedNodeData.Id).First();
-            Hospital eventData;
-            if (resourceDetails != null)
-            {
-                eventData = new Hospital
-                {
-                    Name = TreeData.Name,
-                    StartTime = cellData.StartTime,
-                    EndTime = cellData.EndTime,
-                    IsAllDay = cellData.IsAllDay,
-                    Symptoms = TreeData.Disease,
-                    PatientId = TreeData.PatientId,
-                    DepartmentId = resourceDetails.GroupData.DepartmentId,
-                    DoctorId = resourceDetails.GroupData.DoctorId
-                };
-            }
-            else
-            {
-                eventData = new Hospital
-                {
-                    Name = TreeData.Name,
-                    StartTime = cellData.StartTime,
-                    EndTime = cellData.EndTime,
-                    IsAllDay = cellData.IsAllDay,
-                    Symptoms = TreeData.Disease,
-                    PatientId = TreeData.PatientId,
-                    DepartmentId = TreeData.DepartmentId,
-                    DoctorId = Int32.Parse(args.DraggedNodeData.Id)
-                };
-            }
-            if (TreeData != null)
-            {
-                waitingList.Remove(TreeData);
-            }
-            await this.scheduleObj.OpenEditorAsync(eventData, CurrentAction.Add);
-        }
-    }
+    // public async void NodeDragStop(DragAndDropEventArgs args)
+    // {
+    //     args.Cancel = true;
+    //     CellClickEventArgs cellData = await scheduleObj.GetTargetCellAsync((int)args.Left, (int)args.Top);
+    //     if (cellData != null)
+    //     {
+    //         var resourceDetails = scheduleObj.GetResourceByIndex(cellData.GroupIndex);
+    //         WaitingList TreeData = waitingList.Where(data => data.Id.ToString() == args.DraggedNodeData.Id).First();
+    //         Hospital eventData;
+    //         if (resourceDetails != null)
+    //         {
+    //             eventData = new Hospital
+    //             {
+    //                 Name = TreeData.Name,
+    //                 StartTime = cellData.StartTime,
+    //                 EndTime = cellData.EndTime,
+    //                 IsAllDay = cellData.IsAllDay,
+    //                 Symptoms = TreeData.Disease,
+    //                 PatientId = TreeData.PatientId,
+    //                 DepartmentId = resourceDetails.GroupData.DepartmentId,
+    //                 DoctorId = resourceDetails.GroupData.DoctorId
+    //             };
+    //         }
+    //         else
+    //         {
+    //             eventData = new Hospital
+    //             {
+    //                 Name = TreeData.Name,
+    //                 StartTime = cellData.StartTime,
+    //                 EndTime = cellData.EndTime,
+    //                 IsAllDay = cellData.IsAllDay,
+    //                 Symptoms = TreeData.Disease,
+    //                 PatientId = TreeData.PatientId,
+    //                 DepartmentId = TreeData.DepartmentId,
+    //                 DoctorId = Int32.Parse(args.DraggedNodeData.Id)
+    //             };
+    //         }
+    //         if (TreeData != null)
+    //         {
+    //             waitingList.Remove(TreeData);
+    //         }
+    //         await this.scheduleObj.OpenEditorAsync(eventData, CurrentAction.Add);
+    //     }
+    // }
 
     public void Dispose()
     {
@@ -410,8 +474,9 @@ else{
     }
 
     private async void LoadData()
-    {   
-        this.scheduleEventData = Service.Hospitals;
+    {
+        var citas = await CitasService.GetAllCitasAsync();
+        this.scheduleEventData = citas;
         this.workHours = Service.CalendarSettings.Calendar;
         this.queryData = new Query();
         await Task.Delay(100);

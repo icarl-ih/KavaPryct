@@ -68,15 +68,10 @@
 @code{
     // [CascadingParameter]
     // private ExpenseDataService ExpenseDataServices { get; set; }
-    [Inject]
-    protected AppointmentService Service { get; set; }
-    private string dayEventCount { get; set; }
-    private string weekEventCount { get; set; }
-    private List<Appointment> appointments { get; set; } = new List<Appointment>();
-    private List<Activity> activities { get; set; }
-    public List<Doctor> availableDoctors { get; set; }
+    // [Inject]
+    // private string dayEventCount { get; set; }
+    // private string weekEventCount { get; set; }
 
-    private List<Patient> patients { get; set; }
 
     private DateTime startDate { get; set; } = new DateTime(2020, 2, 5, 0, 0, 0, 0);
 
@@ -85,9 +80,7 @@
     private DateTime firstDayOfWeek { get; set; }
     private DateTime max { get; set; }
 
-    private List<ChartData> chartData { get; set; }
-    private List<ChartData> chartData1 { get; set; }
-    private List<ChartData> chartData2 { get; set; }
+    
     private bool isDataLoaded;
     private ExpCards CardsRef;
     private ExpPieChart PieChartRef;

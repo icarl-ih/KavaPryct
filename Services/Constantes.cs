@@ -34,4 +34,22 @@ namespace KavaPryct.Services
         Licenciatura = 3,
         Posgrado = 4
     }
+
+    public enum TipoPaciente
+    {
+        Individual = 1,
+        Pareja = 2,
+        Familia = 3,
+        Infante = 4,
+        Adolescente = 5
+
+    }
+    public enum EstatusCita
+    {
+        Cancelada = 0,
+        Asignada = 1,
+        ReAgendada = 201,
+        Confirmada = 100,
+        Asistencia = 10
+    }
 }
