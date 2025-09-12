@@ -55,7 +55,7 @@ namespace KavaPryct.Services
                 {
                     parseobject["FechaIni"] = new Dictionary<string, object>
                     {
-                        { "Type" , "Date"},
+                        { "__type" , "Date"},
                         { "Iso", c.FechaIni.Iso.ToUniversalTime() }
                     };
                     parseobject["FechaFin"] = new Dictionary<string, object>
