@@ -343,6 +343,38 @@ header .module-title .underline {
     }
 }
 
+@font-face {
+    font-family: 'icomoonNews';
+    src: url('/fonts/icomoonNews.eot');
+    src: url('/fonts/icomoonNews.eot?#iefix') format('embedded-opentype'), url('/fonts/icomoonNews.woff') format('woff'), url('/fonts/icomoonNews.ttf') format('truetype'), url('/fonts/icomoonNews.svg#icomoonNews') format('svg');
+    font-weight: normal;
+    font-style: normal;
+    font-display: block;
+}
+
+[class^="icon-"], [class*=" icon-"] {
+    font-family: 'icomoonNews' !important;
+    speak: never;
+    font-style: normal;
+    font-weight: normal;
+    font-variant: normal;
+    text-transform: none;
+    line-height: 1;
+    /* Mejora en renderizado */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+.iconIHS-contacts:before {
+    content: "\1f4d2";
+}
+
+.iconIHS-psicos:before {
+    content: "\1f465";
+}
+.iconIHS-trans:before {
+    content: "\1f4e0";
+}
+
 
 /*font family*/
 
