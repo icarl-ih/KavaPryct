@@ -26,6 +26,14 @@ namespace KavaPryct.Services
             return result?.Results ?? new List<CitasModel>();
 
         }
+        public async Task DeleteCitaAsync(string id)
+        {   
+            var response = await _http.DeleteAsync($"classes/Citas/{id}");
+            response.EnsureSuccessStatusCode();
+
+            
+
+        }
 
         public async Task<CitasModel> GetCitaById(string id)
         {   
@@ -56,12 +64,12 @@ namespace KavaPryct.Services
                     parseobject["FechaIni"] = new Dictionary<string, object>
                     {
                         { "__type" , "Date"},
-                        { "Iso", c.FechaIni.Iso.ToUniversalTime() }
+                        { "iso", c.FechaIni.Iso.ToUniversalTime() }
                     };
                     parseobject["FechaFin"] = new Dictionary<string, object>
                     {
-                        { "Type" , "Date"},
-                        { "Iso", c.FechaFin.Iso.ToUniversalTime() }
+                        { "__type" , "Date"},
+                        { "iso", c.FechaFin.Iso.ToUniversalTime() }
                     };
                 }
 
@@ -98,13 +106,13 @@ namespace KavaPryct.Services
             {
                 parseobject["FechaIni"] = new Dictionary<string, object>
                 {
-                    { "Type" , "Date"},
-                    { "Iso", c.FechaIni.Iso.ToUniversalTime() }
+                    { "__type" , "Date"},
+                    { "iso", c.FechaIni.Iso.ToUniversalTime() }
                 };
                 parseobject["FechaFin"]= new Dictionary<string, object>
                 {
-                    { "Type" , "Date"},
-                    { "Iso", c.FechaFin.Iso.ToUniversalTime() }
+                    { "__type" , "Date"},
+                    { "iso", c.FechaFin.Iso.ToUniversalTime() }
                 };
             }
 

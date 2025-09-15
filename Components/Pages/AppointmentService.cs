@@ -29,7 +29,7 @@ namespace AppointmentPlanner.Data
             this.DutyTimings = new TextIdData().DutyTimingsData();
             this.Experience = new TextIdData().ExperienceData();
             this.NavigationMenu = new NavigationMenu().GetNavigationMenuItems();
-            this.CalendarSettings = new CalendarSetting { BookingColor = "Doctors", Calendar = new AppointmentPlanner.Models.Calendar { Start = "09:00", End = "20:00" }, CurrentView = "Week", Interval = 60, FirstDayOfWeek = 0 };
+            this.CalendarSettings = new CalendarSetting { BookingColor = "Doctors", Calendar = new AppointmentPlanner.Models.Calendar { Start = "09:00", End = "20:00" }, CurrentView = "Week", Interval = 60, FirstDayOfWeek = 1 };
         }
         public DateTime StartDate { get; set; }
         public Doctor ActiveDoctors { get; set; }

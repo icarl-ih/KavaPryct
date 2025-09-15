@@ -1,4 +1,5 @@
 ﻿@page "/schedule"
+@page "/"
 @* ----------------------------- USING & INYECCIONES ----------------------------- *@
 @using AppointmentPlanner.Data
 @using AppointmentPlanner.Models
@@ -49,7 +50,7 @@
                                         ActionCompleted="OnActionComplete">
                         </ScheduleEvents>
 
-                        <ScheduleWorkHours Start="08:00" End="20:00"></ScheduleWorkHours>
+                        <ScheduleWorkHours Start="09:00" End="20:00"></ScheduleWorkHours>
 
                         <ScheduleEventSettings DataSource="@scheduleEventData"
                                                ResourceColorField="@resourceColorField"
@@ -132,8 +133,8 @@
                                     </div>
                                     <div class="e-row e-justify-content-end e-mt-2">
                                         <button class="e-btn e-secondary e-small" @onclick="() => AbrirReagendar(c)">Reagendar</button>
-                                        <button class="e-btn e-success e-small e-ml-2" @onclick="() => MarcarConfirmar(c)">Confirmar</button>
-                                    </div>
+                                         <button class="e-btn e-success e-small e-ml-2" @onclick="() => MarcarConfirmar(c)">Pagar y Cerrar</button>
+                                   </div>
                                 </div>
                                 
                             </EditorTemplate>
@@ -145,7 +146,7 @@
                                 </div>
                             </DateHeaderTemplate>
                         </ScheduleTemplates>
-                        <ScheduleTimeScale Enable="true" Interval="@viewInterval"></ScheduleTimeScale>
+                        <ScheduleTimeScale Enable="true" Interval="@viewInterval" SlotCount="1"></ScheduleTimeScale>
                         <ScheduleResources>
                             <ScheduleResource TItem="EmpleadosModel" TValue="string"
                                               DataSource="@resourceDataSource"
@@ -158,6 +159,7 @@
                             </ScheduleResource>
                         </ScheduleResources>
                         @* Sombreado de break del terapeuta activo (si tu modelo de horarios lo provee) *@
+                        
                         <ScheduleSpecialTimeRegions>
                             @if (semanaHoras is not null)
                             {
@@ -179,7 +181,7 @@
                             <ScheduleView Option="@View.Day"></ScheduleView>
                             <ScheduleView Option="@View.Week"></ScheduleView>
                             <ScheduleView Option="@View.Month"></ScheduleView>
-                            <ScheduleView Option="@View.TimelineDay">
+                            <ScheduleView Option="@View.TimelineDay" >
                                 <ScheduleViewGroup EnableCompactView="false" Resources="@resourceGroup"></ScheduleViewGroup>
                             </ScheduleView>
                             <ScheduleView Option="@View.TimelineWeek">
@@ -285,16 +287,38 @@
             </div>
         </SfDialog>
     }
+    @if (dialogPayVisible)
+    {
+        <SfDialog @bind-Visible="dialogPayVisible"
+                  IsModal="true"
+                  Width="420px"
+                  ShowCloseIcon="true"
+                  Header="Pagar y Cerrar">
+            <div class="e-mb-3">
+                <label>Nueva fecha/hora</label>
+                <label>Método de Pago</label>
+                <SfDropDownList TItem="KeyValuePair<int,string>" TValue="int"
+                                DataSource="@PayMethods" @bind-Value="Paymethod"
+                                PopupHeight="220px">
+                    <DropDownListFieldSettings Text="Value" Value="Key"></DropDownListFieldSettings>
+                </SfDropDownList>
+            </div>
+            <div class="e-d-flex e-justify-content-end e-mt-3">
+                <button class="e-btn e-flat" @onclick="() => dialogPayVisible = false">Cancelar</button>
+                <button class="e-btn e-primary e-ml-2" @onclick="ConfirmarPago">Guardar</button>
+            </div>
+        </SfDialog>
+    }
     @if (dialogEsperaVisible)
     {
         <SfDialog Visible="true" IsModal="true" Width="460px" Header="Enviar a lista de espera"
                   ShowCloseIcon="true" >
             <p>La cita está en estado <b>Asignada</b> por lo que la cita se mostrará en Lista de Espera</p>
-            
+            <div class="e-d-flex justify-content-end e-mt-3">
+                <button class="e-btn e-flat" @onclick="() => dialogEsperaVisible = false">Ok</button>
+            </div>
         </SfDialog>
     }
-
-
 }
 else
 {
@@ -323,6 +347,9 @@ else
     SfSchedule<CitasModel> scheduleObj { get; set; }
     SfDropDownList<string, EmpleadosModel> ddlObj { get; set; }
     private bool dialogReagendarVisible;
+    private bool dialogPayVisible;
+    private int Paymethod;
+    private List<KeyValuePair<int, string>> PayMethods => Enum.GetValues(typeof(MetodosPago)).Cast<MetodosPago>().Select(p => new KeyValuePair<int, string>((int)p, p.ToString())).ToList();
     private CitasModel? editando;
     private DateTime nuevoInicio, nuevoFin;
     private bool isDataLoaded;
@@ -370,6 +397,8 @@ else
         // Empleados (terapeutas)
         resourceDataSource = await EmployeService.GetAllPsicosAsync();
         resourceGroup = new[] { "Terapeutas" };
+        await LoadData();
+
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -384,10 +413,10 @@ else
     {
         // Trae todas las citas inicialmente (sin filtro)
         var citas = await CitasService.GetAllCitasAsync();
-        scheduleEventData = citas?.OrderBy(c => c.StartLocal).ToList() ?? new();
+        scheduleEventData = citas?.Where(c=>c.StatusCitaId>1).OrderBy(c => c.StartLocal).ToList() ?? new();
 
         // Waiting list = todas con StatusCitaId == 1
-        RefreshWaitingListFromCurrent();
+        RefreshWaitingListFromCurrent(citas);
 
         // Sin terapeuta seleccionado al inicio
         empleadoActivo = null;
@@ -401,7 +430,10 @@ else
     {
         // tu regla de negocio al “confirmar”
         // ej. StatusCitaId = 2 (confirmada), o bandera temporal:
-        c.StatusCitaId = 2;
+        // c.StatusCitaId = 2;
+        dialogPayVisible = true;
+        editando = c;
+
     }
 
     private void AbrirReagendar(CitasModel c)
@@ -417,6 +449,16 @@ else
         editando.StartLocal = nuevoInicio;
         editando.EndLocal = nuevoFin <= nuevoInicio ? nuevoInicio.AddHours(1) : nuevoFin;
         dialogReagendarVisible = false;
+        // no guardamos aquí; el usuario sigue y presiona Save del editor
+        await InvokeAsync(StateHasChanged);
+    }
+    private async Task ConfirmarPago()
+    {
+        if (editando is null) return;
+        editando.StatusCitaId = 10;
+        editando.IsPaid = true;
+        editando.PayMethodId = Paymethod;
+        dialogPayVisible = false;
         // no guardamos aquí; el usuario sigue y presiona Save del editor
         await InvokeAsync(StateHasChanged);
     }
@@ -469,7 +511,7 @@ else
             // Si viene con Status 1 (pendiente) mostramos el diálogo de “Lista de espera”
             if (c.StatusCitaId == 1)
             {
-                /* args.Cancel = true; */       // detenemos el Save interno
+                // args.Cancel = true;       // detenemos el Save interno
                 pendiente = c;
                 dialogEsperaVisible = true;
             }
@@ -514,13 +556,28 @@ else
                 await CitasService.UpdateCitaAsync(c);
 
             }
-            await OnInitializedAsync();
-
+            await LoadData();
         }
         else if (args.ActionType == ActionType.ViewNavigate || args.ActionType == ActionType.DateNavigate)
         {
             UpdateBreakHours(scheduleObj.SelectedDate);
             StateHasChanged();
+        }
+        else if (args.ActionType == ActionType.EventRemove && args.DeletedRecords?.Count > 0)
+        {
+            var c = args.DeletedRecords[0];
+
+            // Detén el delete interno del control
+            args.Cancel = true;
+
+            // Borra en tu backend
+            if (!string.IsNullOrEmpty(c.ObjectId))
+                await CitasService.DeleteCitaAsync(c.ObjectId);
+
+            // Quita del datasource y cierra editor
+            scheduleEventData.RemoveAll(x => x.ObjectId == c.ObjectId);
+            scheduleObj.CloseEditor();
+            StateHasChanged(); await LoadData();
         }
     }
     private async void OnCellClick(CellClickEventArgs args)
@@ -551,7 +608,7 @@ else
             workDay = new int[] {  1, 2, 3, 4, 5};
 
             // refresca waiting list
-            RefreshWaitingListFromCurrent();
+            RefreshWaitingListFromCurrent(citas);
 
             StateHasChanged();
             return;
@@ -576,7 +633,7 @@ else
             .ToList() ?? new();
 
         // Waiting list según el nuevo conjunto
-        RefreshWaitingListFromCurrent();
+        RefreshWaitingListFromCurrent(scheduleEventData);
 
         StateHasChanged();
     }
@@ -637,9 +694,9 @@ else
     private string getEventTime(CitasModel c)
         => $"{Service.GetFormatDate(c.StartLocal, "MMM d")}, {Service.GetFormatDate(c.StartLocal, "h:mm tt")}-{Service.GetFormatDate(c.EndLocal, "h:mm tt")}";
 
-    private void RefreshWaitingListFromCurrent()
+    private void RefreshWaitingListFromCurrent(List<CitasModel> citas)
     {
-        waitingList = (scheduleEventData ?? new())
+        waitingList = (citas ?? new())
             .Where(c => c.StatusCitaId == 1)
             .OrderBy(c => c.StartLocal)
             .ToList();

@@ -58,25 +58,26 @@
         <div class="image"><img src="css/appoinment/assets/images/Admin.png" alt="Admin" /></div>
         <div class="content nameContent">
             <p class='name'>KAVA APP</p>
-            <p class='user-type'>Admin</p>
+            <p class='user-type'>By: IH Solutions</p>
         </div>
     </div>
     <div class="sideparent menulist">
         <ul class="nav flex-column">
+            
             <li class="nav-item e-list-item">
-                <NavLink class="nav-link sidebar-item" href="" Match="NavLinkMatch.All" @onclick="@CloseSidePane">
-                    <span class="dashboard-image">
-                        <span class="item-image icon-dashboard"></span>
-                    </span>
-                    <span class="text" aria-hidden="true" title="Dashboard">Dashboard</span>
-                </NavLink>
-            </li>
-            <li class="nav-item e-list-item">
-                <NavLink class="nav-link sidebar-item" href="schedule" @onclick="@CloseSidePane">
+                <NavLink class="nav-link sidebar-item" href="schedule" Match="NavLinkMatch.All" @onclick="@CloseSidePane">
                     <span class="dashboard-image">
                         <span class="item-image icon-schedule"></span>
                     </span>
                     <span class="text" aria-hidden="true" title="Schedule">Schedule</span>
+                </NavLink>
+            </li>
+            <li class="nav-item e-list-item">
+                <NavLink class="nav-link sidebar-item" href="dashboard" @onclick="@CloseSidePane">
+                    <span class="dashboard-image">
+                        <span class="item-image icon-dashboard"></span>
+                    </span>
+                    <span class="text" aria-hidden="true" title="Dashboard">Dashboard</span>
                 </NavLink>
             </li>
             <li class="nav-item e-list-item">
