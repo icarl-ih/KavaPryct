@@ -18,6 +18,7 @@
 @inject EmpleadoRemoteService EmployeService
 @inject CitasService CitasService
 @inject AppointmentService Service
+@inject PacienteService PacienteService
 @inject IJSRuntime JsRuntime
 
 @implements IDisposable
@@ -80,8 +81,12 @@
                                             <SfNumericTextBox TValue="int" @bind-Value="c.PacienteEdad" Min="0" Max="120"></SfNumericTextBox>
                                         </div>
                                         <div class="e-col-3">
-                                            <label>Teléfono</label>
-                                            <SfNumericTextBox @bind-Value="c.PacienteCelular"></SfNumericTextBox>
+                                            <SfMaskedTextBox CssClass="e-field"
+                                                             @ref="maskObj"
+                                                             Placeholder="Celular"
+                                                             FloatLabelType="@FloatLabelType.Always"
+                                                             @bind-Value="@c.PacienteCelular"
+                                                             Mask="(999) 999-9999"></SfMaskedTextBox>
                                         </div>
                                     </div>
 
@@ -127,7 +132,7 @@
                                                             DataSource="@resourceDataSource"
                                                             @bind-Value="c.PsicoObjectId"
                                                             PopupHeight="260px">
-                                                <DropDownListFieldSettings Text="PrimerNombre" Value="ObjectId"></DropDownListFieldSettings>
+                                                <DropDownListFieldSettings Text="NombreCorto" Value="ObjectId"></DropDownListFieldSettings>
                                             </SfDropDownList>
                                         </div>
                                     </div>
@@ -344,6 +349,7 @@ else
 </style>
 @code {
     // ----------------- REFERENCIAS Y ESTADO -----------------
+    private SfMaskedTextBox maskObj { get; set; }
     SfSchedule<CitasModel> scheduleObj { get; set; }
     SfDropDownList<string, EmpleadosModel> ddlObj { get; set; }
     private bool dialogReagendarVisible;
@@ -537,13 +543,35 @@ else
             }
         }
     }
+    public async Task<PacienteModel>CreatePacModel (CitasModel cita)
+    {
+        var paciente = new PacienteModel
+        {
+            MotivoConsulta = cita.MotivoConsulta,
+            PacienteCelular = cita.PacienteCelular,
+            PacienteEdad = cita.PacienteEdad,
+            PacienteNombre = cita.PacienteNombre,
+            PacienteTypeId = cita.PacienteTypeId,
+            PsicoObjectId = cita.PsicoObjectId
+
+        };
+        return paciente;
+    }
     public async void OnActionComplete(ActionEventArgs<CitasModel> args)
     {
         if ((args.ActionType == ActionType.EventCreate || args.ActionType == ActionType.EventChange)
         && (args.AddedRecords?.Count > 0 || args.ChangedRecords?.Count > 0))
         {
+
             foreach (var c in args.AddedRecords)
             {
+                var newpac = new PacienteModel();
+                if(c.StatusCitaId == 10)
+                {
+                    var pac = await CreatePacModel(c);
+                    newpac = await PacienteService.CreatePacienteAsync(pac);
+                    c.PacienteObjectId = newpac.ObjectId;
+                }
 
                 await CitasService.CreateCitaAsync(c);
 
@@ -553,6 +581,13 @@ else
             }  
             foreach(var c in args.ChangedRecords)
             {
+                var newpac = new PacienteModel();
+                if (c.StatusCitaId == 10)
+                {
+                    var pac = await CreatePacModel(c);
+                    newpac = await PacienteService.CreatePacienteAsync(pac);
+                    c.PacienteObjectId = newpac.ObjectId;
+                }
                 await CitasService.UpdateCitaAsync(c);
 
             }
@@ -577,7 +612,9 @@ else
             // Quita del datasource y cierra editor
             scheduleEventData.RemoveAll(x => x.ObjectId == c.ObjectId);
             scheduleObj.CloseEditor();
-            StateHasChanged(); await LoadData();
+            await LoadData();
+            StateHasChanged(); 
+
         }
     }
     private async void OnCellClick(CellClickEventArgs args)
@@ -637,6 +674,7 @@ else
 
         StateHasChanged();
     }
+    
     public async void NodeDragStop(DragAndDropEventArgs args)
     {
         args.Cancel = true;

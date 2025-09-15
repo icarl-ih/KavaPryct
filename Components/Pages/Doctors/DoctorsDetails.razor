@@ -2,6 +2,8 @@
 
 @using AppointmentPlanner.Data;
 @using AppointmentPlanner.Models;
+@using KavaPryct.Components.Models
+@using KavaPryct.Services
 @using Microsoft.AspNetCore.Components.Forms;
 @using Syncfusion.Blazor.Buttons
 @using Syncfusion.Blazor.DropDowns
@@ -28,34 +30,30 @@
     </header>
     @if (activeData != null) { 
     <div class="active-doctor">
-        <div class="active-doctor-image">
+        @* <div class="active-doctor-image">
             <img class="value" src="css/appoinment/assets/images/@(activeData.Text).png" alt="doctor" />
             <span class='availability @(activeData.Availability)'></span>
-        </div>
+        </div> *@
         <div class="active-doctor-info">
             <div class="basic-detail info-field-container">
-                <div class="name">Dr. @activeData.Name</div>
-                <div class="education">@(activeData.Education != null ? activeData.Education.ToUpper(): "")</div>
-                <div class="designation">@activeData.Designation</div>
+                <div class="name">@((activeEstudio.Posgrados?.Any() ?? false)? string.Join(", ",activeEstudio.Posgrados.Select(ps=>ps.Abrv.ToUpperInvariant())):activeEstudio.Abrv) @activeData.NombreCorto</div>
+                <div class="education">@(activeEstudio.Nombre != null ? activeEstudio.Nombre.ToUpper(): "")</div>
             </div>
             <div class="speciality-detail info-field-container">
                 <div class="label-text">Specialization</div>
                 <div class="specialization">@getSpecializationText</div>
             </div>
-            <div class="work-experience info-field-container">
-                <div class="label-text">Experience</div>
-                <div class="experience">@activeData.Experience</div>
-            </div>
+            
             <div class="work-availability info-field-container">
                 <div class="label-text">Availability</div>
                 <div class="available-days">@getAvailability</div>
             </div>
             <div class="contact-info info-field-container">
                 <div class="label-text">Mobile</div>
-                <div class="mobile">@activeData.Mobile</div>
+                <div class="mobile">@activeData.Telefono</div>
             </div>
         </div>
-        <div class="work-days-container">
+        @* <div class="work-days-container">
             <div class="work-days-content">
                 <div class='work-day-item'>
                     @foreach (var data in activeData.WorkDays)
@@ -65,7 +63,7 @@
                     }
                 </div>
             </div>
-        </div>
+        </div> *@
     </div>
     }
 </div>
@@ -79,51 +77,166 @@
         <DialogAnimationSettings Effect="DialogEffect.Zoom"></DialogAnimationSettings>
         <EditForm class="new-doctor-form" Model="@doctorEditModel" OnValidSubmit="@handleSubmit">
             <DataAnnotationsValidator></DataAnnotationsValidator>
+            <div>
+                <div class="name-cantainer">
+                    <SfTextBox class="doctor-detail" Placeholder="Apellido Paterno" FloatLabelType="@FloatLabelType.Always" @bind-Value="@doctorEditModel.A_Paterno"></SfTextBox>
+                    <ValidationMessage For="@(() => doctorEditModel.A_Paterno)"></ValidationMessage>
+                </div>
+                <div class="name-cantainer">
+                        <SfTextBox class="doctor-detail" Placeholder="Apellido Materno" FloatLabelType="@FloatLabelType.Always" @bind-Value="@doctorEditModel.A_Materno"></SfTextBox>
+                        <ValidationMessage For="@(() => doctorEditModel.A_Materno)"></ValidationMessage>
+                </div>
+            </div>
             <div class="name-container">
-                <SfTextBox CssClass='doctor-name e-field' Placeholder='Doctor Name' FloatLabelType="@FloatLabelType.Always" @bind-Value="@doctorEditModel.Name"></SfTextBox>
-                <ValidationMessage For="@(() => doctorEditModel.Name)" />
+                <SfTextBox CssClass='doctor-name e-field' Placeholder='Nombre(s) del Empleado' FloatLabelType="@FloatLabelType.Always" @bind-Value="@doctorEditModel.Nombres"></SfTextBox>
+                <ValidationMessage For="@(() => doctorEditModel.Nombres)" />
             </div>
             <div class="gender-container">
-                <div class="gender">
-                    <div><label>Gender</label></div>
-                    <div class='e-btn-group e-round-corner e-field'>
-                        <SfRadioButton Label="Male" Name="Gender" Value="Male" @bind-Checked="@doctorEditModel.Gender"></SfRadioButton>
-                        <SfRadioButton Label="Female" Name="Gender" Value="Female" @bind-Checked="@doctorEditModel.Gender"></SfRadioButton>
-                    </div>
-                </div>
                 <div class="mobile" style="width:345px">
-                    <SfMaskedTextBox CssClass="e-field" @ref="maskObj" Placeholder="Mobile Number" FloatLabelType="@FloatLabelType.Always" Mask="(999) 999-9999" @bind-Value="@doctorEditModel.Mobile"></SfMaskedTextBox>
-                    <ValidationMessage For="@(() => doctorEditModel.Mobile)" />
+                    <SfMaskedTextBox CssClass="e-field" @ref="maskObj" Placeholder="Celular" FloatLabelType="@FloatLabelType.Always" Mask="(999) 999-9999" @bind-Value="@doctorEditModel.Telefono"></SfMaskedTextBox>
+                    <ValidationMessage For="@(() => doctorEditModel.Telefono)" />
                 </div>
             </div>
             <div class="email-container">
-                <SfTextBox CssClass='e-field' Placeholder='Email' FloatLabelType="@FloatLabelType.Always" @bind-Value="@doctorEditModel.Email"></SfTextBox>
-                <ValidationMessage For="@(() => doctorEditModel.Email)" />
+                <SfTextBox CssClass='e-field' Placeholder='Dirección (Ej. Calle ##, Colonia)' FloatLabelType="@FloatLabelType.Always" @bind-Value="@doctorEditModel.Direccion"></SfTextBox>
+                <ValidationMessage For="@(() => doctorEditModel.Direccion)" />
+            </div>
+            <div class="email-container">
+                <Syncfusion.Blazor.Calendars.SfDatePicker Placeholder="Fecha de Nacimiento" @bind-Value="@doctorEditModel.FechaNac"></Syncfusion.Blazor.Calendars.SfDatePicker>
+                <ValidationMessage For="@(()=> doctorEditModel.FechaNac)"></ValidationMessage>
             </div>
             <div class="education-container">
                 <div class="department">
-                    <SfDropDownList FloatLabelType="@FloatLabelType.Always" Placeholder="Department" Width="160px" DataSource="@specializationData" @bind-Value="@doctorEditModel.DepartmentId">
-                        <DropDownListFieldSettings Text="Text" Value="DepartmentId"></DropDownListFieldSettings>
-                    </SfDropDownList>
+                        <SfDropDownList TItem="KeyValuePair<int,string>" TValue="int"
+                                        DataSource="@EdoCivil" @bind-Value="@doctorEditModel.EdoCivilId"
+                                        PopupHeight="220px">
+                            <DropDownListFieldSettings Text="Value" Value="Key"></DropDownListFieldSettings>
+                        </SfDropDownList>
+                        
                 </div>
                 <div class="education" style="width:345px">
-                    <SfTextBox CssClass='e-field' Placeholder='Education' FloatLabelType="@FloatLabelType.Always" @bind-Value="@doctorEditModel.Education"></SfTextBox>
-                </div>
+                        <SfDropDownList ID="estudiosint" TItem="KeyValuePair<int,string>" TValue="int"
+                                        DataSource="@GdoEstudios" @bind-Value="@doctorEditModel.EstudiosLast"
+                                        PopupHeight="220px" >
+                            <DropDownListFieldSettings Text="Value" Value="Key">
+                            <DropDownListEvents TItem="KeyValuePair<int,string>" TValue="int"
+                                                ValueChange="EstudiosChanged" />
+                            </DropDownListFieldSettings>
+                        </SfDropDownList>
+@*                         <SfTextBox CssClass='e-field' Placeholder='Education' FloatLabelType="@FloatLabelType.Always" @bind-Value="@doctorEditModel.Education"></SfTextBox>*@
+                 </div>
+                    @if (doctorEditModel.EstudiosLast != 0)
+                    {
+                        <!-- === Datos del ESTUDIO (siempre que sea != 0) === -->
+                        <div class="e-card e-mt-2 e-p-2">
+                            <h5 class="e-mb-2">Datos del estudio</h5>
+                            <div class="e-row e-g-2">
+                                <div class="e-col-12">
+                                    <label>Nombre del estudio</label>
+                                    <SfTextBox @bind-Value="@estudioEditModel.Nombre" Placeholder="Ej. Licenciatura en Psicología" />
+                                </div>
+                                <div>
+                                    <label>Abreviatura</label> <SfTextBox @bind-Value="@estudioEditModel.Abrv" Placeholder="Ej. L.Psic"></SfTextBox>
+                                </div>
+                                <div class="e-col-12">
+                                    <label>Cédula</label>
+                                    <SfTextBox @bind-Value="estudioEditModel.Cedula" Placeholder="Número de cédula (opcional)" />
+                                </div>
+                                <div class="e-col-12">
+                                    <SfCheckBox @bind-Checked="estudioEditModel.ClavePosgrado" Label="Cuenta con Posgrado (Maestría/Doctorado)" />
+                                </div>
+                            </div>
+                        </div>
+
+                        @if (doctorEditModel.EstudiosLast == 4)
+                        {
+                            <!-- === POSGRADOS (solo cuando el valor es 4) === -->
+                            <div class="e-card e-mt-3 e-p-2">
+                                <div class="e-d-flex e-justify-content-between e-align-center e-mb-2">
+                                    <h5 class="e-m-0">Posgrados</h5>
+                                    <SfButton CssClass="e-primary e-small" IconCss="e-icons e-plus" OnClick="AgregarPosgrado">
+                                        Agregar posgrado
+                                    </SfButton>
+                                </div>
+
+                                @if (posgrados?.Count > 0)
+                                {
+                                    @for (var i = 0; i < posgrados.Count; i++)
+                                    {
+                                        var idx = i;
+                                        <div class="e-row e-g-2 e-mb-2 e-p-2 e-border">
+                                            <div class="e-col-7">
+                                                <label>Nombre del posgrado</label>
+                                                <SfTextBox ID=@($"posgrado-nombre-{idx}") @bind-Value="posgrados[idx].Nombre"
+                                                           Placeholder="Ej. Maestría en Terapia Familiar" />
+                                            </div>
+                                            <div class="e-col-7">
+                                                <label>Abreviatura del posgrado</label>
+                                                <SfTextBox ID=@($"posgrado-nombre-{idx}") @bind-Value="posgrados[idx].Abrv"
+                                                           Placeholder="Ej. M.T.F." />
+                                            </div>
+                                            <div class="e-col-4">
+                                                <label>Cédula</label>
+                                                <SfTextBox ID=@($"posgrado-cedula-{idx}") @bind-Value="posgrados[idx].Cedula"
+                                                           Placeholder="Cédula (opcional)" />
+                                            </div>
+                                            <div class="e-col-1 e-d-flex e-align-end">
+                                                <SfButton CssClass="e-danger e-small" IconCss="e-icons e-close"
+                                                          OnClick="@(() => QuitarPosgrado(idx))" />
+                                            </div>
+                                        </div>
+                                    }
+                                }
+                                else
+                                {
+                                    <div class="e-text-muted">No hay posgrados capturados.</div>
+                                }
+                            </div>
+                            
+                        }
+                    }
             </div>
-            <div class="experience-container">
-                <div class="experience">
-                    <SfDropDownList FloatLabelType="@FloatLabelType.Always" Placeholder="Experience" Width="160px" @bind-Value="@doctorEditModel.Experience" DataSource="@experienceData">
-                        <DropDownListFieldSettings Text="Text" Value="Id"></DropDownListFieldSettings>
-                    </SfDropDownList>
+            <div class="e-card e-mt-3 e-p-2">
+                <div class="e-d-flex e-justify-content-between e-align-center e-mb-2">
+                    <h5 class="e-m-0">Contacto de Emergencia</h5>
+                    <SfButton CssClass="e-primary e-small" IconCss="e-icons e-plus" OnClick="AgregarCnct">
+                        Agregar Contacto
+                    </SfButton>
                 </div>
-                <div class="designation" style="width:345px">
-                    <SfTextBox CssClass='e-field' Placeholder='Designation' FloatLabelType="@FloatLabelType.Always" @bind-Value="@doctorEditModel.Designation"></SfTextBox>
-                </div>
-            </div>
-            <div class="duty-container">
-                <SfDropDownList FloatLabelType="@FloatLabelType.Always" Placeholder="Duty Timing" @bind-Value="@doctorEditModel.DutyTiming" DataSource="@dutyTimingsData">
-                    <DropDownListFieldSettings Text="Text" Value="Id"></DropDownListFieldSettings>
-                </SfDropDownList>
+
+                @if (emergs?.Count > 0)
+                {
+                    @for (var i = 0; i < emergs.Count; i++)
+                    {
+                        var idx = i;
+                        <div class="e-row e-g-2 e-mb-2 e-p-2 e-border">
+                            <div class="e-col-7">
+                                <label>Nombre del Contacto</label>
+                                    <SfTextBox ID=@($"Emergcntct-nombre-{idx}") @bind-Value="emergs[idx].Nombre"
+                                            Placeholder="Ej. Maestría en Terapia Familiar" />
+                            </div>
+                            <div class="e-col-7">
+                                <label>Abreviatura del posgrado</label>
+                                    <SfTextBox ID=@($"Emergcntct-celular-{idx}") @bind-Value="emergs[idx].Parentezco"
+                                            Placeholder="Ej. M.T.F." />
+                            </div>
+                            <div class="e-col-4">
+                                <label>Cédula</label>
+                                <SfMaskedTextBox ID=@($"Emergcntct-celular-{idx}") CssClass="e-field" @ref="maskObj" Placeholder="Celular" FloatLabelType="@FloatLabelType.Always" Mask="(999) 999-9999" @bind-Value="emergs[idx].Celular"></SfMaskedTextBox>
+
+                                
+                            </div>
+                            <div class="e-col-1 e-d-flex e-align-end">
+                                <SfButton CssClass="e-danger e-small" IconCss="e-icons e-close"
+                                            OnClick="@(() => QuitarPosgrado(idx))" />
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="e-text-muted">No hay posgrados capturados.</div>
+                }
             </div>
             <div class="e-footer-content">
                 <div class="button-container">
@@ -141,25 +254,35 @@
     [Inject]
     protected AppointmentService Service { get; set; }
     [Parameter]
-    public int Id { get; set; }
+    public string Id { get; set; }
 
     SfDialog EdiDialogObj;
     private SfMaskedTextBox maskObj { get; set; }
 
     private bool editVisible { get; set; } = false;
+    private EstudiosModel activeEstudio { get; set; }
 
-
-    private Doctor activeData { get; set; }
+    private EmpleadosModel activeData { get; set; }
     private string getSpecializationText { get; set; }
     private string getAvailability { get; set; }
+    private List<KeyValuePair<int, string>> EdoCivil =>
+    Enum.GetValues(typeof(EstadoCivil))
+        .Cast<EstadoCivil>()
+        .Select(e => new KeyValuePair<int, string>((int)e, e.ToString()))
+        .ToList();
+    private List<KeyValuePair<int, string>> GdoEstudios =>
+    Enum.GetValues(typeof(UltimoGradoEstudios))
+        .Cast<UltimoGradoEstudios>()
+        .Select(e => new KeyValuePair<int, string>((int)e, e.ToString()))
+        .ToList();
 
-    protected override void OnInitialized()
+
+    protected override async Task OnInitializedAsync()
     {
-        activeData = Service.GetDoctorDetails(Id);
-        activeData = (activeData == null) ? Service.GetDoctorDetails(1) : activeData;
-        activeData.WorkDays = activeData.WorkDays != null ? activeData.WorkDays : new List<WorkDay>();
-        getSpecializationText = Service.GetSpecializationText(activeData.Specialization);
-        getAvailability = Service.GetAvailability(activeData);
+        activeData = await Service.GetDoctorDetails(Id);
+        activeData = (activeData == null) ? await Service.GetDoctorDetails(activeData.ObjectId) : activeData;
+        var activeEstudio = await Service.GetSpecialization(activeData.EstudiosObjectId);
+        getSpecializationText = activeEstudio.Posgrados.Select(ps => ps.Nombre).ToString();
 
         this.specializationData = Service.Specializations;
         this.experienceData = Service.Experience;
@@ -201,32 +324,32 @@
 
     private void deleteBtnClick(Microsoft.AspNetCore.Components.Web.MouseEventArgs args)
     {
-        Service.Doctors = Service.Doctors.Where(item => item.Id != activeData.Id).ToList();
-        Service.Hospitals = Service.Hospitals.Where(i => i.DoctorId != activeData.Id).ToList();
-        Service.WaitingLists = Service.WaitingLists.Where(item => item.DepartmentId != activeData.DepartmentId).ToList();
-        if(Service.Doctors.Any())
-        {
-            this.getSpecializationText = Service.Doctors[0].Specialization;
-        }
+        // Service.Doctors = Service.Doctors.Where(item => item.Id != activeData.Id).ToList();
+        // Service.Hospitals = Service.Hospitals.Where(i => i.PsicoObjectId != activeData.Id).ToList();
+        // Service.WaitingLists = Service.WaitingLists.Where(item => item.DepartmentId != activeData.DepartmentId).ToList();
+        // if(Service.Doctors.Any())
+        // {
+        //     this.getSpecializationText = Service.Doctors[0].Specialization;
+        // }
         onBackIconClick(args);
     }
-    
+
     private void onDoctorEdit(Microsoft.AspNetCore.Components.Web.MouseEventArgs args)
     {
-        editVisible = true;
-        doctorEditModel.Name = activeData.Name;
-        doctorEditModel.Text = activeData.Text;
-        doctorEditModel.Id = activeData.Id;
-        doctorEditModel.Color = activeData.Color != null ? activeData.Color : "";
-        doctorEditModel.Gender = activeData.Gender;
-        doctorEditModel.Mobile = activeData.Mobile;
-        doctorEditModel.Email = activeData.Email;
-        doctorEditModel.DepartmentId = activeData.DepartmentId;
-        doctorEditModel.Education = activeData.Education;
-        doctorEditModel.Experience = activeData.Experience;
-        doctorEditModel.Designation = activeData.Designation;
-        doctorEditModel.DutyTiming = activeData.DutyTiming;
-        doctorEditModel.Specialization = activeData.Specialization;
+        // editVisible = true;
+        // doctorEditModel.Name = activeData.Name;
+        // doctorEditModel.Text = activeData.Text;
+        // doctorEditModel.Id = activeData.Id;
+        // doctorEditModel.Color = activeData.Color != null ? activeData.Color : "";
+        // doctorEditModel.Gender = activeData.Gender;
+        // doctorEditModel.Mobile = activeData.Mobile;
+        // doctorEditModel.Email = activeData.Email;
+        // doctorEditModel.DepartmentId = activeData.DepartmentId;
+        // doctorEditModel.Education = activeData.Education;
+        // doctorEditModel.Experience = activeData.Experience;
+        // doctorEditModel.Designation = activeData.Designation;
+        // doctorEditModel.DutyTiming = activeData.DutyTiming;
+        // doctorEditModel.Specialization = activeData.Specialization;
     }
 
     private void onCancelClick(Microsoft.AspNetCore.Components.Web.MouseEventArgs args)
@@ -234,7 +357,9 @@
         editVisible = false;
     }
 
-    private Doctor doctorEditModel = new Doctor();
+    private EmpleadosModel doctorEditModel = new EmpleadosModel();
+    private EstudiosModel estudioEditModel = new EstudiosModel();
+    private PosgradosModel posgradosEditModel = new PosgradosModel();
     private string editHeader { get; set; } = "Edit Doctor";
 
     private List<TextIdData> experienceData { get; set; }
@@ -242,17 +367,62 @@
     private List<TextIdData> dutyTimingsData { get; set; }
 
     private List<Specialization> specializationData { get; set; }
+    private List<PosgradosModel> posgrados { get; set; } = new();
+    private List<EmergContact> emergs { get; set; } = new();
 
-    public void UpdateEditModel(Microsoft.AspNetCore.Components.Web.MouseEventArgs args)
+    // (Opcional) si quieres reaccionar al cambio del drop
+    private void EstudiosChanged(ChangeEventArgs<int, KeyValuePair<int, string>> args)
     {
-        Doctor getHours = updateWorkHours(activeData);
+        // Si cambia a 4 y no hay lista, inicializa con una fila
+        if (args?.Value == 4 && (posgrados == null || posgrados.Count == 0))
+            posgrados = new List<PosgradosModel> { new PosgradosModel() };
+
+        // Si cambia a otro valor, puedes limpiar posgrados si gustas
+        if (args?.Value != 4)
+            posgrados = new List<PosgradosModel>();
+    }
+
+    private void AgregarPosgrado()
+    {
+        emergs ??= new List<EmergContact>();
+        emergs.Add(new EmergContact());
+    }
+    private void AgregarCnct()
+    {
+        posgrados ??= new List<PosgradosModel>();
+        posgrados.Add(new PosgradosModel());
+    }
+
+    private void QuitarPosgrado(int idx)
+    {
+        if (posgrados is null) return;
+        if (idx >= 0 && idx < posgrados.Count) posgrados.RemoveAt(idx);
+    }
+    private void Quitarcontacto(int idx)
+    {
+        if (emergs is null) return;
+        if (idx >= 0 && idx < emergs.Count) emergs.RemoveAt(idx);
+    }
+    public async void UpdateEditModel(Microsoft.AspNetCore.Components.Web.MouseEventArgs args)
+    {
+        EmpleadosModel getHours = updateWorkHours(activeData);
         string mobileNo = this.maskObj.GetMaskedValue();
-        var specialize = Service.Doctors.Where(i => i.DepartmentId == doctorEditModel.DepartmentId).FirstOrDefault().Specialization;
-        activeData = new Doctor(doctorEditModel.Name, doctorEditModel.Gender, activeData.Text, activeData.Id, doctorEditModel.DepartmentId, activeData.Color, doctorEditModel.Education, specialize, doctorEditModel.Experience, doctorEditModel.Designation, doctorEditModel.DutyTiming, doctorEditModel.Email, mobileNo, activeData.Availability, getHours.StartHour, getHours.EndHour, activeData.AvailableDays, getHours.WorkDays);
-        getSpecializationText = activeData.Specialization;
-        Service.Doctors[activeData.Id - 1] = activeData;
-        string message = "Dr." + activeData.Name + "," + activeData.Specialization.Substring(0, 1).ToUpper() + activeData.Specialization.Substring(1);
-        Service.Activities.Insert(0, new Activity { Name = "Updated Doctor", Message = message, Time = "10 mins ago", Type = "doctor", ActivityTime = DateTime.Now });
+        var activeEstudio = await Service.GetSpecialization(activeData.EstudiosObjectId); ;
+        activeData = new EmpleadosModel
+        {
+            A_Materno = doctorEditModel.A_Materno,
+            A_Paterno = doctorEditModel.A_Paterno,
+            ContEmergObjectId = doctorEditModel.ObjectId,
+            Direccion = doctorEditModel.Direccion,
+            EdoCivilId = doctorEditModel.EdoCivilId,
+            EstudiosObjectId = doctorEditModel.EstudiosObjectId,
+            FechaNac = doctorEditModel.FechaNac,
+            Nombres = doctorEditModel.Nombres,
+            Telefono = doctorEditModel.Telefono
+        };
+        getSpecializationText = activeEstudio.Posgrados.Select(p=>p.Nombre).ToString();
+        // Service.Doctors[activeData.ObjectId] = activeData;
+        string message = activeData.NombreCorto;
         editVisible = false;
     }
 
@@ -260,43 +430,19 @@
     {
         editVisible = false;
     }
-    private Doctor updateWorkHours(Doctor data)
+    private EmpleadosModel updateWorkHours(EmpleadosModel data)
     {
-        string dutyString = Service.DutyTimings.Where(item => item.Id.Equals(doctorEditModel.DutyTiming)).FirstOrDefault().Text;
-        string startHour;
-        string endHour;
-        int startValue;
-        int endValue;
-        if (dutyString == "10:00 AM - 7:00 PM")
-        {
-            startValue = 10;
-            endValue = 19;
-            startHour = "10:00";
-            endHour = "19:00";
-        }
-        else if (dutyString == "08:00 AM - 5:00 PM")
-        {
-            startValue = 8;
-            endValue = 17;
-            startHour = "08:00";
-            endHour = "17:00";
-        }
-        else
-        {
-            startValue = 12;
-            endValue = 21;
-            startHour = "12:00";
-            endHour = "21:00";
-        }
-        for (int i=0; i< data.WorkDays.Count;i++)
-        {
-            var item = data.WorkDays[i];
-            item.WorkStartHour = ((DateTime)item.WorkStartHour).AddHours(startValue);
-            item.WorkEndHour = ((DateTime)item.WorkEndHour).AddHours(endValue);
-            item.BreakStartHour = item.BreakStartHour;
-            item.BreakEndHour = item.BreakEndHour;
-        }
-        return new Doctor { StartHour = startHour, EndHour = endHour, WorkDays=data.WorkDays };
+        
+
+        // for (int i=0; i< data.WorkDays.Count;i++)
+        // {
+        //     var item = data.WorkDays[i];
+        //     item.WorkStartHour = ((DateTime)item.WorkStartHour).AddHours(startValue);
+        //     item.WorkEndHour = ((DateTime)item.WorkEndHour).AddHours(endValue);
+        //     item.BreakStartHour = item.BreakStartHour;
+        //     item.BreakEndHour = item.BreakEndHour;
+        // }
+        return new EmpleadosModel();
     }
 
 

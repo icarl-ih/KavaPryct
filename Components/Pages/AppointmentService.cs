@@ -3,17 +3,21 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Globalization;
 using AppointmentPlanner.Models;
+using KavaPryct.Components.Models;
+using KavaPryct.Services;
+using System.Threading.Tasks;
 
 namespace AppointmentPlanner.Data
 {
     public class AppointmentService
     {
+        EmpleadoRemoteService EmployeeService;
         public AppointmentService()
         {
             this.Activities = new Activity().GetActivityData();
             this.StartDate = DateTime.Today;
             this.ActiveDoctors = new Doctor().GetDoctorsData().FirstOrDefault();
-            this.ActivePatients = new Patient().GetPatientsData().FirstOrDefault();
+            //this.ActivePatients = new Patient().GetPatientsData().FirstOrDefault();
             this.StartHours = new TextValueData().GetStartHours();
             this.EndHours = new TextValueData().GetEndHours();
             this.Views = new TextValueData().GetViews();
@@ -21,9 +25,9 @@ namespace AppointmentPlanner.Data
             this.BloodGroups = new TextValueData().GetBloodGroupData();
             this.DayOfWeekList = new TextValueNumericData().GetDayOfWeekList();
             this.TimeSlot = new TextValueNumericData().GetTimeSlot();
-            this.Hospitals = new Hospital().GetHospitalData();
-            this.Patients = new Patient().GetPatientsData();
-            this.Doctors = new Doctor().GetDoctorsData();
+            //this.Hospitals = new Hospital().GetHospitalData();
+            //this.Patients = new Patient().GetPatientsData();
+            //this.Doctors = new Doctor().GetDoctorsData();
             this.WaitingLists = new WaitingList().GetWaitingList();
             this.Specializations = new Specialization().GetSpecializationData();
             this.DutyTimings = new TextIdData().DutyTimingsData();
@@ -34,7 +38,7 @@ namespace AppointmentPlanner.Data
         public DateTime StartDate { get; set; }
         public Doctor ActiveDoctors { get; set; }
 
-        public Patient ActivePatients { get; set; }
+        public PacienteModel ActivePatients { get; set; }
         public List<TextValueData> StartHours { get; set; } 
         public List<TextValueData> EndHours { get; set; }
         public List<TextValueData> Views { get; set; }
@@ -42,9 +46,9 @@ namespace AppointmentPlanner.Data
         public List<TextValueData> BloodGroups { get; set; }
         public List<TextValueNumericData> DayOfWeekList { get; set; }
         public List<TextValueNumericData> TimeSlot { get; set; }
-        public List<Hospital> Hospitals { get; set; }
-        public List<Patient> Patients { get; set; }
-        public List<Doctor> Doctors { get; set; }
+        public List<CitasModel> Hospitals { get; set; }
+        public List<PacienteModel> Patients { get; set; }
+        public List<EmpleadosModel> Doctors { get; set; }
         public List<WaitingList> WaitingLists { get; set; }
         public List<Specialization> Specializations { get; set; }
         public List<TextIdData> DutyTimings { get; set; }
@@ -85,14 +89,15 @@ namespace AppointmentPlanner.Data
             return Math.Round((DateTime.Now - activityTime).TotalMilliseconds).ToString() + " milliSeconds ago";
         }
 
-        public Doctor GetDoctorDetails(int id)
+        public async Task<EmpleadosModel> GetDoctorDetails(string id)
         {
-            return Doctors.Where(i => i.Id.Equals(id)).FirstOrDefault();
+            return await EmployeeService.GetEmpleadoByIdAsync(id);
         }
 
-        public string GetSpecializationText(string text)
+        public async Task<EstudiosModel> GetSpecialization(string text)
         {
-            return Specializations.Where(item => item.Id.Equals(text)).FirstOrDefault().Text;
+            
+            return await EmployeeService.GetEstudioWithPosgradosByIdAsync(text);
         }
         public string GetAvailability(Doctor doctor)
         {
@@ -106,9 +111,9 @@ namespace AppointmentPlanner.Data
             return string.Empty;
         }
 
-        public List<Hospital> GetFilteredData(DateTime StartDate, DateTime EndDate)
+        public List<CitasModel> GetFilteredData(DateTime StartDate, DateTime EndDate)
         {
-            return this.Hospitals.Where(hospital => (hospital.StartTime >= StartDate && hospital.EndTime <= EndDate)).ToList();
+            return this.Hospitals.Where(hospital => (hospital.StartLocal >= StartDate && hospital.EndLocal <= EndDate)).ToList();
         }
 
         public ChartData GetChartData(List<Hospital> hospitals, DateTime startDate)

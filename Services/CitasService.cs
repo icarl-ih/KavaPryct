@@ -17,7 +17,7 @@ namespace KavaPryct.Services
 
         public async Task<List<CitasModel>> GetAllCitasAsync()
         {   
-            var response = await _http.GetAsync("classes/Citas");
+            var response = await _http.GetAsync("/classes/Citas");
             response.EnsureSuccessStatusCode();
 
             var json = await response.Content.ReadAsStringAsync();
@@ -57,7 +57,7 @@ namespace KavaPryct.Services
                     {"MotivoConsulta" , c.MotivoConsulta },
                     {"StatusCitaId" , c.StatusCitaId },   // 1
                     {"PsicoObjectId" , c.PsicoObjectId },
-                    {"FechaIni", "" },{"FechaFin", "" }
+                    {"FechaIni", "" },{"FechaFin", "" }, {"PacienteObjecId",c.PacienteObjectId}
                 };
                 if (c.FechaIni != null && c.FechaFin != null)
                 {

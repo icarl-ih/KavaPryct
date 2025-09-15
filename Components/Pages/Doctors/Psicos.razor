@@ -63,7 +63,7 @@
                         @foreach(var std in estudios)
                         {
                             <div class="name">
-                                <span>@((std.Posgrados?.Any() ?? false)? string.Join(", ", std.Posgrados.Select(p => p.Abrv.ToUpperInvariant())): std.Abrv) @data.Nombres @data.A_Materno @data.A_Paterno</span>
+                                <span>@((std.Posgrados?.Any() ?? false)? string.Join(", ", std.Posgrados.Select(p => p.Abrv.ToUpperInvariant())): std.Abrv) @data.NombreCorto</span>
                             </div>
                                 
                             if (data.EstudiosObjectId == std.ObjectId)
@@ -247,21 +247,21 @@ else
 
     public void HandleValidSubmit(EditContext context)
     {
-        Doctor initialData = Service.Doctors.FirstOrDefault();
-        initialData = initialData != null ? initialData : new Doctor();
-        Doctor getHours = updateWorkHours(initialData);
-        string mobileNo = this.maskObj.GetMaskedValue();
-        var specialize = Service.Doctors.Where(i => i.DepartmentId == doctorEditModel.DepartmentId).FirstOrDefault().Specialization;
-        Doctor newDoctor = new Doctor(doctorEditModel.Name, doctorEditModel.Gender, "default", filteredDoctors.LastOrDefault().Id + 1, doctorEditModel.DepartmentId, doctorEditModel.Color, doctorEditModel.Education, specialize, doctorEditModel.Experience, doctorEditModel.Designation, doctorEditModel.DutyTiming, doctorEditModel.Email, mobileNo, "available", getHours.StartHour, getHours.EndHour, initialData.AvailableDays, initialData.WorkDays);
-        Service.Doctors.Add(newDoctor);
+        // Doctor initialData = Service.Doctors.FirstOrDefault();
+        // initialData = initialData != null ? initialData : new Doctor();
+        // Doctor getHours = updateWorkHours(initialData);
+        // string mobileNo = this.maskObj.GetMaskedValue();
+        // var specialize = Service.Doctors.Where(i => i.DepartmentId == doctorEditModel.DepartmentId).FirstOrDefault().Specialization;
+        // Doctor newDoctor = new Doctor(doctorEditModel.Name, doctorEditModel.Gender, "default", filteredDoctors.LastOrDefault().Id + 1, doctorEditModel.DepartmentId, doctorEditModel.Color, doctorEditModel.Education, specialize, doctorEditModel.Experience, doctorEditModel.Designation, doctorEditModel.DutyTiming, doctorEditModel.Email, mobileNo, "available", getHours.StartHour, getHours.EndHour, initialData.AvailableDays, initialData.WorkDays);
+        // Service.Doctors.Add(newDoctor);
 
-        if (specObj.Value != null)
-        {
-            filteredDoctors = Service.Doctors.Where(i => i.Specialization.Equals(specObj.Value)).ToList();
-        }
-        string message = $"Dr.{newDoctor.Name}, {newDoctor.Specialization.Substring(0, 1).ToUpper()}{newDoctor.Specialization.Substring(1)}";
-        Service.Activities.Insert(0, new Activity { Name = "Added New Doctor", Message = message, Time = "4 mins ago", Type = "doctor", ActivityTime = DateTime.Now });
-        this.isShowNewDialog = false;
+        // if (specObj.Value != null)
+        // {
+        //     filteredDoctors = Service.Doctors.Where(i => i.Specialization.Equals(specObj.Value)).ToList();
+        // }
+        // string message = $"Dr.{newDoctor.Name}, {newDoctor.Specialization.Substring(0, 1).ToUpper()}{newDoctor.Specialization.Substring(1)}";
+        // Service.Activities.Insert(0, new Activity { Name = "Added New Doctor", Message = message, Time = "4 mins ago", Type = "doctor", ActivityTime = DateTime.Now });
+        // this.isShowNewDialog = false;
     }
 
     private Doctor updateWorkHours(Doctor data)
@@ -297,18 +297,18 @@ else
 
     private void onSpecializationChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<string, Specialization> eventArgs)
     {
-        List<Doctor> filteredData;
-        if (eventArgs.Value != null)
-        {
-            this.selectedDepartmentId = eventArgs.ItemData.DepartmentId;
-            filteredData = Service.Doctors.Where(i => i.Specialization.Equals(eventArgs.ItemData.Id)).ToList();
-        }
-        else
-        {
-            this.selectedDepartmentId = null;
-            filteredData = Service.Doctors;
-        }
-        filteredDoctors = filteredData;
+        // List<Doctor> filteredData;
+        // if (eventArgs.Value != null)
+        // {
+        //     this.selectedDepartmentId = eventArgs.ItemData.DepartmentId;
+        //     filteredData = Service.Doctors.Where(i => i.Specialization.Equals(eventArgs.ItemData.Id)).ToList();
+        // }
+        // else
+        // {
+        //     this.selectedDepartmentId = null;
+        //     filteredData = Service.Doctors;
+        // }
+        // filteredDoctors = filteredData;
     }
     private void onCancelClick(Microsoft.AspNetCore.Components.Web.MouseEventArgs args)
     {

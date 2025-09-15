@@ -1,10 +1,11 @@
 ﻿using AppointmentPlanner.Data;
 using ExpenseTracker.Service;
 using KavaPryct.Services;
-using Microsoft.Extensions.Logging;using Microsoft.Extensions.DependencyInjection;
-using System.Net.Http.Headers;
-
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Syncfusion.Blazor;
+using Syncfusion.Blazor.Popups;
+using System.Net.Http.Headers;
 
 namespace KavaPryct
 {
@@ -23,10 +24,12 @@ namespace KavaPryct
                 });
             builder.Services.AddSyncfusionBlazor();
             builder.Services.AddMauiBlazorWebView();
+            builder.Services.AddScoped<SfDialogService>();
             builder.Services.AddScoped<AppointmentService>();
             builder.Services.AddScoped<ExpenseDataService>();
             builder.Services.AddSingleton<EmpleadoRemoteService>();
             builder.Services.AddSingleton < CitasService > ();
+            builder.Services.AddSingleton < PacienteService > ();
             var settings = new AppSettings(); // usa tu clase/valores
 
             builder.Services.AddScoped<CitasService>(sp =>
@@ -36,6 +39,14 @@ namespace KavaPryct
                 client.DefaultRequestHeaders.Add("X-Parse-REST-API-Key", settings.RestApiKey);
                 client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
                 return new CitasService(client);
+            });
+            builder.Services.AddScoped<PacienteService>(sp =>
+            {
+                var client = new HttpClient { BaseAddress = new Uri(settings.ParseBaseUrl) };
+                client.DefaultRequestHeaders.Add("X-Parse-Application-Id", settings.ApplicationId);
+                client.DefaultRequestHeaders.Add("X-Parse-REST-API-Key", settings.RestApiKey);
+                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                return new PacienteService(client);
             });
 
             builder.Services.AddScoped<EmpleadoRemoteService>(sp =>

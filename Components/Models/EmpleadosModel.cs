@@ -46,7 +46,7 @@ namespace KavaPryct.Components.Models
         public string Direccion { get; set; }
 
         [JsonPropertyName("Telefono")]
-        public long Telefono { get; set; }
+        public string Telefono { get; set; }
 
         [JsonPropertyName("FechaNac")]
         public FechaModel FechaNac { get; set; }
@@ -86,6 +86,8 @@ namespace KavaPryct.Components.Models
         [JsonPropertyName("updatedAt")]
         public DateTime UpdatedAt { get; set; }
 
+        [JsonPropertyName("EstudiosId")]
+        public int EstudiosLast { get; set; }
         [JsonPropertyName("EstudiosObjectId")]
         public string EstudiosObjectId { get; set; }
 
@@ -127,5 +129,23 @@ namespace KavaPryct.Components.Models
         public string Type { get; set; } = "Date";
         [JsonPropertyName("iso")]
         public DateTime Iso {  get; set; }
+    }
+
+    public class EmergContact
+    {
+        
+        [JsonPropertyName("objectId")]
+        public string ObjectId { get; set; }
+        [JsonPropertyName("Nombre")]
+        public string Nombre { get; set; }
+        [JsonPropertyName("Telefono")]
+        public string Celular { get; set; }
+        [JsonPropertyName("Parentezco")]
+        public string Parentezco { get; set; }
+        [JsonPropertyName("createdAt")]
+        public DateTime CreatedAt { get; set; }
+
+        [JsonPropertyName("updatedAt")]
+        public DateTime UpdatedAt { get; set; }
     }
 }

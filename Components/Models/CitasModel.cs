@@ -21,7 +21,7 @@ namespace KavaPryct.Components.Models
         public int PacienteEdad { get; set; }
 
         [JsonPropertyName("PacienteCelular")]
-        public long PacienteCelular { get; set; }
+        public string PacienteCelular { get; set; }
 
         [JsonPropertyName("PacienteTypeId")]
         public int PacienteTypeId { get; set; }
@@ -49,6 +49,8 @@ namespace KavaPryct.Components.Models
 
         [JsonPropertyName("PsicoObjectId")]
         public string PsicoObjectId { get; set; }
+        [JsonPropertyName("PacienteObjectId")]
+        public string PacienteObjectId { get; set; }
 
         [JsonPropertyName("createdAt")]
         public DateTime CreatedAt { get; set; }

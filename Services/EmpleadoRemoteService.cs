@@ -118,6 +118,15 @@ namespace KavaPryct.Services
             await Task.WhenAll(tareas);
             return estudios;
         }
+        public async Task<EstudiosModel> GetEstudioWithPosgradosByIdAsync(string ObjectId)
+        {
+            // 1) Trae todos los estudios (igual que tu método actual)
+            var estudio = await GetEstudiosByIdAsync(ObjectId);
+            if (estudio == null || string.IsNullOrEmpty(estudio.ObjectId)) return estudio;
+
+            estudio.Posgrados = await GetPosgradosByEstudioAsync(estudio.ObjectId);
+            return estudio;
+        }
 
         public async Task<WorkHours> GetWorkHoursByEmpleadoAsync(string empleadoObjectId)
         {

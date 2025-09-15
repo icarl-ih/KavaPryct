@@ -29,6 +29,7 @@ namespace KavaPryct.Services
 
     public enum UltimoGradoEstudios
     {
+        SinEstudios = 0,
         Secundaria = 1,
         Preparatoria = 2,
         Licenciatura = 3,
@@ -51,5 +52,15 @@ namespace KavaPryct.Services
         ReAgendada = 201,
         Confirmada = 100,
         Asistencia = 10
+    }
+
+    public enum EstadoCivil
+    {
+        Otro = 0,
+        Soltería = 1,
+        Matrmonio = 2,
+        Viudez = 3,
+        Divorcio = 4,
+        Concubinato = 5
     }
 }
