@@ -73,16 +73,21 @@
 
     private DateTime StartDate;
     private DateTime EndDate;
-    private List<RenderingData> PieRenderingData;
-    private List<LegendRenderData> PieRenderData;
+    private List<RenderingData> PieRenderingData = new List<RenderingData>();
+    private List<LegendRenderData> PieRenderData = new List<LegendRenderData>();
     private string[] palettes = new string[] { "#61EFCD", "#CDDE1F", "#FEC200", "#CA765A", "#2485FA", "#F57D7D", "#C152D2",
                     "#8854D9", "#3D4EB8", "#00BCD7","#4472c4", "#ed7d31", "#ffc000", "#70ad47", "#5b9bd5", "#c1c1c1", "#6f6fe2", "#e269ae", "#9e480e", "#997300" };
     private string[] Months = new string[] { "", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
-        await base.OnInitializedAsync();
-        UpdatePieChart();
+        ExpenseDataService.OnChanged += HandleChanged;
+        BuildFromService();
+    }
+    private void HandleChanged()
+    {
+        BuildFromService();
+        InvokeAsync(StateHasChanged);
     }
 
     /// <summary>
@@ -96,75 +101,169 @@
 
     private void UpdatePieChart()
     {
-        StartDate = ExpenseDataService.StartDate;
-        EndDate = ExpenseDataService.EndDate;
-        var Category = new List<string>();
-        var renderingData = new List<RenderingData>();
-        var lengendRenderData = new List<LegendRenderData>();
-        var legendData = new List<ExpenseData>();
-        var expTotal = 0;
-        /** Extracts the category based data from the whole expense data */
-        foreach (var item in ExpenseData)
-        {
-            expTotal += Convert.ToInt32(item.Amount);
-            legendData.Add(item);
-            if (!Category.Contains(item.Category))
-            {
-                Category.Add(item.Category);
-            }
-        }
-        /** From the category data, percentage calculation for legend grid */
-        for (int i = 0; i < Category.Count(); i++)
-        {
-            var str = Category[i];
-            int total = 0;
-            foreach (var item in legendData)
-            {
-                if (str == item.Category)
-                    total += Convert.ToInt32(item.Amount);
-            }
+        // 1) Ventana de fechas (si las usas en la gráfica)
+        StartDate = ExpenseDataService?.StartDate ?? DateTime.MinValue;
+        EndDate = ExpenseDataService?.EndDate ?? DateTime.MaxValue;
 
-            string percent = (((decimal)total / expTotal) * 100).ToString("N2") + '%';
-            renderingData.Add(new RenderingData { X = str, Y = total, Text = percent, Fill = "" });
-        }
-        renderingData = renderingData.OrderByDescending(s => s.Y).ToList();
-        var GroupValue = renderingData.Count() > 10 ? renderingData[8].Y - 1 : 0;
-        LegendRenderData OthersRenderData = new LegendRenderData { Color = "", X = "0", Y = 0, Text = "Others" };
-        RenderingData OthersRenderingData = new RenderingData { Fill = "", X = "Others", Y = 0, Text = "0" };
-        decimal X = 0; var Y = 0;
-        for (int i = 0; i < renderingData.Count(); i++)
+        // 2) Fuente segura (evita NRE)
+        var data = (ExpenseData ?? Enumerable.Empty<ExpenseData>())
+            .Where(x => x != null)
+            .ToList();
+
+        // Si no hay datos, limpia y sal
+        if (data.Count == 0)
         {
-            renderingData[i].Fill = this.palettes[i];
-            if (renderingData[i].Y > GroupValue)
-            {
-                lengendRenderData.Add(new LegendRenderData { X = renderingData[i].Text, Y = renderingData[i].Y, Text = renderingData[i].X, Color = this.palettes[i] });
-            }
-            else
-            {
-                if (OthersRenderData.Color == "")
-                {
-                    OthersRenderData.Color = renderingData[i].Fill;
-                    OthersRenderingData.Fill = renderingData[i].Fill;
-                }
-                X += Convert.ToDecimal(renderingData[i].Text.Split("%")[0]); Y += renderingData[i].Y;
-                renderingData.RemoveAt(i);
-                if (i != 0) { i--; }
-            }
+            PieRenderingData = new List<RenderingData>();
+            PieRenderData = new List<LegendRenderData>();
+            return;
         }
-        if (OthersRenderData.Color != "")
+
+        // 3) Agrupar por categoría (normalizando nulos/vacíos)
+        var grupos = data
+            .GroupBy(x => string.IsNullOrWhiteSpace(x.Category) ? "Sin categoría" : x.Category.Trim())
+            .Select(g => new
+            {
+                Categoria = g.Key,
+                Total = g.Sum(z => z.Amount) // decimal
+            })
+            .OrderByDescending(x => x.Total)
+            .ToList();
+
+        // 4) Total general (decimal) y guardas división entre cero
+        var expTotal = grupos.Sum(x => x.Total);
+        if (expTotal <= 0)
         {
-            OthersRenderData.X = X.ToString() + "%"; OthersRenderingData.Text = X.ToString() + "%";
-            OthersRenderData.Y = Y; OthersRenderingData.Y = Y;
-            lengendRenderData.Add(OthersRenderData); renderingData.Add(OthersRenderingData);
+            // No tiene sentido calcular porcentajes
+            PieRenderingData = new List<RenderingData>();
+            PieRenderData = new List<LegendRenderData>();
+            return;
         }
+
+        // 5) Construir series para el pie (top-N + Others)
+        // Regla original: si hay >10, agrupar desde el índice 9 hacia abajo como "Others"
+        var maxSlices = 10;
+        var top = grupos.Take(maxSlices - 1).ToList();      // 9
+        var rest = grupos.Skip(maxSlices - 1).ToList();     // el resto
+
+        decimal othersTotal = rest.Sum(r => r.Total);
+        var renderingData = new List<RenderingData>();
+        var legendRender = new List<LegendRenderData>();
+
+        // 6) Paleta segura
+        int PaletteCount = palettes?.Length ?? 0;
+        string GetColor(int idx) => PaletteCount > 0 ? palettes[idx % PaletteCount] : "";
+
+        // 7) Agregar top categorías
+        for (int i = 0; i < top.Count; i++)
+        {
+            var t = top[i];
+            var percent = (t.Total / expTotal) * 100m;
+            var color = GetColor(i);
+
+            renderingData.Add(new RenderingData
+            {
+                X = t.Categoria,
+                Y = t.Total, // si tu lib de chart requiere double
+                Text = percent.ToString("N2") + '%',
+                Fill = color
+            });
+
+            legendRender.Add(new LegendRenderData
+            {
+                X = percent.ToString("N2") + '%',
+                Y = (int)t.Total, // si tu grid de leyenda quiere int, si no usa double
+                Text = t.Categoria,
+                Color = color
+            });
+        }
+
+        // 8) Agregar "Others" si aplica
+        if (othersTotal > 0)
+        {
+            var idx = top.Count; // siguiente color
+            var percent = (othersTotal / expTotal) * 100m;
+            var color = GetColor(idx);
+
+            renderingData.Add(new RenderingData
+            {
+                X = "Others",
+                Y = othersTotal,
+                Text = percent.ToString("N2") + '%',
+                Fill = color
+            });
+
+            legendRender.Add(new LegendRenderData
+            {
+                X = percent.ToString("N2") + '%',
+                Y = (int)othersTotal,
+                Text = "Others",
+                Color = color
+            });
+        }
+
+        // 9) Salida
         PieRenderingData = renderingData;
-        PieRenderData = lengendRenderData;
+        PieRenderData = legendRender;
     }
+    private void OnChanged() { BuildFromService(); InvokeAsync(StateHasChanged); }
+    private void BuildFromService()
+    {
+        var data = (ExpenseDataService.ExpenseData ?? new())
+                    .Where(x => x != null)
+                    .ToList();
+
+        // Si no hay datos, limpia
+        if (data.Count == 0) { PieRenderingData = new(); PieRenderData = new(); return; }
+
+        var grupos = data
+            .GroupBy(x => string.IsNullOrWhiteSpace(x.Category) ? "Sin categoría" : x.Category.Trim())
+            .Select(g => new { Categoria = g.Key, Total = g.Sum(z => z.Amount) })
+            .OrderByDescending(x => x.Total)
+            .ToList();
+
+        var total = grupos.Sum(x => x.Total);
+        if (total <= 0) { PieRenderingData = new(); PieRenderData = new(); return; }
+
+        var maxSlices = 10;
+        var top = grupos.Take(maxSlices - 1).ToList();
+        var rest = grupos.Skip(maxSlices - 1).ToList();
+        var othersTotal = rest.Sum(r => r.Total);
+
+        var rendering = new List<RenderingData>();
+        var legend = new List<LegendRenderData>();
+
+        string Color(int i) => palettes.Length == 0 ? "" : palettes[i % palettes.Length];
+
+        for (int i = 0; i < top.Count; i++)
+        {
+            var t = top[i];
+            var pct = (t.Total / total) * 100m;
+            var col = Color(i);
+
+            rendering.Add(new RenderingData { X = t.Categoria, Y = t.Total, Text = pct.ToString("N2") + "%", Fill = col });
+            legend.Add(new LegendRenderData { X = pct.ToString("N2") + "%", Y = (int)t.Total, Text = t.Categoria, Color = col });
+        }
+
+        if (othersTotal > 0)
+        {
+            var i = top.Count;
+            var pct = (othersTotal / total) * 100m;
+            var col = Color(i);
+
+            rendering.Add(new RenderingData { X = "Others", Y = othersTotal, Text = pct.ToString("N2") + "%", Fill = col });
+            legend.Add(new LegendRenderData { X = pct.ToString("N2") + "%", Y = (int)othersTotal, Text = "Others", Color = col });
+        }
+
+        PieRenderingData = rendering;
+        PieRenderData = legend;
+    }
+    public void Dispose() => ExpenseDataService.OnChanged -= HandleChanged;
+
 
     private class RenderingData
     {
         public string X { get; set; }
-        public int Y { get; set; }
+        public decimal Y { get; set; }
         public string Text { get; set; }
         public string Fill { get; set; }
     }
@@ -177,11 +276,7 @@
         public string Color { get; set; }
     }
 
-    public void Dispose()
-    {
-        PieRenderingData = null;
-        PieRenderData = null;
-    }
+    
 }
 
 <style>

@@ -1,6 +1,9 @@
 ﻿@using ExpenseTracker.Models
+@using ExpenseTracker.Service
 @using Syncfusion.Blazor.Grids
 @using Syncfusion.Blazor.Navigations
+@inject ExpenseDataService ExpenseDataService
+
 <div class="row recent-expense-grid">
     <div class="col-xs-6 col-sm-6 col-md-12" style="width:100%">
 		@if (Render)
@@ -18,7 +21,7 @@
                     </ToolbarTemplate>
                 </GridTemplates>
                 <GridColumns>
-                    <GridColumn Field="@nameof(ExpenseData.DateTime)" HeaderText="Date" Width="120" Format="d"></GridColumn>
+                    <GridColumn Field="@nameof(ExpenseData.dateTime)" HeaderText="Date" Width="120" Format="d"></GridColumn>
                     <GridColumn Field="@nameof(ExpenseData.Category)" HeaderText="Category" Width="180">
                         <Template>
                             @{
@@ -56,21 +59,21 @@
                             @{
                                 var expense = (context as ExpenseData);
                                 <div class="normalRes">
-                                    <div class='amt-payment @expense.TransactionType'>
+                                    <div class='amt-payment @expense.TransactionTypeId'>
                                         <span>$</span> <span>@expense.Amount</span>
                                     </div>
                                 </div>
                                 <div class="mediumRes">
-                                    <div class='amt-payment @expense.TransactionType'>
+                                    <div class='amt-payment @expense.TransactionTypeId'>
                                         <span>$</span> <span>@expense.Amount</span>
                                     </div>
-                                    <div>@expense.DateTime.ToString("dd/MM/yyyy")</div>
+                                    <div>@expense.dateTime.ToString("dd/MM/yyyy")</div>
                                 </div>
                                 <div class="smallRes">
-                                    <div class='amt-payment @expense.TransactionType'>
+                                    <div class='amt-payment @expense.TransactionTypeId'>
                                         <span>$</span> <span>@expense.Amount</span>
                                     </div>
-                                    <div>@expense.DateTime.ToString("dd/MM/yyyy")</div>
+                                    <div>@expense.dateTime.ToString("dd/MM/yyyy")</div>
                                 </div>
                             }
                         </Template>
@@ -89,4 +92,19 @@
     public System.Action ExpenseGridCreated { get; set; }
     [Parameter]
     public bool Render { get; set; }
+
+  private IEnumerable<ExpenseData> Recent = Enumerable.Empty<ExpenseData>();
+    protected override void OnInitialized()
+    {
+        ExpenseDataService.OnChanged += HandleChanged;
+        Build();
+    }
+  private void HandleChanged(){ Build(); InvokeAsync(StateHasChanged); }
+    private void Build()
+    {
+        var win = ExpenseDataService.ExpenseData ?? new List<ExpenseData>();
+        Recent = win.OrderByDescending(x => x.dateTime).Take(5).ToList();
+    }
+  public void Dispose() => ExpenseDataService.OnChanged -= HandleChanged;
 }
+

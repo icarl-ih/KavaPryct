@@ -30,6 +30,7 @@ namespace KavaPryct
             builder.Services.AddSingleton<EmpleadoRemoteService>();
             builder.Services.AddSingleton < CitasService > ();
             builder.Services.AddSingleton < PacienteService > ();
+            builder.Services.AddSingleton < TransactionService > ();
             var settings = new AppSettings(); // usa tu clase/valores
 
             builder.Services.AddScoped<CitasService>(sp =>
@@ -56,6 +57,14 @@ namespace KavaPryct
                 client.DefaultRequestHeaders.Add("X-Parse-REST-API-Key", settings.RestApiKey);
                 client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
                 return new EmpleadoRemoteService(client);
+            });
+            builder.Services.AddScoped<TransactionService>(sp =>
+            {
+                var client = new HttpClient { BaseAddress = new Uri(settings.ParseBaseUrl) };
+                client.DefaultRequestHeaders.Add("X-Parse-Application-Id", settings.ApplicationId);
+                client.DefaultRequestHeaders.Add("X-Parse-REST-API-Key", settings.RestApiKey);
+                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                return new TransactionService(client);
             });
 
 #if DEBUG

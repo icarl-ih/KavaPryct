@@ -1,80 +1,68 @@
 ﻿@using ExpenseTracker.Models
 @using ExpenseTracker.Service
-@inject ExpenseTracker.Service.ExpenseDataService ExpenseDataService
+@using KavaPryct.Services
+@using static ExpenseTracker.Service.CommonService
+@inject ExpenseDataService ExpenseDataService
+
 <div class="row">
+    <!-- tus divs EXACTOS -->
     <div class="col-xs-6 col-xl-3 col-lg-3 col-md-3 col-sm-6 card-container">
         <div class="e-card card">
             <div class="e-card-content">
-                <h3 class="card-value" id="tolincome">@TotalIncome</h3>
-                <span class="card-text">Income</span>
+                <h3 class="card-value" id="tolincome">@TotalIncome</h3><span class="card-text">Income</span>
             </div>
         </div>
     </div>
     <div class="col-xs-6 col-xl-3 col-lg-3 col-md-3 col-sm-6 card-container">
         <div class="e-card card">
             <div class="e-card-content">
-                <h3 class="card-value" id="tolexpense">@TotalExpense</h3>
-                <span class="card-text">Expenses</span>
+                <h3 class="card-value" id="tolexpense">@TotalExpense</h3><span class="card-text">Expenses</span>
             </div>
         </div>
     </div>
     <div class="col-xs-6 col-xl-3 col-lg-3 col-md-3 col-sm-6 card-container">
         <div class="e-card card">
             <div class="e-card-content">
-                <h3 class="card-value" id="tolbalance">@TotalBalance</h3>
-                <span class="card-text">Balance</span>
+                <h3 class="card-value" id="tolbalance">@TotalBalance</h3><span class="card-text">Balance</span>
             </div>
         </div>
     </div>
     <div class="col-xs-6 col-xl-3 col-lg-3 col-md-3 col-sm-6 card-container">
         <div class="e-card card">
             <div class="e-card-content">
-                <h3 class="card-value" id="toltransaction">@TotalTransactions</h3>
-                <span class="card-text">Transactions</span>
+                <h3 class="card-value" id="toltransaction">@TotalTransactions</h3><span class="card-text">Transactions</span>
             </div>
         </div>
     </div>
 </div>
 
-@code{
-    // [CascadingParameter]
-    // private ExpenseDataService ExpenseDataService { get; set; }
-    [Parameter]
-    public IEnumerable<ExpenseData> IncomeData { get; set; }
-    [Parameter]
-    public IEnumerable<ExpenseData> ExpenseData { get; set; }
-
-    private string TotalIncome = "$0";
-    private string TotalExpense = "$0";
-    private string TotalBalance = "$0";
-    private string TotalTransactions = "0";
+@code {
+    private string TotalIncome = "$0", TotalExpense = "$0", TotalBalance = "$0", TotalTransactions = "0";
 
     protected override async Task OnInitializedAsync()
     {
-        await base.OnInitializedAsync();
-        UpdateCards();
+        ExpenseDataService.OnChanged += HandleChanged;
+        await ExpenseDataService.ReloadWindowAsync(); // carga inicial si hace falta
+        Recalc();
     }
 
-    /// <summary>
-    /// Calculation for card values
-    /// </summary>
-    public void RefreshCards(IEnumerable<ExpenseData> incomeData, IEnumerable<ExpenseData> expenseData)
+    private void HandleChanged()
     {
-        IncomeData = incomeData; ExpenseData = expenseData;
-        UpdateCards();
+        Recalc();
+        InvokeAsync(StateHasChanged);
     }
-    private void UpdateCards()
+
+    private void Recalc()
     {
-        var incomeRS = 0;
-        var expenseRS = 0;
-        //Calulates total income and sets to the Income card
-        incomeRS = IncomeData.Sum(s => s.Amount);
-        TotalIncome = CommonService.GetCurrencyVal(incomeRS);
-        //Calulates total expenses and sets to the Expenses card
-        expenseRS = ExpenseData.Sum(s => s.Amount);
-        TotalExpense = CommonService.GetCurrencyVal(expenseRS);
-        TotalBalance = CommonService.GetCurrencyVal(incomeRS - expenseRS);
-        TotalTransactions = CommonService.GetNumberVal(ExpenseDataService.CurrentExpenseData.Count());
-        ExpenseDataService.UpdateCurrentBalance(TotalBalance);
+        var win = ExpenseDataService.ExpenseData ?? new List<ExpenseData>();
+        var inc = win.Where(x => x?.TransactionTypeId == (int)Giro.Ingreso).Sum(x => x!.Amount);
+        var eg = win.Where(x => x?.TransactionTypeId == (int)Giro.Egreso).Sum(x => x!.Amount);
+
+        TotalIncome = GetCurrencyVal(inc);
+        TotalExpense = GetCurrencyVal(eg);
+        TotalBalance = GetCurrencyVal(inc - eg);
+        TotalTransactions = GetNumberVal(win.Count);
     }
+
+    public void Dispose() => ExpenseDataService.OnChanged -= HandleChanged;
 }

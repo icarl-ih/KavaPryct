@@ -4,7 +4,7 @@ namespace ExpenseTracker.Service
 {
     public static class CommonService
     {
-        public static string GetCurrencyVal(int val)
+        public static string GetCurrencyVal(decimal val)
         {
             CultureInfo NewCulture = new CultureInfo("en-US");
             if (val < 0)
@@ -15,7 +15,7 @@ namespace ExpenseTracker.Service
             return formattedValue;
         }
 
-        public static string GetNumberVal(int val)
+        public static string GetNumberVal(decimal val)
         {
             return val.ToString("0,0", new CultureInfo("en-US"));
         }

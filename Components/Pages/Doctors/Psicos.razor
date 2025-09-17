@@ -290,7 +290,7 @@ else
 
     private void onSpecialistClick(Microsoft.AspNetCore.Components.Web.MouseEventArgs args, string Id)
     {
-        UriHelper.NavigateTo("doctors/doctorsdetails/" + Id);
+        UriHelper.NavigateTo($"/psicos/details/{Id}");
     }
 
     private int? selectedDepartmentId { get; set; }

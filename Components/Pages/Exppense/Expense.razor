@@ -1,7 +1,10 @@
 ﻿@page "/expense"
+@using ExpenseTracker.Models
+@using ExpenseTracker.Service
+@using KavaPryct.Services
 @using Syncfusion.Blazor.Inputs
-
-@implements IDisposable;
+@using Syncfusion.Blazor.Notifications
+@inject ExpenseDataService ExpenseDataServices
 
 <style>
     #main-page {
@@ -46,7 +49,7 @@
         overflow-x: hidden;
     }
 
-    /*skeleton*/
+    /* skeleton */
     .e-skeleton.e-skeleton-text, .e-skeleton.e-skeleton-square, .e-skeleton.e-skeleton-rectangle, .e-skeleton.e-skeleton-circle {
         background-color: #83808014;
     }
@@ -63,7 +66,7 @@
         margin: 0px 10px 10px 15px;
     }
 
-    .filter-skeleton{
+    .filter-skeleton {
         position: absolute;
         top: 0px;
         right: 0px;
@@ -72,8 +75,8 @@
     }
 
     @@media (max-width:1101px) {
-        .filter-skeleton{
-            display:none;
+        .filter-skeleton {
+            display: none;
         }
     }
 
@@ -87,97 +90,148 @@
         }
     }
 
+    /* Encabezado de grid */
+    .expense-grid-container {
+        background: #fff;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .expense-head-padding {
+        padding: 14px 16px;
+    }
+
+    .search-wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+    }
+
+    .search-section {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .txt {
+        min-width: 260px;
+    }
+
+    .button-section .e-btn.small {
+        height: 32px;
+    }
+
+    .add-head-item {
+        vertical-align: middle;
+    }
 </style>
 
 @if (isDataLoaded)
 {
-<div class="expense-page">
-    <div class='exp-content-container'>
-        <div>
-            <p class="page-title">All Transactions</p>
-        </div>
-        <div>
-            <div class="col-md-12 margin-top col-lg-12">
-                <div class="expense-grid-container">
-                    <div class="expense-head-padding" style="background-color: @color;">
-                        <div class="search-wrapper search-section" style="display: @visibility;">
-                            <div id="search">
-                                <SfTextBox Type="InputType.Search" ShowClearButton="true" Placeholder="Search" CssClass="search txt" @bind-Value="SearchValue" ValueChange="@(async () => await this.ContentRef.Search(SearchValue))" Created="OnCreate"></SfTextBox>
-                                <span id="searchbtn" class="e-search-icon expense-search-icon e-icons" @onclick="@(() => this.ContentRef.Search(SearchValue))"></span>
-                            </div>
-                            <div class="button-section search-section">
-                                <button id="addexpense" class="e-btn small e-info" @onclick="@(() => this.DialogRef.ShowAddDialog())">Add Transaction</button>
-                                <button id="filterExpense" class="e-btn small e-info" @onclick="@(() => this.FilterRef.ShowFilterMenu())">Filter</button>
-                                <div id="add-btn" class='e-btn' @onclick="@(() => this.DialogRef.ShowAddDialog())">
-                                    <span class='e-icons add-icon add-head-item'></span>
+    <div class="expense-page">
+        <div class='exp-content-container'>
+            <div>
+                <p class="page-title">All Transactions</p>
+            </div>
+
+            <div>
+                <div class="col-md-12 margin-top col-lg-12">
+                    <div class="expense-grid-container">
+                        <div class="expense-head-padding" style="background-color: @headColor;">
+                            <div class="search-wrapper search-section" style="display: @headVisibility;">
+                                <div id="search">
+                                    <SfTextBox Type="InputType.Search"
+                                               ShowClearButton="true"
+                                               Placeholder="Search"
+                                               CssClass="search txt"
+                                               @bind-Value="SearchValue"
+                                               ValueChange="@(async () => await ContentRef.Search(SearchValue))"
+                                               Created="OnCreate">
+                                    </SfTextBox>
+                                    <span id="searchbtn"
+                                          class="e-search-icon expense-search-icon e-icons"
+                                          @onclick="() => ContentRef.Search(SearchValue)"></span>
+                                </div>
+
+                                <div class="button-section search-section">
+                                    <button id="addexpense" class="e-btn small e-info" @onclick="() => DialogRef.ShowAddDialog()">Add Transaction</button>
+                                    <button id="filterExpense" class="e-btn small e-info" @onclick="() => FilterRef.ShowFilterMenu()">Filter</button>
+                                    <div id="add-btn" class='e-btn' @onclick="() => DialogRef.ShowAddDialog()">
+                                        <span class='e-icons add-icon add-head-item'></span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
+
+                        <TransactGrid @ref="ContentRef"></TransactGrid>
                     </div>
-                    <TransactGrid @ref="ContentRef"></TransactGrid>
                 </div>
             </div>
         </div>
-    </div>
+
         <FilterMenu @ref="FilterRef"></FilterMenu>
         <TransactDialog @ref="DialogRef"></TransactDialog>
-</div>
+    </div>
 }
-else{
-    <div class="search-skeleton"><SfSkeleton Shape="Syncfusion.Blazor.Notifications.SkeletonType.Rectangle" Height="30px" Width="100%"></SfSkeleton></div>
-    <div class="expense-grid-skeleton"><SfSkeleton Shape="Syncfusion.Blazor.Notifications.SkeletonType.Rectangle" Height="700px" Width="100%"></SfSkeleton></div>
-    <div class="filter-skeleton"><SfSkeleton Shape="Syncfusion.Blazor.Notifications.SkeletonType.Rectangle" Height="815px" Width="100%"></SfSkeleton></div>
+else
+{
+    <div class="search-skeleton">
+        <SfSkeleton Shape="Syncfusion.Blazor.Notifications.SkeletonType.Rectangle" Height="30px" Width="100%"></SfSkeleton>
+    </div>
+    <div class="expense-grid-skeleton">
+        <SfSkeleton Shape="Syncfusion.Blazor.Notifications.SkeletonType.Rectangle" Height="700px" Width="100%"></SfSkeleton>
+    </div>
+    <div class="filter-skeleton">
+        <SfSkeleton Shape="Syncfusion.Blazor.Notifications.SkeletonType.Rectangle" Height="815px" Width="100%"></SfSkeleton>
+    </div>
 }
 
-@code{
-    // [CascadingParameter]
-    // public ExpenseDataService ExpenseDataService { get; set; }
+@code {
+    // Estado UI
+    private bool isDataLoaded = false;
+    private string SearchValue = string.Empty;
+    private string headColor = "#f7f9ff";       // color de fondo del encabezado
+    private string headVisibility = "block";     // mostrar/ocultar cabecera
 
-    public FilterMenu FilterRef;
-    public TransactDialog DialogRef;
-    public TransactGrid ContentRef;
-    public string SearchValue { get; set; }
-    private string  visibility = "none";
-    private string color = "#FFFFFF";
-    private bool isDataLoaded;
+    // Refs a tus componentes
+    private TransactGrid ContentRef;
+    private FilterMenu FilterRef;
+    private TransactDialog DialogRef;
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    protected override async Task OnInitializedAsync()
     {
-        if (isDataLoaded)
+        // Suscríbete a cambios globales del servicio (cuando Expense/Schedule guarden, o cambies el rango)
+        ExpenseDataServices.OnChanged += OnServiceChanged;
+
+        // Carga inicial desde Back4App para la ventana actual del servicio
+        await ExpenseDataServices.ReloadWindowAsync();
+
+        isDataLoaded = true;
+    }
+
+    private void OnServiceChanged()
+    {
+        // Cuando cambien los datos globales, refresca los hijos si es necesario
+        InvokeAsync(async () =>
         {
-            await base.OnAfterRenderAsync(firstRender);
-            this.ContentRef.DialogRef = this.DialogRef;
-            this.FilterRef.ContentRef = this.ContentRef;
-            this.DialogRef.ContentRef = this.ContentRef;
-            this.ContentRef.FilterRef = this.FilterRef;
-        }
+            // Si tu TransactGrid soporta recarga, llámala aquí (depende de tu implementación)
+            await ContentRef?.ReloadAsync();
+
+            StateHasChanged();
+        });
     }
 
     private void OnCreate()
     {
-        this.visibility = ""; this.color = "";
+        // Hook de Syncfusion TextBox si necesitas algo al crear el control
     }
+
+    // Helpers públicos que pueden invocar tus hijos si lo requieres:
+    public async Task RefreshFromServer() => await ExpenseDataServices.ReloadWindowAsync();
 
     public void Dispose()
     {
-        ContentRef = null;
-        FilterRef = null;
-        DialogRef = null;
-        isDataLoaded = false;
-    }
-
-    private async void LoadData()
-    {
-        await Task.Delay(500);
-        isDataLoaded = true;
-        StateHasChanged();
-    }
-
-    protected override void OnAfterRender(bool firstRender)
-    {
-        if (firstRender)
-        {
-            LoadData();
-        }
+        ExpenseDataServices.OnChanged -= OnServiceChanged;
     }
 }

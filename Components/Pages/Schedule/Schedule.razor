@@ -3,6 +3,7 @@
 @* ----------------------------- USING & INYECCIONES ----------------------------- *@
 @using AppointmentPlanner.Data
 @using AppointmentPlanner.Models
+@using ExpenseTracker.Models
 @using Syncfusion.Blazor.Calendars
 @using Syncfusion.Blazor.Data
 @using Syncfusion.Blazor.Navigations
@@ -19,6 +20,7 @@
 @inject CitasService CitasService
 @inject AppointmentService Service
 @inject PacienteService PacienteService
+@inject TransactionService transactionService
 @inject IJSRuntime JsRuntime
 
 @implements IDisposable
@@ -508,6 +510,7 @@ else
 
     private bool dialogEsperaVisible;
     private CitasModel? pendiente;
+
     public void OnActionBegin(ActionEventArgs<CitasModel> args)
     {
         if ((args.ActionType == ActionType.EventCreate || args.ActionType == ActionType.EventChange)
@@ -557,6 +560,14 @@ else
         };
         return paciente;
     }
+    public static readonly Dictionary<int,string> Display = new()
+    {
+        {(int)MetodosPago.Efectivo,"Efectivo"},
+        {(int)MetodosPago.Otro,"Otro"},
+        {(int)MetodosPago.Transferencia,"Transferencia"},
+        {(int)MetodosPago.Tarjeta,"Tarjeta"},
+    };
+    public static string GetDisplay(int id) => Display.TryGetValue(id, out var name) ? name : id.ToString();
     public async void OnActionComplete(ActionEventArgs<CitasModel> args)
     {
         if ((args.ActionType == ActionType.EventCreate || args.ActionType == ActionType.EventChange)
@@ -571,10 +582,26 @@ else
                     var pac = await CreatePacModel(c);
                     newpac = await PacienteService.CreatePacienteAsync(pac);
                     c.PacienteObjectId = newpac.ObjectId;
+
+
+                    var empleadoactivo = await EmployeService.GetEmpleadoByIdAsync(c.PsicoObjectId);
+                    var newingreso = new ExpenseData
+                    {
+                        Amount = c.Amount,
+                        Category = "Consulta",
+                        dateTime = DateTime.Now,
+                        Description = $"{c.PacienteNombre}-{c.MotivoConsulta}",
+                        EmployeeName = empleadoactivo.NombreCorto,
+                        EmployeeObjectId = empleadoactivo.ObjectId,
+                        PayMethodId = c.PayMethodId,
+                        PaymentMode = GetDisplay(c.PayMethodId),TransactionTypeId = 1
+                    };
+                    await transactionService.CreateMovementeAsync(newingreso);
+                    
                 }
 
                 await CitasService.CreateCitaAsync(c);
-
+                
 
 
                 // Llama a tu servicio para POST -> /classes/Citas
@@ -587,6 +614,19 @@ else
                     var pac = await CreatePacModel(c);
                     newpac = await PacienteService.CreatePacienteAsync(pac);
                     c.PacienteObjectId = newpac.ObjectId;
+                    var empleadoactivo = await EmployeService.GetEmpleadoByIdAsync(c.PsicoObjectId);
+                    var newingreso = new ExpenseData
+                    {
+                        Amount = c.Amount,
+                        Category = "Consulta",
+                        dateTime = DateTime.Now,
+                        Description = $"{c.PacienteNombre}-{c.MotivoConsulta}",
+                        EmployeeName = empleadoactivo.NombreCorto,
+                        EmployeeObjectId = empleadoactivo.ObjectId,
+                        PayMethodId = c.PayMethodId,
+                        PaymentMode = GetDisplay(c.PayMethodId),TransactionTypeId = 1
+                    };
+                    await transactionService.CreateMovementeAsync(newingreso);
                 }
                 await CitasService.UpdateCitaAsync(c);
 
@@ -726,6 +766,7 @@ else
 
 
     // ----------------- HELPERS UI -----------------
+    #region HELPERS UI
     private string getDateHeaderText(DateTime? date)
         => Service.GetFormatDate((DateTime)date, "ddd, MMMM d");
 
@@ -739,6 +780,7 @@ else
             .OrderBy(c => c.StartLocal)
             .ToList();
     }
+    #endregion
 
     // ----------------- HORARIOS: ANCLAR A SEMANA VISIBLE (usa tus modelos) -----------------
     private void UpdateBreakHours(DateTime current)

@@ -1,362 +1,240 @@
-﻿@implements IDisposable;
-@using ExpenseTracker.Models
-@using ExpenseTracker.Service
-@using Syncfusion.Blazor.Buttons
-@using Syncfusion.Blazor.Calendars
-@using Syncfusion.Blazor.DropDowns
-@using Syncfusion.Blazor.Inputs
-@using Syncfusion.Blazor.Popups;
-@inject SfDialogService DialogService;
+﻿@using ExpenseTracker.Models
+@using KavaPryct.Services
 
-<div id='dlg-content'>
-    <Syncfusion.Blazor.Popups.SfDialogProvider />
-    <div id="dialogTarget">
-        <SfMessage Severity="MessageSeverity.Success" Visible=@ShowDeleteMsg>The transaction(s) has been deleted successfully.</SfMessage>
-        <SfMessage Severity="MessageSeverity.Success" Visible=@ShowAddedMsg>The transaction has been added successfully.</SfMessage>
-        <SfMessage Severity="MessageSeverity.Success" Visible=@ShowSavedMsg>The transaction has been saved successfully.</SfMessage>
-        @if (CreateNewDialog)
-        {
-            <SfDialog @ref="TransactionDialog" Width="100%" CssClass="transact-dialog" ShowCloseIcon="true" CloseOnEscape="false" IsModal="true" Target="#sidebarRightpane">
-                <ChildContent>
-                    <DialogTemplates>
-                        <Header>@DialogHeader</Header>
-                    </DialogTemplates>
-                    <div class='dlg-content'>
-                        <div class="transaction-dialog">
-                            <input type='hidden' id="uniqueId" @bind="UniqueId" class="e-input required readonly" />
-                            <div class='dlg-radio-btn-section'>
-                                <div class='dlg-income-radio-section'>
-                                    <SfRadioButton TChecked="string" Label="Income" @bind-Checked="TransactionType" Value="Income" Name='dlgTransactionType' ValueChange="DlgTransactTypeChanged"></SfRadioButton>
-                                </div>
-                                <div class='dlg-expense-radio-section'>
-                                    <SfRadioButton TChecked="string" Label="Expense" @bind-Checked="TransactionType" Value="Expense" Name='dlgTransactionType' ValueChange="DlgTransactTypeChanged"></SfRadioButton>
-                                </div>
-                            </div>
-                            <div class='dlg-date-section'>
-                                <div class='dlg-date-picker-container'>
-                                    <div>
-                                        <SfDatePicker Placeholder='Choose a Date' Width='100%' FloatLabelType='FloatLabelType.Always' @bind-Value="DateValue" Min="@MinDate" Max="@MaxDate"></SfDatePicker>
-                                    </div>
-                                </div>
-                                <div class='dlg-time-picker-container'>
-                                    <div>
-                                        <SfTimePicker Placeholder='Choose a Time' Width='100%' FloatLabelType='FloatLabelType.Always' @bind-Value="TimeValue"></SfTimePicker>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class='category-section'>
-                                <div class='dlg-category-container'>
-                                    <div>
-                                        <SfDropDownList @ref="DropDownList" TValue="string" CssClass='Category' Placeholder='Select a Category' FloatLabelType='FloatLabelType.Always'
-                                                        TItem="CategoryData" DataSource='CategoryDataSource' @bind-Value="CategoryValue">
-                                            <DropDownListFieldSettings Text="Category" Value="Category" IconCss="Class"></DropDownListFieldSettings>
-                                        </SfDropDownList>
-                                    </div>
-                                </div>
-                                <div class='dlg-amount-container'>
-                                    <div>
-                                        <SfNumericTextBox TValue="double?" Placeholder='Enter a Amount' FloatLabelType='FloatLabelType.Always' Format="c2" Min="0" @bind-Value="Amount"></SfNumericTextBox>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class='description-container'>
-                                <div>
-                                    <div class="e-float-input">
-                                        <input type='text' @bind="Description" class="e-input required readonly" />
-                                        <span class="e-float-line"></span>
-                                        <label class="e-float-text e-label-top">Descriptions</label>
-                                    </div>
-                                </div>
-                            </div>
-                            <div>
-                                <div class='payment-label'>
-                                    <label class="">PaymentMode</label>
-                                </div>
-                                <div class='payment-radio-container'>
-                                    <div class='dlg-cash-payment'>
-                                        <SfRadioButton Label="Cash" Value="Cash" @bind-Checked="PaymentMode" Name='dlgPaymentMode'></SfRadioButton>
-                                    </div>
-                                    <div class='dlg-debit-payment'>
-                                        <SfRadioButton Label="Debit Card" Value="Debit Card" @bind-Checked="PaymentMode" Name='dlgPaymentMode'></SfRadioButton>
-                                    </div>
-                                    <div class='dlg-credit-payment'>
-                                        <SfRadioButton Label="Credit Card" Value="Credit Card" @bind-Checked="PaymentMode" Name='dlgPaymentMode'></SfRadioButton>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+@if (_visible)
+{
+    <div class="fixed inset-0 bg-black/50 z-40" @onclick="Cancel"></div>
+    <div class="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg bg-base-100 shadow-xl rounded-xl p-4 z-50">
+        <div class="flex items-center justify-between pb-2 border-b">
+            <h3 class="text-lg font-semibold">@Title</h3>
+            <button class="btn btn-sm" @onclick="Cancel">✕</button>
+        </div>
+
+        <div class="space-y-3 py-4">
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="block text-sm font-medium mb-1">Tipo</label>
+                    <select class="select select-bordered w-full" @bind="Model.TransactionTypeId">
+                        <option value="@((int)Giro.Ingreso)">Ingreso</option>
+                        <option value="@((int)Giro.Egreso)">Egreso</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Fecha y hora</label>
+                    <input type="datetime-local"
+                           class="input input-bordered w-full"
+                           @bind-value="Model.dateTime"
+                           @bind-value:format="yyyy-MM-ddTHH:mm" />
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="block text-sm font-medium mb-1">Monto</label>
+                    <input type="number" class="input input-bordered w-full" step="0.01" @bind="Model.Amount" />
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Método de pago</label>
+                    <select class="select select-bordered w-full"
+                            @bind="Model.PayMethodId"
+                            @bind:after="UpdatePaymentMode">
+                        <option value="@((int)MetodosPago.Efectivo)">Efectivo</option>
+                        <option value="@((int)MetodosPago.Transferencia)">Transferencia</option>
+                        <option value="@((int)MetodosPago.Tarjeta)">Tarjeta</option>
+                        <option value="@((int)MetodosPago.Otro)">Otro</option>
+                    </select>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium mb-1">Categoría</label>
+                <input class="input input-bordered w-full" @bind="Model.Category" placeholder="Consultas, Insumos, etc." />
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium mb-1">Descripción</label>
+                <input class="input input-bordered w-full" @bind="Model.Description" placeholder="Detalle corto (opcional)" />
+            </div>
+
+            @if (Model.TransactionTypeId == (int)Giro.Ingreso)
+            {
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Empleado (ObjectId)</label>
+                        <input class="input input-bordered w-full" @bind="Model.EmployeeObjectId" />
                     </div>
-                    <DialogButtons>
-                        <DialogButton Content="@ButtonContent" CssClass="e-info e-add" IsPrimary="true" OnClick="OnClickSave" />
-                        <DialogButton Content="Cancel" CssClass="e-outline e-cancel" OnClick="OnClickCancel" />
-                    </DialogButtons>
-                    <DialogEvents Created="OnCreate"></DialogEvents>
-                </ChildContent>
-            </SfDialog>
-        }
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Empleado (Nombre)</label>
+                        <input class="input input-bordered w-full" @bind="Model.EmployeeName" />
+                    </div>
+                </div>
+            }
+            else
+            {
+                <!-- Para Egreso se asigna "Otros gastos" automáticamente al guardar si está vacío -->
+                <div class="alert alert-info text-sm">
+                    Si dejas vacío el empleado, se asignará a <b>Otros gastos</b>.
+                </div>
+            }
+        </div>
+
+        <div class="flex justify-end gap-2 border-t pt-3">
+            <button class="btn btn-ghost" @onclick="Cancel">Cancelar</button>
+            <button class="btn btn-primary" @onclick="Save">Guardar</button>
+        </div>
     </div>
-</div>
+}
 
-<style>
-    .e-message {
-        position: absolute;
-        top: 0%;
-        right: 0%;
-        width: 86%;
-        letter-spacing: 0.5px;
-        margin: 0;
-        font-size: 16px;
-        font-weight: 600;
-    }
+@code {
+    [Parameter] public bool _visible { get; set; }
+    [Parameter] public int ModeTransactionTypeId { get; set; } = (int)Giro.Ingreso;
+    [Parameter] public ExpenseData? Editing { get; set; }
 
-    @@media (max-width: 600px) {
-        .e-message {
-            top: 8%;
-            width: 100%;
-        }
-    }
-</style>
+    [Parameter] public EventCallback OnCancel { get; set; }
+    [Parameter] public EventCallback<ExpenseData> OnSaved { get; set; }
 
-@code{
-    public SfDialog TransactionDialog;
-    public TransactGrid ContentRef;
-    SfDropDownList<string, CategoryData> DropDownList;
-
-    public string CategoryValue { get; set; } = null;
-    public DateTime? DateValue;
-    public DateTime? TimeValue;
-    public string UniqueId { get; set; }
-    public string Description { get; set; }
-    public double? Amount = 0;
-    public List<CategoryData> CategoryDataSource { get; set; }
-    [CascadingParameter]
-    public ExpenseDataService ExpenseDataService { get; set; }
-    [Parameter]
-    public Action<List<ExpenseData>> OnGridUpdate { get; set; }
-    public bool IsAdd = false;
-
-    private DateTime MinDate;
-    private DateTime MaxDate;
-    private ExpenseData SelectedRecord;
-    private string ButtonContent = "Add";
-
-    public string DialogHeader { get; set; }
-    public bool CreateNewDialog = false;
-    public bool ShowAddedMsg;
-    public bool ShowDeleteMsg;
-    public bool ShowSavedMsg;
-    public string TransactionType = "Expense";
-
-    public string PaymentMode = "Cash";
-
-    List<ExpenseData> GridSelectedRecords { get; set; }
-
-    protected override async Task OnInitializedAsync()
+    private ExpenseData Model = new();
+    private string Title => (Editing is null ? "Nueva" : "Editar") + " transacción";
+    public void ShowAddDialog(int defaultTypeId = (int)Giro.Ingreso)
     {
-        await base.OnInitializedAsync();
-        this.DialogHeader = "";
-        this.Description = "";
-        this.DateValue = ExpenseDataService.EndDate;
-        this.MinDate = new DateTime(2019, 06, 01, 00, 00, 00);
-        this.MaxDate = new DateTime(2019, 11, 30, 23, 59, 59);
-        this.CategoryDataSource = new List<CategoryData>();
-        this.GridSelectedRecords = new List<ExpenseData>();
-        this.CategoryDataSource = ExpenseDataService.CategoryExpenseData;
+        ModeTransactionTypeId = defaultTypeId;
+        Editing = null;
+        Model = new ExpenseData
+        {
+            TransactionTypeId = ModeTransactionTypeId,
+            Category = ModeTransactionTypeId == (int)Giro.Ingreso ? "Consultas" : "Gastos",
+            PayMethodId = (int)MetodosPago.Efectivo,
+            PaymentMode = nameof(MetodosPago.Efectivo)
+        };
+        Model.dateTime = DateTime.Now;
+        _visible = true;
+        StateHasChanged();
     }
 
-    /// <summary>
-    /// Show Add Dialog
-    /// </summary>
-    public async Task ShowAddDialog()
+    public void ShowEditDialog(ExpenseData item)
     {
-        this.IsAdd = true;
-        if (this.TransactionDialog == null)
+        Editing = item;
+        // Clonar a Model para edición no destructiva
+        Model = new ExpenseData
         {
-            this.UpdateAddDialog();
-            CreateNewDialog = true;
-            StateHasChanged();
-        }
-        else
-        {
-            this.UpdateAddDialog();
-            StateHasChanged();
-            await this.TransactionDialog.ShowAsync();
-        }
+            ObjectId = item.ObjectId,
+            TransactionTypeId = item.TransactionTypeId,
+            Amount = item.Amount,
+            DatFecha = item.DatFecha,
+            Category = item.Category,
+            Description = item.Description,
+            PayMethodId = item.PayMethodId,
+            PaymentMode = item.PaymentMode,
+            EmployeeObjectId = item.EmployeeObjectId,
+            EmployeeName = item.EmployeeName,
+            MonthShort = item.MonthShort,
+            MonthFull = item.MonthFull,
+            FormattedDate = item.FormattedDate
+        };
+        _visible = true;
+        StateHasChanged();
     }
 
-    private void UpdateAddDialog()
+    public void CloseDialog()
     {
-        this.DialogHeader = "New Transaction";
-        this.ButtonContent = "Add";
-        this.UniqueId = "T" + DateTime.Now.Ticks.ToString().Substring(12, 6);
-        this.Amount = 0;
-        this.DateValue = this.TimeValue = ExpenseDataService.EndDate;
-        this.Description = "";
-        this.TransactionType = "Expense";
-        this.PaymentMode = "Cash";
-        this.CategoryDataSource = ExpenseDataService.CategoryExpenseData;
-        this.CategoryValue = CategoryDataSource[0].Category;
+        _visible = false;
+        StateHasChanged();
     }
 
-    /// <summary>
-    /// Show edit dialog
-    /// </summary>
-    /// <param name="selectedRecord"></param>
-    public async Task ShowEditDialog(ExpenseData selectedRecord)
-    {
-        this.IsAdd = false;
-        SelectedRecord = selectedRecord;
-        if (this.TransactionDialog == null)
-        {
-            this.UpdateEditDialog();
-            CreateNewDialog = true;
-            StateHasChanged();
-        }
-        else
-        {
-            this.UpdateEditDialog();
-            StateHasChanged();
-            await this.TransactionDialog.ShowAsync();
-        }
-    }
+    // Llama CloseDialog en Cancel/Save
+    // private async Task Save()
+    // {
+    //     // … tu validación/ajustes (Otros gastos para Egreso, etc.)
+    //     await OnSaved.InvokeAsync(Model);
+    //     _visible = false;
+    //     await InvokeAsync(StateHasChanged);
+    // }
 
-    private void UpdateEditDialog()
+    // private async Task Cancel()
+    // {
+    //     _visible = false;
+    //     await OnCancel.InvokeAsync();
+    //     await InvokeAsync(StateHasChanged);
+    // }
+
+    protected override void OnParametersSet()
     {
-        this.DialogHeader = "Edit Transaction";
-        this.ButtonContent = "Save";
-        if (SelectedRecord != null)
+        if (!_visible) return;
+
+        if (Editing is not null)
         {
-            this.UniqueId = SelectedRecord.UniqueId;
-            if (SelectedRecord.TransactionType == "Income")
+            // Clonar para edición no destructiva
+            Model = new ExpenseData
             {
-                this.TransactionType = "Income";
-                this.CategoryDataSource = this.ExpenseDataService.CategoryIncomeData;
+                ObjectId = Editing.ObjectId,
+                TransactionTypeId = Editing.TransactionTypeId,
+                Amount = Editing.Amount,
+                DatFecha = Editing.DatFecha,
+                Category = Editing.Category,
+                Description = Editing.Description,
+                PayMethodId = Editing.PayMethodId,
+                PaymentMode = Editing.PaymentMode,
+                EmployeeObjectId = Editing.EmployeeObjectId,
+                EmployeeName = Editing.EmployeeName,
+                MonthShort = Editing.MonthShort,
+                MonthFull = Editing.MonthFull,
+                FormattedDate = Editing.FormattedDate
+            };
+        }
+        else
+        {
+            Model = new ExpenseData
+            {
+                TransactionTypeId = ModeTransactionTypeId,
+                Amount = 0m,
+                Category = ModeTransactionTypeId == (int)Giro.Ingreso ? "Consultas" : "Gastos",
+                PayMethodId = (int)MetodosPago.Efectivo,
+                PaymentMode = nameof(MetodosPago.Efectivo),
+            };
+            Model.dateTime = DateTime.Now;
+            UpdateDateStrings();
+        }
+    }
+
+    private string LocalDateTimeString
+    {
+        get => Model.dateTime.ToString("yyyy-MM-ddTHH:mm");
+        set
+        {
+            if (DateTime.TryParse(value, out var local))
+            {
+                Model.dateTime = local;   // setter llena DatFecha.Iso (UTC)
+                UpdateDateStrings();
             }
-            else if (SelectedRecord.TransactionType == "Expense")
-            {
-                this.TransactionType = "Expense";
-                this.CategoryDataSource = this.ExpenseDataService.CategoryExpenseData;
-            }
-            this.DateValue = this.TimeValue = SelectedRecord.DateTime;
-            this.PaymentMode = SelectedRecord.PaymentMode;
-            this.Description = SelectedRecord.Description;
-            this.Amount = (double?)SelectedRecord.Amount;
-            this.CategoryValue = SelectedRecord.Category;
         }
     }
 
-    public void OnCreate()
+    void UpdatePaymentMode()
     {
-        if (IsAdd)
-            this.UpdateAddDialog();
-        else
-            this.UpdateEditDialog();
+        Model.PaymentMode = Enum.GetName(typeof(MetodosPago), Model.PayMethodId)
+                             ?? Model.PayMethodId.ToString();
     }
 
-    /// <summary>
-    /// Show alert dialog
-    /// </summary>
-    /// <param name="selectedRecords"></param>
-    public async Task ShowAlertDialog(List<ExpenseData> selectedRecords)
+    private void UpdateDateStrings()
     {
-        this.GridSelectedRecords = selectedRecords;
-        bool isConfirm = await DialogService.ConfirmAsync("Are you sure you want to delete the selected transaction(s)?", "Delete", new DialogOptions()
-            {
-                ShowCloseIcon = true,
-                Width = "40%",
-                PrimaryButtonOptions = new DialogButtonOptions() { Content = "Yes" },
-                CancelButtonOptions = new DialogButtonOptions() { Content = "No" },
-            });
-        if(isConfirm){
-            await this.OnClickDelete();
-            ContentRef.Toolbaritems[0].Disabled = true;
-            ContentRef.Toolbaritems[1].Disabled = true;
-            ShowDeleteMsg = true;
-            StateHasChanged();
-        }
+        var dt = Model.dateTime;
+        Model.MonthShort = dt.ToString("MMM");
+        Model.MonthFull = dt.ToString("MMMM, yyyy");
+        Model.FormattedDate = dt.ToString("MM/dd/yyyy hh:mm tt");
     }
 
-    public async Task DlgOverlayClicked()
+    private async Task Save()
     {
-        if (CreateNewDialog)
-            await this.TransactionDialog.HideAsync();
-    }
-
-    public void DlgTransactTypeChanged(Syncfusion.Blazor.Buttons.ChangeArgs<string> args)
-    {
-        if (args.Value == "Income")
+        // Defaults para Egreso → "Otros gastos"
+        if (Model.TransactionTypeId == (int)Giro.Egreso)
         {
-            this.CategoryDataSource = this.ExpenseDataService.CategoryIncomeData;
+            Model.EmployeeObjectId ??= "OTROS_GASTOS";
+            Model.EmployeeName ??= "Otros gastos";
         }
-        else
-        {
-            this.CategoryDataSource = this.ExpenseDataService.CategoryExpenseData;
-        }
-        this.CategoryValue = this.CategoryDataSource[0].Category;
+
+        // Si editas y no hay ObjectId (por si es local), déjalo nulo; tu capa remota devolverá el objectId
+        await OnSaved.InvokeAsync(Model);
     }
 
-    /// <summary>
-    /// Add or edit grid data
-    /// </summary>
-    /// <param name="args"></param>
-    public async Task OnClickSave()
-    {
-        var expenseData = new ExpenseData();
-        expenseData.UniqueId = this.UniqueId;
-        expenseData.TransactionType = this.TransactionType;
-        expenseData.DateTime = (this.DateValue == null ? ExpenseDataService.EndDate : (DateTime)this.DateValue).Date.Add((this.TimeValue == null ? ExpenseDataService.EndDate : (DateTime)this.TimeValue).TimeOfDay);
-        expenseData.Category = this.CategoryValue;
-        expenseData.PaymentMode = this.PaymentMode;
-        expenseData.Description = this.Description;
-        expenseData.Amount = (int)this.Amount;
-        expenseData.MonthShort = expenseData.DateTime.ToString("MMM");
-        expenseData.MonthFull = expenseData.DateTime.ToString("MMMM, yyyy");
-        expenseData.FormattedDate = expenseData.DateTime.ToString("MM/dd/yyyy hh:mm tt");
-        if (IsAdd)
-        {
-            ShowAddedMsg = true;
-            // this.ContentRef.AddRecord(expenseData);
-        }
-        else
-        {
-            ShowSavedMsg = true;
-            // this.ContentRef.UpdateRecord(expenseData);
-        }
-        await this.TransactionDialog.HideAsync();
-        this.ContentRef.UpdateTotalBalance();
-    }
-
-    /// <summary>
-    /// Delete record from grid
-    /// </summary>
-    /// <param name="args"></param>
-    public async Task OnClickDelete()
-    {
-        var selectedIds = this.GridSelectedRecords.Select(s => s.UniqueId).ToList();
-        this.ContentRef.RemoveRecord(selectedIds);
-        this.ContentRef.UpdateTotalBalance();
-        await ContentRef.EnableToolbarItems();
-    }
-
-    public async Task OnClickCancel()
-    {
-        await this.DlgOverlayClicked();
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if(ShowDeleteMsg || ShowAddedMsg || ShowSavedMsg){
-            await Task.Delay(1000);
-            ShowDeleteMsg = false;
-            ShowAddedMsg = false;
-            ShowSavedMsg = false;
-            StateHasChanged();
-        }
-    }
-
-    public void Dispose()
-    {
-        TransactionDialog = null;
-        DropDownList = null;
-    }
+    private async Task Cancel() => await OnCancel.InvokeAsync();
 }
