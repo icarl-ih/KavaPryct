@@ -196,7 +196,10 @@
                                         <GridAggregates>
                                             <GridAggregate>
                                                 <GridAggregateColumns>
-                                                    <GridAggregateColumn Field=@nameof(SalaryRow.SuggestedSalary) Type="AggregateType.Sum" Format="C2" FooterTemplate="@(context => @<text>Total sugerido: @context.Sum</text>)"></GridAggregateColumn>
+                                                    <GridAggregateColumn Field=@nameof(SalaryRow.SuggestedSalary)
+                                                                         Type="AggregateType.Sum"
+                                                                         FooterTemplate="@FooterSuggestedTemplate">
+                                                    </GridAggregateColumn>
                                                 </GridAggregateColumns>
                                             </GridAggregate>
                                         </GridAggregates>
@@ -227,6 +230,11 @@ else
 }
 
 @code {
+    // Template para el footer del agregado (suma del salario sugerido)
+    // Nota: AggregateTemplateContext expone Sum/Count/Avg/etc.
+    private RenderFragment<AggregateTemplateContext> FooterSuggestedTemplate => (context) => @<div class="w-100 text-end pe-2">
+        <strong>Total sugerido: @string.Format(System.Globalization.CultureInfo.CurrentCulture, "{0:C2}", context.Sum)</strong>
+    </div>;
     // Estado UI
     private bool isDataLoaded = false;
     private string SearchValue = string.Empty;
