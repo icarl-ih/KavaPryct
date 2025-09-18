@@ -193,6 +193,136 @@ namespace KavaPryct.Services
 
             return null;
         }
+        public async Task CreateEmpleadoAsync(EmpleadosModel e)
+        {
+            var parseObject = new Dictionary<string, object>
+            {
+                {"Nombres",e.Nombres },
+                {"A_Paterno",e.A_Paterno }, {"A_Materno",e.A_Materno },
+                {"Direccion",e.Direccion },
+                {"FechaNac","" }, {"EdoCivilId",e.EdoCivilId},{"EstudiosObjectId",e.EstudiosObjectId},{"EstudiosLast",e.EstudiosLast},
+                { "ContEmergObjectId",e.ContEmergObjectId }, { "RolId", e.RolEmpleo },
+                { "Telefono", e.Telefono }
+            };
+            if(e.FechaNac != null)
+            {
+                parseObject["FechaNac"] = new Dictionary<string, object>
+                    {
+                        { "__type" , "Date"},
+                        { "iso", e.FechaNac.Iso.ToUniversalTime() }
+                    };
+            }
+            var json = JsonSerializer.Serialize(parseObject);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
 
+            var response = await _http.PostAsync("/classes/Empleados", content);
+
+            var body = await response.Content.ReadAsStringAsync();
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new Exception($"Parse {((int)response.StatusCode)} {response.ReasonPhrase}: {body}");
+
+            }
+
+            response.EnsureSuccessStatusCode();
+        }
+        public async Task<string> CreateEstudioAsync(EstudiosModel e)
+        {
+            try
+            {
+                var parseObject = new Dictionary<string, object>
+                {
+                    {"Id", e.Id },
+                    {"Nombre",e.Nombre },
+                    {"Cedula",e.Cedula },
+                    {"ClavePosgrado",e.ClavePosgrado },
+                    {"Abrv",e.Abrv }
+                };
+                var json = JsonSerializer.Serialize(parseObject);
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+                var response = await _http.PostAsync("/classes/Estudios", content);
+
+                var body = await response.Content.ReadAsStringAsync();
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new Exception($"Parse {((int)response.StatusCode)} {response.ReasonPhrase}: {body}");
+
+                }
+
+                response.EnsureSuccessStatusCode();
+                
+                
+                if (!response.IsSuccessStatusCode)
+                    throw new Exception($"Parse {((int)response.StatusCode)} {response.ReasonPhrase}: {body}");
+               
+                
+                var result = JsonSerializer.Deserialize<EstudiosModel>(body);
+
+                return result.ObjectId;
+
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        public async Task<string> CreateNewContactAsync(EmergContact e)
+        {
+            try
+            {
+                var parseobject = new Dictionary<string, object>
+                {
+                    { "Nombre",e.Nombre},{"Telefono",e.Celular},{"Parentezco",e.Parentezco}
+                };
+                var json = JsonSerializer.Serialize(parseobject);
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+                var response = await _http.PostAsync("/classes/ContactosEmergencia", content);
+
+                var body = await response.Content.ReadAsStringAsync();
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new Exception($"Parse {((int)response.StatusCode)} {response.ReasonPhrase}: {body}");
+
+                }
+
+                response.EnsureSuccessStatusCode();
+                
+                if (!response.IsSuccessStatusCode)
+                    throw new Exception($"Parse {((int)response.StatusCode)} {response.ReasonPhrase}: {body}");
+               
+                
+                var result = JsonSerializer.Deserialize<EmergContact>(body);
+
+                return result.ObjectId;
+                
+            }catch(Exception ex)
+            {
+                return null;
+            }
+        }
+        public async Task CreatePosgradoAsync(PosgradosModel p)
+        {
+            var parseobject = new Dictionary<string, object>
+            {
+                { "Nombre",p.Nombre},{"TipoId",p.Id},{"Cedula",p.Cedula},{"Abrv",p.Abrv}
+            };
+            var json = JsonSerializer.Serialize(parseobject);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            var response = await _http.PostAsync("/classes/Posgrados", content);
+
+            var body = await response.Content.ReadAsStringAsync();
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new Exception($"Parse {((int)response.StatusCode)} {response.ReasonPhrase}: {body}");
+
+            }
+
+            response.EnsureSuccessStatusCode();
+
+        }
     }
 }

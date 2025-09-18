@@ -1,10 +1,16 @@
 ﻿@page "/expense"
 @using ExpenseTracker.Models
 @using ExpenseTracker.Service
+@using KavaPryct.Components.Models
 @using KavaPryct.Services
+@using Syncfusion.Blazor.Grids
 @using Syncfusion.Blazor.Inputs
 @using Syncfusion.Blazor.Notifications
 @inject ExpenseDataService ExpenseDataServices
+@inject TransactionService transactionService
+@inject EmpleadoRemoteService EmpleadoService
+@inject IJSRuntime JS
+
 
 <style>
     #main-page {
@@ -134,44 +140,77 @@
             <div>
                 <p class="page-title">All Transactions</p>
             </div>
-
             <div>
                 <div class="col-md-12 margin-top col-lg-12">
                     <div class="expense-grid-container">
-                        <div class="expense-head-padding" style="background-color: @headColor;">
-                            <div class="search-wrapper search-section" style="display: @headVisibility;">
+                        <div class="expense-head-padding" style="background-color: @color;">
+                            <div class="search-wrapper search-section" style="display: @visibility;">
                                 <div id="search">
-                                    <SfTextBox Type="InputType.Search"
-                                               ShowClearButton="true"
-                                               Placeholder="Search"
-                                               CssClass="search txt"
-                                               @bind-Value="SearchValue"
-                                               ValueChange="@(async () => await ContentRef.Search(SearchValue))"
-                                               Created="OnCreate">
-                                    </SfTextBox>
-                                    <span id="searchbtn"
-                                          class="e-search-icon expense-search-icon e-icons"
-                                          @onclick="() => ContentRef.Search(SearchValue)"></span>
+                                    <SfTextBox Type="InputType.Search" ShowClearButton="true" Placeholder="Search" CssClass="search txt" @bind-Value="SearchValue" ValueChange="@(async () => await this.ContentRef.Search(SearchValue))" Created="OnCreate"></SfTextBox>
+                                    <span id="searchbtn" class="e-search-icon expense-search-icon e-icons" @onclick="@(() => this.ContentRef.Search(SearchValue))"></span>
                                 </div>
-
                                 <div class="button-section search-section">
-                                    <button id="addexpense" class="e-btn small e-info" @onclick="() => DialogRef.ShowAddDialog()">Add Transaction</button>
-                                    <button id="filterExpense" class="e-btn small e-info" @onclick="() => FilterRef.ShowFilterMenu()">Filter</button>
-                                    <div id="add-btn" class='e-btn' @onclick="() => DialogRef.ShowAddDialog()">
+                                    <button id="addexpense" class="e-btn small e-info" @onclick="@(() => this.DialogRef.ShowAddDialog())">Add Transaction</button>
+                                    <button id="filterExpense" class="e-btn small e-info" @onclick="@(() => this.FilterRef.ShowFilterMenu())">Filter</button>
+                                    <div id="add-btn" class='e-btn' @onclick="@(() => this.DialogRef.ShowAddDialog())">
                                         <span class='e-icons add-icon add-head-item'></span>
                                     </div>
                                 </div>
                             </div>
                         </div>
+                        <TransactGrid @ref="ContentRef"  
+                            OnEdit="HandleEdit"
+                            OnDelete="HandleDelete"></TransactGrid>
 
-                        <TransactGrid @ref="ContentRef"></TransactGrid>
+                        <div class="mt-4 p-3 border rounded-3">
+                            <div class="d-flex align-items-end gap-3 flex-wrap">
+                                <div>
+                                    <label class="form-label mb-1">Porcentaje de salario (%)</label>
+                                    <SfNumericTextBox @bind-Value="SalaryPercent"
+                                                      TValue="decimal"
+                                                      Min="0" Max="100"
+                                                      Decimals="2"
+                                                      Placeholder="Ej. 10 para 10%" />
+                                    <div class="form-text">Se guarda automáticamente; puedes editarlo cuando quieras.</div>
+                                </div>
+
+                                <div class="d-flex gap-2">
+                                    <SfButton CssClass="e-primary" OnClick="CalculateSalaries">Calcular salarios</SfButton>
+                                    <SfButton CssClass="e-outline" OnClick="ClearResults" IsPrimary="false">Limpiar</SfButton>
+                                </div>
+                            </div>
+
+                            @if (Rows?.Count > 0)
+                            {
+                                <div class="mt-3">
+                                    <SfGrid DataSource="Rows" AllowPaging="true" AllowSorting="true">
+                                        <GridColumns>
+                                            <GridColumn Field=@nameof(SalaryRow.ShortName) HeaderText="Empleado" Width="160"></GridColumn>
+                                            <GridColumn Field=@nameof(SalaryRow.RoleName) HeaderText="Rol" Width="140"></GridColumn>
+                                            <GridColumn Field=@nameof(SalaryRow.Cash) HeaderText="Efectivo" Format="C2" TextAlign="TextAlign.Right" Width="130"></GridColumn>
+                                            <GridColumn Field=@nameof(SalaryRow.Transfer) HeaderText="Transferencia" Format="C2" TextAlign="TextAlign.Right" Width="150"></GridColumn>
+                                            <GridColumn Field=@nameof(SalaryRow.Card) HeaderText="Tarjeta" Format="C2" TextAlign="TextAlign.Right" Width="130"></GridColumn>
+                                            <GridColumn Field=@nameof(SalaryRow.Total) HeaderText="Total Ingresos" Format="C2" TextAlign="TextAlign.Right" Width="150"></GridColumn>
+                                            <GridColumn Field=@nameof(SalaryRow.SuggestedSalary) HeaderText="Salario sugerido" Format="C2" TextAlign="TextAlign.Right" Width="170"></GridColumn>
+                                        </GridColumns>
+                                        <GridAggregates>
+                                            <GridAggregate>
+                                                <GridAggregateColumns>
+                                                    <GridAggregateColumn Field=@nameof(SalaryRow.SuggestedSalary) Type="AggregateType.Sum" Format="C2" FooterTemplate="@(context => @<text>Total sugerido: @context.Sum</text>)"></GridAggregateColumn>
+                                                </GridAggregateColumns>
+                                            </GridAggregate>
+                                        </GridAggregates>
+                                    </SfGrid>
+                                </div>
+                            }
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-
         <FilterMenu @ref="FilterRef"></FilterMenu>
-        <TransactDialog @ref="DialogRef"></TransactDialog>
+        <TransactDialog @ref="DialogRef" OnSaved="HandleSaved"
+            OnCancel="HandleCancel"></TransactDialog>
     </div>
 }
 else
@@ -191,13 +230,23 @@ else
     // Estado UI
     private bool isDataLoaded = false;
     private string SearchValue = string.Empty;
-    private string headColor = "#f7f9ff";       // color de fondo del encabezado
-    private string headVisibility = "block";     // mostrar/ocultar cabecera
+    private string color = "#f7f9ff";       // color de fondo del encabezado
+    private string visibility = "block";     // mostrar/ocultar cabecera
 
     // Refs a tus componentes
     private TransactGrid ContentRef;
     private FilterMenu FilterRef;
     private TransactDialog DialogRef;
+
+
+    // Porcentaje persistido (ej. 10 = 10%)
+    private decimal SalaryPercent { get; set; } = 10m;
+
+    // Resultado del cálculo
+    private List<SalaryRow> Rows = new();
+
+    // Clave en localStorage
+    private const string SalaryPctKey = "expense.salaryPercent";
 
     protected override async Task OnInitializedAsync()
     {
@@ -209,7 +258,35 @@ else
 
         isDataLoaded = true;
     }
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Carga porcentaje guardado (si existe)
+            try
+            {
+                var stored = await JS.InvokeAsync<string>("snf_getLocal", SalaryPctKey);
+                if (!string.IsNullOrWhiteSpace(stored) && decimal.TryParse(stored, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var val))
+                {
+                    SalaryPercent = Math.Clamp(val, 0m, 100m);
+                    StateHasChanged();
+                }
+            }
+            catch { /* ignora si aún no existe helper JS */ }
+        }
 
+        // Guarda cada vez que cambia (pequeña auto-sync)
+        await PersistPercent();
+    }
+
+    private async Task PersistPercent()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("snf_setLocal", SalaryPctKey, SalaryPercent.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        }
+        catch { /* sincr. best-effort */ }
+    }
     private void OnServiceChanged()
     {
         // Cuando cambien los datos globales, refresca los hijos si es necesario
@@ -217,14 +294,147 @@ else
         {
             // Si tu TransactGrid soporta recarga, llámala aquí (depende de tu implementación)
             await ContentRef?.ReloadAsync();
-
-            StateHasChanged();
+            InvokeAsync(StateHasChanged);        
         });
     }
+    // --------- Handlers ---------
+
+    // Abrir diálogo de edición desde el grid
+    private void HandleEdit(ExpenseData row)
+        => DialogRef.ShowEditDialog(row);
+
+    // Eliminar en Back4App y refrescar
+    private async Task HandleDelete(ExpenseData row)
+    {
+        if (!string.IsNullOrWhiteSpace(row.ObjectId))
+        {
+            await transactionService.DeleteTransactionAsync(row.ObjectId);
+            await ExpenseDataServices.ReloadWindowAsync();
+        }
+    }
+
+    // Guardar (create/update) según tenga ObjectId
+    private async Task HandleSaved(ExpenseData model)
+    {
+        // Asegura "Otros gastos" completo en egresos sin empleado
+        if (model.TransactionTypeId == (int)Giro.Egreso &&
+            string.IsNullOrWhiteSpace(model.EmployeeObjectId))
+        {
+            model.EmployeeObjectId = "OTROS";
+            model.EmployeeName = "Otros gastos";
+        }
+        model.DatFecha ??= new FechaModel{Iso = model.dateTime};
+        // Persistir
+        if (string.IsNullOrWhiteSpace(model.ObjectId))
+            await transactionService.CreateMovementeAsync(model);
+        else
+            await transactionService.UpdateTransactionAsync(model);
+
+        await ExpenseDataServices.ReloadWindowAsync(); // refresca todo el dashboard/expense
+    }
+
+    private Task HandleCancel()
+    {
+        // nada en especial: el dialog ya se cierra solo
+        return Task.CompletedTask;
+    }
+
 
     private void OnCreate()
     {
         // Hook de Syncfusion TextBox si necesitas algo al crear el control
+    }
+
+    private async Task OnSaved(ExpenseData model)
+    {
+        if (string.IsNullOrWhiteSpace(model.ObjectId))
+            await transactionService.CreateMovementeAsync(model);
+        else
+            await transactionService.UpdateTransactionAsync(model);
+
+        await ExpenseDataServices.ReloadWindowAsync(); // vuelve a leer B4A (rango activo)
+    }
+
+    private async Task OnDelete(ExpenseData item)
+    {
+        if (!string.IsNullOrWhiteSpace(item.ObjectId))
+        {
+            await transactionService.DeleteTransactionAsync(item.ObjectId);
+            await ExpenseDataServices.ReloadWindowAsync();
+        }
+    }
+
+    private async Task CalculateSalaries()
+    {
+        // Asegura persistencia antes de calcular
+        await PersistPercent();
+
+        Rows = new();
+
+        // === Ajusta nombres/condiciones si tus modelos difieren ===
+        // Solo ingresos (Tipo == 1)
+        List<ExpenseData> transactions = await transactionService.GetAllTransactionsAsync();
+        var ingresos = transactions.Where(t => t.TransactionTypeId == 1).ToList();
+
+        // Join con empleados RoleId == 1
+        List<EmpleadosModel> empleadosAll = await EmpleadoService.GetAllPsicosAsync();
+        var empleadosDict = empleadosAll
+            .Where(e => e.RolEmpleo == 1 && !string.IsNullOrWhiteSpace(e.ObjectId))
+            .GroupBy(e => e.ObjectId!)                // por si hubiera duplicados de ObjectId
+            .ToDictionary(g => g.Key, g => g.First()); // toma el primero
+
+        // Agrupamos por empleado
+        var query =
+        from t in ingresos
+        where !string.IsNullOrWhiteSpace(t.EmployeeObjectId)
+              && empleadosDict.ContainsKey(t.EmployeeObjectId!)
+        group t by t.EmployeeObjectId! into g
+        let emp = empleadosDict[g.Key]
+        let cash = g.Where(x => IsCash(x.PayMethodId)).Sum(x => x.Amount)
+        let transfer = g.Where(x => IsTransfer(x.PayMethodId)).Sum(x => x.Amount)
+        let card = g.Where(x => IsCard(x.PayMethodId)).Sum(x => x.Amount)
+        let total = cash + transfer + card
+        orderby emp.NombreCorto
+        select new SalaryRow
+        {
+            EmployeeId = g.Key, // este es el ObjectId del empleado
+            ShortName = emp.NombreCorto,
+            RoleName = emp.RoleName ?? "Empleado",
+            Cash = cash,
+            Transfer = transfer,
+            Card = card,
+            Total = total,
+            SuggestedSalary = Math.Round(total * (SalaryPercent / 100m), 2)
+        };
+
+        Rows = query.Where(r => r.Total > 0m).ToList();
+
+        StateHasChanged();
+    }
+
+    private void ClearResults() => Rows = new();
+
+    // === Utilidades para mapear método de pago (ajusta a tus valores reales) ===
+    private static bool IsCash(int? m) =>
+        m.Equals(1);
+
+    private static bool IsTransfer(int? m) =>
+        m.Equals(2);
+
+    private static bool IsCard(int? m) =>
+        m.Equals(3);
+
+    // === Tipos de ejemplo: ajusta a tus modelos ===
+    public class SalaryRow
+    {
+        public string EmployeeId { get; set; } = string.Empty;
+        public string ShortName { get; set; } = string.Empty;
+        public string RoleName { get; set; } = string.Empty;
+        public decimal Cash { get; set; }
+        public decimal Transfer { get; set; }
+        public decimal Card { get; set; }
+        public decimal Total { get; set; }
+        public decimal SuggestedSalary { get; set; }
     }
 
     // Helpers públicos que pueden invocar tus hijos si lo requieres:

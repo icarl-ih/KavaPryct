@@ -118,31 +118,31 @@
     margin-right: 10px;
 }
 
-    .category-icon.Rent {
+    .category-icon.Renta {
         background-image: url("./images/category/rent.png");
     }
 
-    .category-icon.Food {
+    .category-icon.Comida {
         background-image: url("./images/category/food.png");
     }
 
-    .category-icon.Bills {
+    .category-icon.Servicios {
         background-image: url("./images/category/bills.png");
     }
 
-    .category-icon.Utilities {
+    .category-icon.Reparaciones {
         background-image: url("./images/category/utilities.png");
     }
 
-    .category-icon.Transportation {
+    .category-icon.Viaticos {
         background-image: url("./images/category/transport.png");
     }
 
-    .category-icon.Insurance {
+    .category-icon.Accidentes {
         background-image: url("./images/category/insurance.png");
     }
 
-    .category-icon.Shopping {
+    .category-icon.Insumos {
         background-image: url("./images/category/shopping.png");
     }
 
@@ -158,7 +158,7 @@
         background-image: url("./images/category/house.png");
     }
 
-    .category-icon.Taxes {
+    .category-icon.Impuestos {
         background-image: url("./images/category/tax.png");
     }
 
@@ -170,15 +170,15 @@
         background-image: url("./images/category/education.png");
     }
 
-    .category-icon.Miscellaneous {
+    .category-icon.Otros {
         background-image: url("./images/category/miscellaneous.png");
     }
 
-    .category-icon.Personal {
+    .category-icon.Consultas {
         background-image: url("./images/category/personal.png");
     }
 
-    .category-icon.Salary {
+    .category-icon.Ingreso, .category-icon.Ingreso.Extra {
         background-image: url("./images/category/salary.png");
     }
 
@@ -190,7 +190,7 @@
         background-image: url("./images/category/business.png");
     }
 
-    .category-icon.Extra, .category-icon.Extra.income {
+    .category-icon.Salario {
         background-image: url("./images/category/extra.png");
     }
 

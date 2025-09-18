@@ -15,17 +15,6 @@ namespace KavaPryct.Services
         private readonly AppSettings _appSetting = new AppSettings();
         public TransactionService(HttpClient httpClient) => _http = httpClient;
 
-        public async Task<List<ExpenseData>> GetAllPacientesAsync()
-        {
-            var response = await _http.GetAsync("/classes/Balance");
-            response.EnsureSuccessStatusCode();
-
-            var json = await response.Content.ReadAsStringAsync();
-            var result = JsonSerializer.Deserialize<ParseResponse<ExpenseData>>(json);
-
-            return result?.Results ?? new List<ExpenseData>();
-
-        }
         public async Task DeleteTransactionAsync(string id)
         {
             var response = await _http.DeleteAsync($"classes/Balance/{id}");

@@ -1,120 +1,320 @@
 ﻿@using ExpenseTracker.Models
+@using KavaPryct.Components.Models
 @using KavaPryct.Services
 
-@if (_visible)
-{
-    <div class="fixed inset-0 bg-black/50 z-40" @onclick="Cancel"></div>
-    <div class="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg bg-base-100 shadow-xl rounded-xl p-4 z-50">
-        <div class="flex items-center justify-between pb-2 border-b">
-            <h3 class="text-lg font-semibold">@Title</h3>
-            <button class="btn btn-sm" @onclick="Cancel">✕</button>
-        </div>
+@using ExpenseTracker.Service
+@using Syncfusion.Blazor.DropDowns
+@using Syncfusion.Blazor.Notifications
+@using Syncfusion.Blazor.Popups
+@using Syncfusion.Blazor.Inputs
+@using Syncfusion.Blazor.Calendars
+@using Syncfusion.Blazor.Buttons
 
-        <div class="space-y-3 py-4">
-            <div class="grid grid-cols-2 gap-2">
-                <div>
-                    <label class="block text-sm font-medium mb-1">Tipo</label>
-                    <select class="select select-bordered w-full" @bind="Model.TransactionTypeId">
-                        <option value="@((int)Giro.Ingreso)">Ingreso</option>
-                        <option value="@((int)Giro.Egreso)">Egreso</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium mb-1">Fecha y hora</label>
-                    <input type="datetime-local"
-                           class="input input-bordered w-full"
-                           @bind-value="Model.dateTime"
-                           @bind-value:format="yyyy-MM-ddTHH:mm" />
-                </div>
-            </div>
+@inject EmpleadoRemoteService EmpleadoService
+@inject ExpenseDataService ExpenseDataService
 
-            <div class="grid grid-cols-2 gap-2">
-                <div>
-                    <label class="block text-sm font-medium mb-1">Monto</label>
-                    <input type="number" class="input input-bordered w-full" step="0.01" @bind="Model.Amount" />
-                </div>
-                <div>
-                    <label class="block text-sm font-medium mb-1">Método de pago</label>
-                    <select class="select select-bordered w-full"
-                            @bind="Model.PayMethodId"
-                            @bind:after="UpdatePaymentMode">
-                        <option value="@((int)MetodosPago.Efectivo)">Efectivo</option>
-                        <option value="@((int)MetodosPago.Transferencia)">Transferencia</option>
-                        <option value="@((int)MetodosPago.Tarjeta)">Tarjeta</option>
-                        <option value="@((int)MetodosPago.Otro)">Otro</option>
-                    </select>
-                </div>
-            </div>
 
-            <div>
-                <label class="block text-sm font-medium mb-1">Categoría</label>
-                <input class="input input-bordered w-full" @bind="Model.Category" placeholder="Consultas, Insumos, etc." />
-            </div>
 
-            <div>
-                <label class="block text-sm font-medium mb-1">Descripción</label>
-                <input class="input input-bordered w-full" @bind="Model.Description" placeholder="Detalle corto (opcional)" />
-            </div>
+<div id='dlg-content'>
+    <Syncfusion.Blazor.Popups.SfDialogProvider />
+    <div id="dialogTarget">
+        <SfMessage Severity="MessageSeverity.Success" Visible=@ShowDeleteMsg>The transaction(s) has been deleted successfully.</SfMessage>
+        <SfMessage Severity="MessageSeverity.Success" Visible=@ShowAddedMsg>The transaction has been added successfully.</SfMessage>
+        <SfMessage Severity="MessageSeverity.Success" Visible=@ShowSavedMsg>The transaction has been saved successfully.</SfMessage>
 
-            @if (Model.TransactionTypeId == (int)Giro.Ingreso)
-            {
-                <div class="grid grid-cols-2 gap-2">
-                    <div>
-                        <label class="block text-sm font-medium mb-1">Empleado (ObjectId)</label>
-                        <input class="input input-bordered w-full" @bind="Model.EmployeeObjectId" />
+        @if (_visible)
+        {
+            <SfDialog @ref="TransactionDialog"
+                      Width="100%"
+                      CssClass="transact-dialog"
+                      ShowCloseIcon="true"
+                      CloseOnEscape="false"
+                      IsModal="true"
+                      Target="#sidebarRightpane">
+                <ChildContent>
+                    <DialogTemplates>
+                        <Header>@DialogHeader</Header>
+                    </DialogTemplates>
+
+                    <div class='dlg-content'>
+                        <div class="transaction-dialog">
+                            <SfRadioButton TChecked="string"
+                                           Label="Income"
+                                           Name="dlgTransactionType"
+                                           Value="1"
+                                           @bind-Checked="TipoStr"
+                                           @bind-Checked:after="OnTipoAfter" />
+
+                            <SfRadioButton TChecked="string"
+                                           Label="Expense"
+                                           Name="dlgTransactionType"
+                                           Value="2"
+                                           @bind-Checked="TipoStr"
+                                           @bind-Checked:after="OnTipoAfter" />
+
+                            <!-- Fecha y hora (se combinan a Model.dateTime) -->
+                            <div class='dlg-date-section'>
+                                <div class='dlg-date-picker-container'>
+                                    <SfDatePicker TValue="DateTime"
+                                                  Placeholder='Choose a Date'
+                                                  Width='100%'
+                                                  FloatLabelType='FloatLabelType.Always'
+                                                  @bind-Value="DateValue"
+                                                  Min="@MinDate"
+                                                  Max="@MaxDate">
+                                    </SfDatePicker>
+                                </div>
+                                <div class='dlg-time-picker-container'>
+                                    <SfTimePicker TValue="TimeSpan"
+                                                  Placeholder='Choose a Time'
+                                                  Width='100%'
+                                                  FloatLabelType='FloatLabelType.Always'
+                                                  @bind-Value="TimeValue">
+                                    </SfTimePicker>
+                                </div>
+                            </div>
+
+                            <!-- Categoría / Monto -->
+                            <div class='category-section'>
+                               <div class='dlg-category-container'>
+                                    <label class="e-label">Categoría</label>
+                                    <SfDropDownList TItem="CategoryData"
+                                                    TValue="string"
+                                                    DataSource="@CategoryDS"
+                                                    Placeholder="Selecciona categoría"
+                                                    @bind-Value="@SelectCategoriaId"
+                                                    AllowFiltering="true"
+                                                    FilterType="FilterType.Contains"
+                                                    @bind-Value:after = "@OnCategoryChanged">
+                                        <DropDownListFieldSettings Text="Category" Value="Id"></DropDownListFieldSettings>
+                                        
+
+                                       
+                                    </SfDropDownList>
+                                </div>
+
+                                <div class='dlg-amount-container'>
+                                    <SfNumericTextBox TValue="decimal?"
+                                                      Placeholder='Enter Amount'
+                                                      FloatLabelType='FloatLabelType.Always'
+                                                      Format="c2"
+                                                      Min="0"
+                                                      @bind-Value="AmountNullable">
+                                    </SfNumericTextBox>
+                                </div>
+                            </div>
+
+                            <!-- Descripción -->
+                            <div class='description-container'>
+                                <div class="e-float-input">
+                                    <input type='text' @bind="Model.Description" class="e-input" />
+                                    <span class="e-float-line"></span>
+                                    <label class="e-float-text e-label-top">Description</label>
+                                </div>
+                            </div>
+
+                            <!-- Método de pago (enum -> id + nombre) -->
+                            <div>
+                                <div class='payment-label'>
+                                    <label>Payment Method</label>
+                                </div>
+                                <div class='payment-radio-container'>
+                                    <div class='dlg-cash-payment'>
+                                        <SfRadioButton TChecked="string"
+                                                       Label="Efectivo"
+                                                       Name="dlgPaymentMode"
+                                                       Value="1"
+                                                       @bind-Checked="PayMethodStr" />
+                                    </div>
+
+                                    <div class='dlg-debit-payment'>
+                                        <SfRadioButton TChecked="string"
+                                                       Label="Transferencia"
+                                                       Name="dlgPaymentMode"
+                                                       Value="2"
+                                                       @bind-Checked="PayMethodStr" />
+                                    </div>
+
+                                    <div class='dlg-credit-payment'>
+                                        <SfRadioButton TChecked="string"
+                                                       Label="Tarjeta"
+                                                       Name="dlgPaymentMode"
+                                                       Value="3"
+                                                       @bind-Checked="PayMethodStr" />
+                                    </div>
+
+                                    <div class='dlg-credit-payment'>
+                                        <SfRadioButton TChecked="string"
+                                                       Label="Otro"
+                                                       Name="dlgPaymentMode"
+                                                       Value="0"
+                                                       @bind-Checked="PayMethodStr" />
+                                    </div>
+                                </div>
+
+
+                            </div>
+
+                            <!-- Empleado (solo para Ingreso) -->
+                            @if (Model.TransactionTypeId == (int)Giro.Ingreso)
+                            {
+                                <div class="description-container" style="margin-top:12px">
+                                    <div class="col-span-2">
+                                        <label class="e-label">Empleado</label>
+                                        <SfDropDownList TItem="EmpleadosModel"
+                                                        TValue="string"
+                                                        DataSource="@Empleados"
+                                                        Placeholder="Selecciona empleado"
+                                                        AllowFiltering="true"
+                                                        FilterType="FilterType.Contains"
+                                                        @bind-Value="@SelectedEmpleadoId"
+                                                        @bind-Value:after="OnEmpleadoChanged">
+                                            <DropDownListFieldSettings Text="NombreCorto" Value="ObjectId"></DropDownListFieldSettings>
+                                        </SfDropDownList>
+                                    </div>
+                                </div>
+                            }
+                            else
+                            {
+                                <SfMessage Severity="MessageSeverity.Info" Visible=@true>Se asignará a <b>Otros Gastos</b></SfMessage>
+
+                            }
+                        </div>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-1">Empleado (Nombre)</label>
-                        <input class="input input-bordered w-full" @bind="Model.EmployeeName" />
-                    </div>
-                </div>
-            }
-            else
-            {
-                <!-- Para Egreso se asigna "Otros gastos" automáticamente al guardar si está vacío -->
-                <div class="alert alert-info text-sm">
-                    Si dejas vacío el empleado, se asignará a <b>Otros gastos</b>.
-                </div>
-            }
-        </div>
 
-        <div class="flex justify-end gap-2 border-t pt-3">
-            <button class="btn btn-ghost" @onclick="Cancel">Cancelar</button>
-            <button class="btn btn-primary" @onclick="Save">Guardar</button>
-        </div>
+                    <DialogButtons>
+                        <DialogButton Content="@ButtonContent" CssClass="e-info e-add" IsPrimary="true" OnClick="OnClickSave" />
+                        <DialogButton Content="Cancel" CssClass="e-outline e-cancel" OnClick="OnClickCancel" />
+                    </DialogButtons>
+                    <DialogEvents Created="OnCreate"></DialogEvents>
+                </ChildContent>
+            </SfDialog>
+        }
     </div>
-}
+</div>
+
+<style>
+    .e-message {
+        position: absolute;
+        top: 0%;
+        right: 0%;
+        width: 86%;
+        letter-spacing: 0.5px;
+        margin: 0;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    @@media (max-width: 600px) {
+        .e-message { top: 8%; width: 100%; }
+    }
+</style>
 
 @code {
-    [Parameter] public bool _visible { get; set; }
-    [Parameter] public int ModeTransactionTypeId { get; set; } = (int)Giro.Ingreso;
-    [Parameter] public ExpenseData? Editing { get; set; }
 
-    [Parameter] public EventCallback OnCancel { get; set; }
-    [Parameter] public EventCallback<ExpenseData> OnSaved { get; set; }
+    private List<EmpleadosModel> Empleados = new();
+    // DataSource dinámico según tipo (Ingreso/Egreso)
+    private List<CategoryData> CategoryDS = new();
+    private CategoryData categoryData = new();
 
-    private ExpenseData Model = new();
-    private string Title => (Editing is null ? "Nueva" : "Editar") + " transacción";
+    // Reconstruye la fuente al abrir/cambiar tipo
+    private void RebuildCategorySource()
+    {
+        ExpenseDataService.IniteCats();
+        var src = Model.TransactionTypeId == (int)Giro.Ingreso
+            ? ExpenseDataService.CategoryIncomeData
+            : ExpenseDataService.CategoryExpenseData;
+
+        CategoryDS = (src ?? new List<CategoryData>()).ToList();
+
+        // Si la categoría actual ya no existe en el set, establece una por defecto
+        if (!CategoryDS.Any(c => string.Equals(c.Category, Model.Category, StringComparison.OrdinalIgnoreCase)))
+            Model.Category = CategoryDS.FirstOrDefault()?.Category ?? string.Empty;
+    }
+
+    // Handler del DropDown (sin ambigüedad de ChangeEventArgs)
+
+
+    // Valor seleccionado (ObjectId). Es el que “ve” el DropDownList.
+    private string? SelectedEmpleadoId
+    {
+        get => Model?.EmployeeObjectId;
+        set
+        {
+            Model.EmployeeObjectId = value;
+            // Buscar el nombre corto para guardarlo junto con el id
+            var emp = Empleados.FirstOrDefault(e => e.ObjectId == value);
+            Model.EmployeeName = emp?.NombreCorto ?? string.Empty;
+        }
+    }
+    private string? SelectCategoriaId
+    {
+        get => categoryData?.Id;
+        set
+        {
+            categoryData.Id = value;
+            var cat = CategoryDS.FirstOrDefault(c => c.Id == value);
+            categoryData.Category = cat?.Category ?? string.Empty;
+        }
+    }
+
+    // Cargar empleados desde Back4App
+    private async Task EnsureEmpleadosLoadedAsync()
+    {
+        if (Empleados.Count == 0)
+        {
+            Empleados = await EmpleadoService.GetAllEmpleadosAsync();
+            StateHasChanged();
+        }
+    }
+
+    // Handler del DropDownList (se dispara al cambiar la selección)
+    private void OnEmpleadoChanged()
+    {
+        var cat = Empleados.FirstOrDefault(c => c.ObjectId == SelectedEmpleadoId);
+        Model.EmployeeObjectId = cat?.ObjectId ?? "";
+    }
+
+    private void OnCategoryChanged()
+    {
+        var cat = CategoryDS.FirstOrDefault(c => c.Id == SelectCategoriaId);
+        Model.Category = cat?.Category ?? "";
+    }
+
+
+
+    // -------- API pública para @ref --------
     public void ShowAddDialog(int defaultTypeId = (int)Giro.Ingreso)
     {
-        ModeTransactionTypeId = defaultTypeId;
         Editing = null;
+        DialogHeader = "Add Transaction";
+        ButtonContent = "Add";
+        _visible = true;
+        _ = EnsureEmpleadosLoadedAsync();
+        
         Model = new ExpenseData
         {
-            TransactionTypeId = ModeTransactionTypeId,
-            Category = ModeTransactionTypeId == (int)Giro.Ingreso ? "Consultas" : "Gastos",
+            TransactionTypeId = defaultTypeId,
+            Category = defaultTypeId == (int)Giro.Ingreso ? "Consultas" : "Gastos",
             PayMethodId = (int)MetodosPago.Efectivo,
             PaymentMode = nameof(MetodosPago.Efectivo)
         };
-        Model.dateTime = DateTime.Now;
-        _visible = true;
+        DateValue = DateTime.Today;
+        TimeValue = DateTime.Now.TimeOfDay;
+        AmountNullable = 0m;
+        RebuildCategorySource();
+
         StateHasChanged();
     }
 
     public void ShowEditDialog(ExpenseData item)
     {
         Editing = item;
-        // Clonar a Model para edición no destructiva
+        DialogHeader = "Edit Transaction";
+        ButtonContent = "Save";
+        _visible = true;
+        _ = EnsureEmpleadosLoadedAsync();
+
+        // Clonar a Model
         Model = new ExpenseData
         {
             ObjectId = item.ObjectId,
@@ -131,7 +331,15 @@
             MonthFull = item.MonthFull,
             FormattedDate = item.FormattedDate
         };
-        _visible = true;
+
+        // Preparar Date/Time pickers desde Model.dateTime (local)
+        var dt = Model.dateTime == default ? DateTime.Now : Model.dateTime;
+        DateValue = dt.Date;
+        TimeValue = dt.TimeOfDay;
+
+        AmountNullable = Model.Amount;
+        RebuildCategorySource();
+
         StateHasChanged();
     }
 
@@ -141,100 +349,123 @@
         StateHasChanged();
     }
 
-    // Llama CloseDialog en Cancel/Save
-    // private async Task Save()
-    // {
-    //     // … tu validación/ajustes (Otros gastos para Egreso, etc.)
-    //     await OnSaved.InvokeAsync(Model);
-    //     _visible = false;
-    //     await InvokeAsync(StateHasChanged);
-    // }
+    // -------- Parámetros hacia el padre --------
+    [Parameter] public EventCallback OnCancel { get; set; }
+    [Parameter] public EventCallback<ExpenseData> OnSaved { get; set; }
 
-    // private async Task Cancel()
-    // {
-    //     _visible = false;
-    //     await OnCancel.InvokeAsync();
-    //     await InvokeAsync(StateHasChanged);
-    // }
+    // -------- Estado interno / UI --------
+    private SfDialog TransactionDialog;
+    private bool _visible;
+    private string DialogHeader = "Transaction";
+    private string ButtonContent = "Save";
 
-    protected override void OnParametersSet()
+    public bool ShowDeleteMsg { get; set; }
+    public bool ShowAddedMsg { get; set; }
+    public bool ShowSavedMsg { get; set; }
+
+    // -------- Modelo y campos auxiliares --------
+    private ExpenseData Model = new();
+    private ExpenseData? Editing;
+
+    // Date + Time pickers (se combinan a Model.dateTime al guardar)
+    private DateTime DateValue = DateTime.Today;
+    private TimeSpan TimeValue = DateTime.Now.TimeOfDay;
+    private DateTime MinDate => new DateTime(2023, 1, 1);
+    private DateTime MaxDate => DateTime.Today.AddYears(1);
+
+    // Numeric textbox usa decimal?
+    private decimal? AmountNullable
     {
-        if (!_visible) return;
-
-        if (Editing is not null)
-        {
-            // Clonar para edición no destructiva
-            Model = new ExpenseData
-            {
-                ObjectId = Editing.ObjectId,
-                TransactionTypeId = Editing.TransactionTypeId,
-                Amount = Editing.Amount,
-                DatFecha = Editing.DatFecha,
-                Category = Editing.Category,
-                Description = Editing.Description,
-                PayMethodId = Editing.PayMethodId,
-                PaymentMode = Editing.PaymentMode,
-                EmployeeObjectId = Editing.EmployeeObjectId,
-                EmployeeName = Editing.EmployeeName,
-                MonthShort = Editing.MonthShort,
-                MonthFull = Editing.MonthFull,
-                FormattedDate = Editing.FormattedDate
-            };
-        }
-        else
-        {
-            Model = new ExpenseData
-            {
-                TransactionTypeId = ModeTransactionTypeId,
-                Amount = 0m,
-                Category = ModeTransactionTypeId == (int)Giro.Ingreso ? "Consultas" : "Gastos",
-                PayMethodId = (int)MetodosPago.Efectivo,
-                PaymentMode = nameof(MetodosPago.Efectivo),
-            };
-            Model.dateTime = DateTime.Now;
-            UpdateDateStrings();
-        }
+        get => Model.Amount;
+        set => Model.Amount = value ?? 0m;
     }
 
-    private string LocalDateTimeString
+    // -------- Eventos UI --------
+    private void DlgTransactTypeChanged(int nuevoValor)
     {
-        get => Model.dateTime.ToString("yyyy-MM-ddTHH:mm");
+        if (nuevoValor == (int)Giro.Egreso && string.IsNullOrWhiteSpace(Model.Category))
+            Model.Category = "Gastos";
+    }
+
+    private string PayMethodStr
+    {
+        get => (Model?.PayMethodId ?? 0).ToString();
         set
         {
-            if (DateTime.TryParse(value, out var local))
+            if (int.TryParse(value, out var v))
             {
-                Model.dateTime = local;   // setter llena DatFecha.Iso (UTC)
-                UpdateDateStrings();
+                Model.PayMethodId = v;
+                Model.PaymentMode = ((MetodosPago)v).ToString();
             }
+            StateHasChanged();
         }
     }
 
-    void UpdatePaymentMode()
+    private string TipoStr
     {
-        Model.PaymentMode = Enum.GetName(typeof(MetodosPago), Model.PayMethodId)
-                             ?? Model.PayMethodId.ToString();
+        get => (Model?.TransactionTypeId ?? (int)Giro.Ingreso).ToString();
+        set
+        {
+            if (int.TryParse(value, out var v))
+                Model.TransactionTypeId = v;
+        }
     }
 
-    private void UpdateDateStrings()
+    private void OnTipoAfter()
     {
-        var dt = Model.dateTime;
-        Model.MonthShort = dt.ToString("MMM");
-        Model.MonthFull = dt.ToString("MMMM, yyyy");
-        Model.FormattedDate = dt.ToString("MM/dd/yyyy hh:mm tt");
+        // Se ejecuta DESPUÉS de actualizar TipoStr/Model.TransactionTypeId
+        RebuildCategorySource();
     }
 
-    private async Task Save()
+
+    // sin usar ChangeEventArgs, solo el valor
+    private void UpdatePaymentModeFromId()
     {
-        // Defaults para Egreso → "Otros gastos"
+        Model.PaymentMode = ((MetodosPago)Model.PayMethodId).ToString();
+    }
+
+
+    private void OnCreate() { /* opcional */ }
+
+    private async Task OnClickSave(MouseEventArgs args)
+    {
+        // Combinar Date + Time a Model.dateTime (local → tu clase convierte a UTC internamente)
+        var combined = DateValue.Date + TimeValue;
+        Model.dateTime = combined;
+
+        // Normaliza PaymentMode por si algo cambió
+        UpdatePaymentModeFromId();
+        
+        // Si es Egreso y no hay empleado → "Otros gastos"
         if (Model.TransactionTypeId == (int)Giro.Egreso)
         {
-            Model.EmployeeObjectId ??= "OTROS_GASTOS";
-            Model.EmployeeName ??= "Otros gastos";
+            if (string.IsNullOrWhiteSpace(Model.EmployeeObjectId))
+            {
+                Model.EmployeeName = "Otros gastos";
+            }
         }
 
-        // Si editas y no hay ObjectId (por si es local), déjalo nulo; tu capa remota devolverá el objectId
+        // Validaciones simples
+        if (Model.Amount < 0) Model.Amount = Math.Abs(Model.Amount);
+        if (Model.TransactionTypeId != (int)Giro.Ingreso && Model.TransactionTypeId != (int)Giro.Egreso)
+            Model.TransactionTypeId = (int)Giro.Ingreso;
+
+        // Notifica al padre
         await OnSaved.InvokeAsync(Model);
+
+        // Mensaje y cerrar
+        ShowAddedMsg = (Editing is null);
+        ShowSavedMsg = (Editing is not null);
+        _visible = false;
+        await InvokeAsync(StateHasChanged);
     }
 
-    private async Task Cancel() => await OnCancel.InvokeAsync();
+    private async Task OnClickCancel(MouseEventArgs args) => await Cancel();
+
+    private async Task Cancel()
+    {
+        _visible = false;
+        await OnCancel.InvokeAsync();
+        await InvokeAsync(StateHasChanged);
+    }
 }

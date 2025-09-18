@@ -110,6 +110,7 @@
                         <SfDropDownList TItem="KeyValuePair<int,string>" TValue="int"
                                         DataSource="@EdoCivil" @bind-Value="@doctorEditModel.EdoCivilId"
                                         PopupHeight="220px">
+                                        
                             <DropDownListFieldSettings Text="Value" Value="Key"></DropDownListFieldSettings>
                         </SfDropDownList>
                         
@@ -196,6 +197,16 @@
                         }
                     }
             </div>
+            <div class="gender-container">
+                <div class="mobile">
+                        <SfDropDownList TItem="KeyValuePair<int,string>" TValue="int"
+                            DataSource="@RolEmpleo" @bind-Value="@doctorEditModel.RolEmpleo"
+                                        PopupHeight="220px">
+                            <DropDownListFieldSettings Text="Value" Value="Key"></DropDownListFieldSettings>
+                    </SfDropDownList>
+                </div>
+
+            </div>
             <div class="e-card e-mt-3 e-p-2">
                 <div class="e-d-flex e-justify-content-between e-align-center e-mb-2">
                     <h5 class="e-m-0">Contacto de Emergencia</h5>
@@ -265,6 +276,12 @@
     private EmpleadosModel activeData { get; set; }
     private string getSpecializationText { get; set; }
     private string getAvailability { get; set; }
+
+    private List<KeyValuePair<int, string>> RolEmpleo =>
+    Enum.GetValues(typeof(RolEmpleo)).Cast<RolEmpleo>()
+        .Select(r => new KeyValuePair<int, string>((int)r, r.ToString()))
+        .ToList();
+
     private List<KeyValuePair<int, string>> EdoCivil =>
     Enum.GetValues(typeof(EstadoCivil))
         .Cast<EstadoCivil>()

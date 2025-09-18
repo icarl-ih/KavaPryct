@@ -1,61 +1,153 @@
 ﻿@using ExpenseTracker.Models
 @using ExpenseTracker.Service
 @using KavaPryct.Services
+@using Syncfusion.Blazor.Grids
+@using Syncfusion.Blazor.Navigations
 @inject ExpenseDataService ExpenseDataService
 
+<div id="expense-grid-wrapper">
+    @if (RenderGrid)
+    {
+        <SfGrid @ref="TransactGridRef"
+                TValue="ExpenseData"
+                Width="100%"
+                Height="100%"
+                AllowPaging="true"
+                AllowSelection="true"
+                AllowTextWrap="false"
+                DataSource="@TransactGridData">
+            <GridEvents TValue="ExpenseData"
+                        Created="@(() => GridCreated?.Invoke())">
+            </GridEvents>
 
-<table class="table w-full">
-    <thead>
-        <tr>
-            <th>Fecha</th>
-            <th>Tipo</th>
-            <th>Categoría</th>
-            <th>Método</th>
-            <th>Empleado</th>
-            <th class="text-right">Monto</th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-        @if (Items is not null)
-        {
-            @foreach (var x in Items.OrderByDescending(r => r.dateTime))
-            {
-                <tr>
-                    <td>@x.dateTime.ToString("dd/MM/yyyy HH:mm")</td>
-                    <td>
-                        @(x.TransactionTypeId == (int)Giro.Ingreso ? "Ingreso" :
-                                        x.TransactionTypeId == (int)Giro.Egreso ? "Egreso" : x.TransactionTypeId.ToString())
-            </td>
-            <td>@x.Category</td>
-            <td>@x.PaymentMode</td>
-            <td>@x.EmployeeName</td>
-            <td class="text-right">@x.Amount.ToString("C")</td>
-            <td class="text-right">
-                <div class="flex justify-end gap-2">
-                    <button class="btn btn-xs" @onclick="() => OnEdit.InvokeAsync(x)">Editar</button>
-                    <button class="btn btn-xs btn-error" @onclick="() => OnDelete.InvokeAsync(x)">Eliminar</button>
-                </div>
-            </td>
-        </tr>
-                }
-        }
-    </tbody>
-</table>
+            <GridPageSettings PageSize="11"></GridPageSettings>
+            <GridEditSettings AllowEditing="true" AllowEditOnDblClick="false"></GridEditSettings>
+
+            <GridColumns>
+                <GridColumn Type="ColumnType.CheckBox" Width="40"></GridColumn>
+
+                <!-- Categoría (con template responsivo) -->
+                <GridColumn Field="@nameof(ExpenseData.Category)" HeaderText="Category" Width="178" ClipMode="ClipMode.EllipsisWithTooltip">
+                    <Template>
+                        @{
+                            var expense = (context as ExpenseData);
+                        }
+                        <div class="normalRes">
+                            <div class="category-icon @expense.Category"></div>
+                            <div class='category-text'>@expense.Category</div>
+                        </div>
+                        <div class="mediumRes">
+                            <div>
+                                <div class="category-icon @expense.Category"></div>
+                            </div>
+                            <div>
+                                <div>@expense.Category</div>
+                                <div class="description-section">@expense.Description</div>
+                            </div>
+                        </div>
+                        <div class="smallRes">
+                            <div class='sm-category sm-icon'><div class="category-icon @expense.Category"></div></div>
+                            <div class='sm-category category-content'>
+                                <div>@expense.Category</div>
+                                <div class="description-section">@expense.Description</div>
+                                <div>@expense.PaymentMode</div>
+                            </div>
+                        </div>
+                    </Template>
+                </GridColumn>
+
+                <!-- Fecha (tu propiedad es 'dateTime') -->
+                <GridColumn Field="@nameof(ExpenseData.dateTime)" HeaderText="Date" Width="130">
+                    <Template>
+                        @{
+                            var expense = (context as ExpenseData);
+                        }
+                        @expense.dateTime.ToString("dd/MM/yyyy")
+                    </Template>
+                </GridColumn>
+
+                <GridColumn Field="@nameof(ExpenseData.PaymentMode)" HeaderText="Payment Mode" Width="140"></GridColumn>
+                <GridColumn Field="@nameof(ExpenseData.Description)" HeaderText="Description" ClipMode="ClipMode.Ellipsis"></GridColumn>
+                <GridColumn Field="@nameof(ExpenseData.EmployeeName)" HeaderText="Employee" Width="160"></GridColumn>
+
+                <!-- Monto con template y color por tipo (Ingreso/Egreso) -->
+                <GridColumn Field="@nameof(ExpenseData.Amount)" HeaderText="Amount" Width="140" TextAlign="TextAlign.Right">
+                    <Template>
+                        @{
+                            var expense = (context as ExpenseData);
+                            var isInc = expense.TransactionTypeId == (int)Giro.Ingreso;
+                            var cls = isInc ? "Income" : "Expense";
+                        }
+                        <div class="amt-payment @cls">
+                            <span>@expense.Amount.ToString("C")</span>
+                        </div>
+                    </Template>
+                </GridColumn>
+
+                <!-- Acciones -->
+                <GridColumn HeaderText="" Width="130" TextAlign="TextAlign.Center">
+                    <Template>
+                        @{
+                            var x = (context as ExpenseData);
+                        }
+                        <div class="flex justify-end gap-2">
+                            <button class="e-btn e-small" @onclick="() => OnEdit.InvokeAsync(x)">Editar</button>
+                            <button class="e-btn e-small e-danger" @onclick="() => OnDelete.InvokeAsync(x)">Eliminar</button>
+                        </div>
+                    </Template>
+                </GridColumn>
+
+                <!-- PK oculto (usa ObjectId de Back4App) -->
+                <GridColumn Field="@nameof(ExpenseData.ObjectId)" HeaderText="Id" IsPrimaryKey="true" Visible="false"></GridColumn>
+            </GridColumns>
+        </SfGrid>
+    }
+</div>
 
 @code {
-    [Parameter] public IEnumerable<ExpenseData> Items { get; set; } = Enumerable.Empty<ExpenseData>();
+    // ===== API pública (compat para tu toolbar/buscador/filtros) =====
+    public async Task ReloadAsync()
+    {
+        Rebuild();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public Task Search(string query)
+    {
+        _search = query?.Trim() ?? string.Empty;
+        Rebuild();
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    public void SetFilter(Func<ExpenseData, bool>? predicate)
+    {
+        _filter = predicate;
+        Rebuild();
+        StateHasChanged();
+    }
+
+    // Callbacks hacia el padre (Expense/Dashboard)
     [Parameter] public EventCallback<ExpenseData> OnEdit { get; set; }
     [Parameter] public EventCallback<ExpenseData> OnDelete { get; set; }
-    private string _search = "";
+
+    // Hook opcional para cuando el grid se crea
+    [Parameter] public System.Action? GridCreated { get; set; }
+
+    // ===== Estado interno =====
+    private SfGrid<ExpenseData> TransactGridRef;
+    private bool RenderGrid = true;
+    private List<ExpenseData> TransactGridData = new();
+    private string _search = string.Empty;
+    private Func<ExpenseData, bool>? _filter;
 
     protected override void OnInitialized()
     {
-        ExpenseDataService.OnChanged += HandleServiceChanged;
+        ExpenseDataService.OnChanged += OnDataChanged;
         Rebuild();
     }
 
-    private void HandleServiceChanged()
+    private void OnDataChanged()
     {
         Rebuild();
         InvokeAsync(StateHasChanged);
@@ -63,39 +155,33 @@
 
     private void Rebuild()
     {
-        // Trae la ventana actual desde el servicio
-        var data = ExpenseDataService?.ExpenseData ?? new List<ExpenseData>();
-        Items = data.OrderByDescending(x => x.dateTime).ToList();
+        var data = (ExpenseDataService?.ExpenseData ?? new List<ExpenseData>()).AsEnumerable();
 
+        // Aplica filtro del FilterMenu (cliente)
+        if (_filter is not null)
+            data = data.Where(_filter);
+
+        // Aplica búsqueda libre
         if (!string.IsNullOrWhiteSpace(_search))
-            Items = Items.Where(MatchesSearch).ToList();
+        {
+            var q = _search.ToLowerInvariant();
+            data = data.Where(x =>
+                (x.Category ?? string.Empty).ToLowerInvariant().Contains(q) ||
+                (x.Description ?? string.Empty).ToLowerInvariant().Contains(q) ||
+                (x.PaymentMode ?? string.Empty).ToLowerInvariant().Contains(q) ||
+                (x.EmployeeName ?? string.Empty).ToLowerInvariant().Contains(q) ||
+                 x.Amount.ToString("F2").Contains(q) ||
+                 x.dateTime.ToString("dd/MM/yyyy").Contains(q)
+            );
+        }
+
+        TransactGridData = data
+            .OrderByDescending(x => x.dateTime)
+            .ToList();
     }
 
-    private bool MatchesSearch(ExpenseData x)
+    public void Dispose()
     {
-        var q = _search.ToLowerInvariant();
-        return (x.Category?.ToLowerInvariant().Contains(q) ?? false)
-            || (x.Description?.ToLowerInvariant().Contains(q) ?? false)
-            || (x.PaymentMode?.ToLowerInvariant().Contains(q) ?? false)
-            || (x.EmployeeName?.ToLowerInvariant().Contains(q) ?? false);
+        ExpenseDataService.OnChanged -= OnDataChanged;
     }
-
-    // ← llamado por Expense.razor
-    public Task ReloadAsync()
-    {
-        Rebuild();
-        StateHasChanged();
-        return Task.CompletedTask;
-    }
-
-    // ← llamado por tu buscador: ContentRef.Search(SearchValue)
-    public Task Search(string query)
-    {
-        _search = query?.Trim() ?? "";
-        Rebuild();
-        StateHasChanged();
-        return Task.CompletedTask;
-    }
-
-    public void Dispose() => ExpenseDataService.OnChanged -= HandleServiceChanged;
 }

@@ -19,9 +19,8 @@ namespace ExpenseTracker.Service
         // Todo lo que viene de B4A en la ventana activa
         public List<ExpenseData> ExpenseData { get; private set; } = new();
 
-        public UserInfo UserInfo { get; set; }
-        public List<CategoryData> CategoryIncomeData { get; set; }
-        public List<CategoryData> CategoryExpenseData { get; set; }
+        public List<CategoryData> CategoryIncomeData { get; set; } = new();
+        public List<CategoryData> CategoryExpenseData { get; set; } = new();
         public string CurrentBalance { get; set; }
         public IEnumerable<ExpenseData> CurrentExpenseData { get; set; }
         public event Action OnChange;
@@ -49,49 +48,47 @@ namespace ExpenseTracker.Service
         {
             CurrentExpenseData = currentExpenseData;
         }
-
-        public ExpenseDataService()
+        public void IniteCats()
         {
-            //StartDate = new DateTime(2019, 06, 01, 00, 00, 00);
-            //EndDate = new DateTime(2019, 11, 30, 23, 59, 59);
-            CurrentBalance = "$0";
-
-            UserInfo = new UserInfo { FirstName = "Nicholas", FullName = "Nicholas Delacruz", Email = "nicholas@gmail.com" };
-
-            CategoryIncomeData = new List<CategoryData>();
-            CategoryIncomeData.AddRange(new List<CategoryData>
+            CategoryIncomeData = new List<CategoryData>
             {
-                new CategoryData { Class = "category-icon Interests", Category = "Interests", Id = "Interests" },
-                new CategoryData { Class = "category-icon Business", Category = "Business", Id = "Business" },
-                new CategoryData { Class = "category-icon Extra income", Category = "Extra income", Id = "Extra income" },
-                                new CategoryData { Class = "category-icon Personal Care", Category = "Consultas", Id = "Consultas" },
+                //new CategoryData { Class = "category-icon Interests",     Category = "Interests",     Id = "Interests" },
+                //new CategoryData { Class = "category-icon Business",      Category = "Business",      Id = "Business" },
+                new CategoryData { Class = "category-icon Ingreso",  Category = "Ingreso",  Id = "Extra income" },
+                new CategoryData { Class = "category-icon Consultas", Category = "Consultas",     Id = "Consultas" },
+            };
 
-            });
-
-            CategoryExpenseData = new List<CategoryData>();
-            CategoryExpenseData.AddRange(new List<CategoryData>
+            CategoryExpenseData = new List<CategoryData>
             {
-                new CategoryData { Class = "category-icon Rent", Category = "Mortgage / Rent", Id = "Mortgage / Rent" },
-                new CategoryData { Class = "category-icon Food", Category = "Food", Id = "Food" },
-                new CategoryData { Class = "category-icon Bills", Category = "Bills", Id = "Bills" },
-                new CategoryData { Class = "category-icon Utilities", Category = "Utilities", Id = "Utilities" },
-                new CategoryData { Class = "category-icon Transportation", Category = "Transportation", Id = "Transportation" },
-                new CategoryData { Class = "category-icon Insurance", Category = "Insurance", Id = "Insurance" },
-                new CategoryData { Class = "category-icon Shopping", Category = "Shopping", Id = "Shopping" },
-                new CategoryData { Class = "category-icon Entertainment", Category = "Entertainment", Id = "Entertainment" },
-                new CategoryData { Class = "category-icon Health Care", Category = "Health Care", Id = "Health Care" },
-                new CategoryData { Class = "category-icon Housing", Category = "Housing", Id = "Housing" },
-                new CategoryData { Class = "category-icon Taxes", Category = "Tax", Id = "Tax" },
-                new CategoryData { Class = "category-icon Clothing", Category = "Clothing", Id = "Clothing" },
-                new CategoryData { Class = "category-icon Education", Category = "Education", Id = "Education" },
-                new CategoryData { Class = "category-icon Miscellaneous", Category = "Miscellaneous", Id = "Miscellaneous" },
-                                new CategoryData { Class = "category-icon Salary", Category = "Salario", Id = "Salary" },
-
-            });
-
-            ExpenseData = new List<ExpenseData>();
-
+                new CategoryData { Class = "category-icon Renta",           Category = "Renta", Id = "Rent" },
+                new CategoryData { Class = "category-icon Comida",           Category = "Comida",            Id = "Food" },
+                new CategoryData { Class = "category-icon Bills",          Category = "Servicios",           Id = "Bills" },
+                new CategoryData { Class = "category-icon Servicios",      Category = "Reparaciones",       Id = "Utilities" },
+                new CategoryData { Class = "category-icon Viaticos", Category = "Viaticos",  Id = "Transportation" },
+                new CategoryData { Class = "category-icon Accidentes",      Category = "Accidentes",       Id = "Insurance" },
+                new CategoryData { Class = "category-icon Insumos",       Category = "Insumos",        Id = "Shopping" },
+                //new CategoryData { Class = "category-icon Entertainment",  Category = "Entertainment",   Id = "Entertainment" },
+                //new CategoryData { Class = "category-icon Health Care",    Category = "Health Care",     Id = "Health Care" },
+                //new CategoryData { Class = "category-icon Housing",        Category = "Housing",         Id = "Housing" },
+                new CategoryData { Class = "category-icon Impuestos",          Category = "Impuestos",             Id = "Tax" },
+                //new CategoryData { Class = "category-icon Clothing",       Category = "Clothing",        Id = "Clothing" },
+                //new CategoryData { Class = "category-icon Education",      Category = "Education",       Id = "Education" },
+                new CategoryData { Class = "category-icon Otros",  Category = "Otros",   Id = "Miscellaneous" },
+                new CategoryData { Class = "category-icon Salario",         Category = "Salario",         Id = "Salary" },
+            };
 
         }
+        public ExpenseDataService()
+        {
+            
+            ExpenseData = new List<ExpenseData>();
+        }
+
+        //// << ctor inyectado: encadena al anterior >>
+        //public ExpenseDataService(TransactionService remote) : this()
+        //{
+        //    _remote = remote;
+        //}
+
     }
 }

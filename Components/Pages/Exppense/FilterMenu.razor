@@ -1,123 +1,313 @@
 ﻿@using ExpenseTracker.Models
+@using ExpenseTracker.Service
+@using KavaPryct.Services
 @using KavaPryct.Components.Models
+@using Syncfusion.Blazor.Navigations
+@using Syncfusion.Blazor.Calendars
+@using Syncfusion.Blazor.DropDowns
+@using Syncfusion.Blazor.Buttons
+@using Syncfusion.Blazor.Inputs
+@inject ExpenseDataService ExpenseDataService
 
-@if (_visible)
-{
-    <div class="fixed inset-0 bg-black/50 z-40" @onclick="OnClose"></div>
-    <div class="fixed right-0 top-0 h-full w-[360px] bg-base-100 shadow-xl p-4 z-50 overflow-auto">
-        <div class="flex items-center justify-between pb-2 border-b mb-4">
-            <h3 class="text-lg font-semibold">Filtros</h3>
-            <button class="btn btn-sm" @onclick="OnClose">✕</button>
-        </div>
+<div>
+    <span id="filter-toggle" class="navbar-toggle e-icon" @onclick="ShowFilterMenu"></span>
+    <div class="filter-container">
+        <SfSidebar @ref="Sidebar"
+                   Width="270px"
+                   MediaQuery="min-width: 1101px"
+                   Position="SidebarPosition.Right"
+                   IsOpen="@sliderOpen"
+                   Created="@SidebarCreated">
+            <ChildContent>
+                <div class="sidebar-wrapper-filter">
+                    <div>
+                        <div class="filter-head">
+                            <span class="e-icon filter-icon filter-head-item"></span>
+                            <span class="filter-txt filter-head-item">Filters</span>
+                        </div>
+                    </div>
 
-        <div class="space-y-4">
-            <div>
-                <label class="block text-sm font-medium mb-1">Empleado</label>
-                <select class="select select-bordered w-full" @bind="EmpleadoId">
-                    <option value="">Todos</option>
-                    @foreach (var e in Empleados ?? Enumerable.Empty<EmpleadosModel>())
-                    {
-                        <option value="@e.ObjectId">@e.NombreCorto</option>
-                    }
-                </select>
-            </div>
+                    <div class="expense-filter-container">
 
-            <div class="grid grid-cols-2 gap-2">
-                <div>
-                    <label class="block text-sm font-medium mb-1">Monto mínimo</label>
-                    <input type="number" class="input input-bordered w-full" @bind-value="MontoMin" step="0.01" />
+                        <!-- RANGO DE FECHAS (impacta servidor/servicio) -->
+                        <label class="label-font">Select a range</label>
+                        <div class='filter-date-range filter-item'>
+                            <SfDateRangePicker TValue="DateTime"
+                                               CssClass="DateTime"
+                                               ShowClearButton="false"
+                                               Format="MM/dd/yyyy"
+                                               AllowEdit="false"
+                                               StartDate="@ExpenseDataService.StartDate"
+                                               EndDate="@ExpenseDataService.EndDate"
+                                               Min="@minDate"
+                                               Max="@maxDate">
+                                <DateRangePickerEvents TValue="DateTime"
+                                                       ValueChange="DateRangeChanged">
+                                </DateRangePickerEvents>
+                            </SfDateRangePicker>
+                        </div>
+
+                        <!-- EMPLEADO -->
+                        <label class="label-font">Employee</label>
+                        <div class="filter-item">
+                            <SfDropDownList TItem="EmpleadosModel"
+                                            TValue="string"
+                                            DataSource="@EmpleadosList"
+                                            Placeholder="Select Employee"
+                                            Value="@EmpleadoId"
+                                            AllowFiltering="true"
+                                            Change="@( (ChangeEventArgs<string, EmpleadosModel> e) => { EmpleadoId = e?.Value; UpdatePredicate(); } )">
+                                <DropDownListFieldSettings Text="NombreCorto" Value="ObjectId"></DropDownListFieldSettings>
+                            </SfDropDownList>
+                        </div>
+
+                        <!-- CATEGORÍAS -->
+                        <label class="label-font">Category</label>
+                        <div class="category filter-item">
+                            <SfMultiSelect TValue="string[]"
+                                           TItem="FilterCategory"
+                                           DataSource="@filterCategoryList"
+                                           Mode="@VisualMode.Box"
+                                           Placeholder="Select Categories"
+                                           HideSelectedItem="true"
+                                           ClosePopupOnSelect="false"
+                                           Value="@filterCategories">
+                                <MultiSelectEvents TValue="string[]" TItem="FilterCategory"
+                                                   OnValueSelect="@(_ => UpdatePredicate())"
+                                                   OnValueRemove="@(_ => UpdatePredicate())"
+                                                   Cleared="@(_ => { filterCategories = Array.Empty<string>(); UpdatePredicate(); })">
+                                </MultiSelectEvents>
+                                <MultiSelectFieldSettings Text="Text" Value="Value"></MultiSelectFieldSettings>
+                            </SfMultiSelect>
+                        </div>
+
+                        <!-- CASHFLOW -->
+                        <label class="label-font bottom-align">Cashflow</label>
+                        <div class="cashflow filter-item">
+                            <SfCheckBox TChecked="bool" Label="Income" @bind-Checked="incomeChecked" CssClass="TransactionType" ValueChange="UpdatePredicate"></SfCheckBox>
+                            <SfCheckBox TChecked="bool" Label="Expense" @bind-Checked="expenseChecked" CssClass="TransactionType" ValueChange="UpdatePredicate"></SfCheckBox>
+                        </div>
+
+                        <!-- MÉTODO DE PAGO -->
+                        <label class="label-font bottom-align">Payment Method</label>
+                        <div class="paymentModes filter-item">
+                            <SfCheckBox TChecked="bool" Label="Efectivo" @bind-Checked="efectivoChecked" CssClass="PaymentMode" ValueChange="UpdatePredicate"></SfCheckBox>
+                            <SfCheckBox TChecked="bool" Label="Transferencia" @bind-Checked="transferChecked" CssClass="PaymentMode" ValueChange="UpdatePredicate"></SfCheckBox>
+                            <br /><br />
+                            <SfCheckBox TChecked="bool" Label="Tarjeta" @bind-Checked="tarjetaChecked" CssClass="PaymentMode" ValueChange="UpdatePredicate"></SfCheckBox>
+                        </div>
+
+                        <!-- MONTO -->
+                        <div>
+                            <label class="label-font">Amount</label>
+                            <div class='amount-filter'>
+                                <div class='min-numeric amt-filter'>
+                                    <label class="inlineAlign minLabel">Min :</label>
+                                    <SfNumericTextBox TValue="decimal?" CssClass="inlineAlign" Width="80px" Format="c0"
+                                                      ShowSpinButton="false" @bind-Value="minAmount" Min="0" Max="100000">
+                                        <NumericTextBoxEvents TValue="decimal?" ValueChange="@(_ => UpdatePredicate())"></NumericTextBoxEvents>
+                                    </SfNumericTextBox>
+                                </div>
+                                <span class='amt-filter separateLine'></span>
+                                <div class='max-numeric amt-filter'>
+                                    <label class="inlineAlign maxLabel">Max :</label>
+                                    <SfNumericTextBox TValue="decimal?" CssClass="inlineAlign" Width="80px" Format="c0"
+                                                      ShowSpinButton="false" @bind-Value="maxAmount" Min="0" Max="1000000">
+                                        <NumericTextBoxEvents TValue="decimal?" ValueChange="@(_ => UpdatePredicate())"></NumericTextBoxEvents>
+                                    </SfNumericTextBox>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ACCIONES -->
+                        <div class="mt-3">
+                            <SfButton CssClass="e-primary" OnClick="Apply">Apply</SfButton>
+                            <SfButton CssClass="e-flat" OnClick="Clear" style="margin-left:8px;">Clear</SfButton>
+                            <SfButton CssClass="e-flat" OnClick="HideFilterMenu" style="float:right;">Close</SfButton>
+                        </div>
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-sm font-medium mb-1">Monto máximo</label>
-                    <input type="number" class="input input-bordered w-full" @bind-value="MontoMax" step="0.01" />
-                </div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-2">
-                <div>
-                    <label class="block text-sm font-medium mb-1">Desde</label>
-                    <input type="date" class="input input-bordered w-full" @bind-value="Desde" />
-                </div>
-                <div>
-                    <label class="block text-sm font-medium mb-1">Hasta</label>
-                    <input type="date" class="input input-bordered w-full" @bind-value="Hasta" />
-                </div>
-            </div>
-
-            <div class="flex gap-2">
-                <button class="btn btn-primary" @onclick="Apply">Aplicar</button>
-                <button class="btn btn-ghost" @onclick="Clear">Limpiar</button>
-            </div>
-        </div>
+            </ChildContent>
+        </SfSidebar>
     </div>
-}
+</div>
+
+<div class="@overlayClass" @onclick="HideFilterMenu"></div>
+
 
 @code {
+    // ------- Parámetros -------
     [Parameter] public IEnumerable<EmpleadosModel>? Empleados { get; set; }
-    [Parameter] public bool _visible { get; set; }
-    [Parameter] public EventCallback OnClose { get; set; }
     [Parameter] public EventCallback<Func<ExpenseData, bool>?> OnFilterChanged { get; set; }
+    private string overlayClass = string.Empty;
 
+    // ------- Sidebar state -------
+    private SfSidebar Sidebar;
+    private bool sliderOpen = false;
+
+    // ------- Date limits (ajusta según tu app) -------
+    private DateTime minDate = new DateTime(2023, 1, 1);
+    private DateTime maxDate = DateTime.Today.AddYears(1);
+
+    // ------- Empleado -------
+    private List<EmpleadosModel> EmpleadosList => (Empleados ?? Enumerable.Empty<EmpleadosModel>()).ToList();
     private string? EmpleadoId;
-    private decimal? MontoMin, MontoMax;
-    private DateTime? Desde, Hasta;
 
-    // private async Task Apply()
-    // {
-    //     Func<ExpenseData, bool> predicate = x =>
-    //     {
-    //         if (!string.IsNullOrEmpty(EmpleadoId) && x.EmployeeObjectId != EmpleadoId) return false;
-    //         if (MontoMin.HasValue && x.Amount < MontoMin.Value) return false;
-    //         if (MontoMax.HasValue && x.Amount > MontoMax.Value) return false;
-    //         if (Desde.HasValue && x.dateTime.Date < Desde.Value.Date) return false;
-    //         if (Hasta.HasValue && x.dateTime.Date > Hasta.Value.Date) return false;
-    //         return true;
-    //     };
+    // ------- Categorías -------
+    public class FilterCategory { public string Text { get; set; } public string Value { get; set; } }
+    private List<FilterCategory> filterCategoryList = new();
+    private string[] filterCategories = Array.Empty<string>();
 
-    //     await OnFilterChanged.InvokeAsync(predicate);
-    //     await OnClose.InvokeAsync();
-    // }
+    // ------- Cashflow -------
+    private bool incomeChecked = true;
+    private bool expenseChecked = true;
 
-    
-    // --- NUEVOS MÉTODOS PÚBLICOS ---
+    // ------- Payment method (mapea a tu enum MetodosPago) -------
+    private bool efectivoChecked = true;
+    private bool transferChecked = true;
+    private bool tarjetaChecked = true;
+
+    // ------- Amount -------
+    private decimal? minAmount;
+    private decimal? maxAmount;
+
+    // ------- Ciclo de vida -------
+    protected override void OnInitialized()
+    {
+        BuildCategoriesFromData();
+    }
+
+    private void BuildCategoriesFromData()
+    {
+        // Construye lista de categorías desde los datos actuales del servicio
+        var cats = (ExpenseDataService?.ExpenseData ?? new List<ExpenseData>())
+            .Select(x => x.Category)
+            .Where(s => !string.IsNullOrWhiteSpace(s))
+            .Select(s => s!.Trim())
+            .Distinct()
+            .OrderBy(s => s)
+            .ToList();
+
+        filterCategoryList = cats.Select(s => new FilterCategory { Text = s, Value = s }).ToList();
+    }
+
+    // ------- API pública -------
     public void ShowFilterMenu()
     {
-        _visible = true;
+        BuildCategoriesFromData();
+        sliderOpen = true;
         StateHasChanged();
     }
 
     public void HideFilterMenu()
     {
-        _visible = false;
-        StateHasChanged();
+        if (!Sidebar.IsOpen)
+        {
+            sliderOpen = true;
+            overlayClass = "overlay";
+            StateHasChanged();
+        }
     }
 
-    // Botones internos del panel
-    private async Task Apply()
-    {
-        // arma tu predicate aquí (como ya lo tenías)
-        Func<ExpenseData, bool>? predicate = BuildPredicate();
-        if (OnFilterChanged.HasDelegate)
-            await OnFilterChanged.InvokeAsync(predicate);
+    private void SidebarCreated() { /* opcional hook */ }
 
-        _visible = false;
-        await InvokeAsync(StateHasChanged);
+    // ------- Rango de fechas (recarga servidor/servicio) -------
+    private async Task DateRangeChanged(RangePickerEventArgs<DateTime> args)
+    {
+        ExpenseDataService.SetDate(args.StartDate, args.EndDate);
+        await ExpenseDataService.ReloadWindowAsync(); // re-fetch B4A
+        BuildCategoriesFromData();
+        // tras recarga, aplica predicate actual (si hay suscriptores)
+        await Apply();
     }
 
-    private async Task Clear()
-    {
-        // limpia campos internos…
-        if (OnFilterChanged.HasDelegate)
-            await OnFilterChanged.InvokeAsync(null);
+    // ------- Construcción de predicate (cliente) -------
+    private Func<ExpenseData, bool>? currentPredicate;
 
-        _visible = false;
-        await InvokeAsync(StateHasChanged);
+    private void UpdatePredicate()
+    {
+        currentPredicate = BuildPredicate();
+        // no invocamos aún; solo en Apply/Live si quisieras
     }
 
     private Func<ExpenseData, bool>? BuildPredicate()
     {
-        // tu lógica de filtros (empleado, montos, fechas…)
-        return null; // ejemplo
+        // Captura estados locales
+        var empId = EmpleadoId;
+        var categoriesSel = new HashSet<string>(filterCategories ?? Array.Empty<string>(), StringComparer.OrdinalIgnoreCase);
+        var wantIncome = incomeChecked;
+        var wantExpense = expenseChecked;
+        var pay_Efectivo = efectivoChecked;
+        var pay_Transf = transferChecked;
+        var pay_Tarjeta = tarjetaChecked;
+        var minAmt = minAmount;
+        var maxAmt = maxAmount;
+
+        // Si todo está "full-open", permite null (sin filtro)
+        var everythingOpen =
+            string.IsNullOrEmpty(empId) &&
+            (categoriesSel.Count == 0) &&
+            wantIncome && wantExpense &&
+            pay_Efectivo && pay_Transf && pay_Tarjeta &&
+            !minAmt.HasValue && !maxAmt.HasValue;
+
+        if (everythingOpen) return null;
+
+        return (ExpenseData x) =>
+        {
+            if (x is null) return false;
+
+            // Empleado
+            if (!string.IsNullOrEmpty(empId) && x.EmployeeObjectId != empId) return false;
+
+            // Categoría
+            if (categoriesSel.Count > 0)
+            {
+                var cat = x.Category ?? "";
+                if (!categoriesSel.Contains(cat)) return false;
+            }
+
+            // Cashflow
+            var isIncome = x.TransactionTypeId == (int)Giro.Ingreso;
+            var isExpense = x.TransactionTypeId == (int)Giro.Egreso;
+            if ((isIncome && !wantIncome) || (isExpense && !wantExpense)) return false;
+
+            // PayMethodId (enum entero)
+            if (!pay_Efectivo && x.PayMethodId == (int)MetodosPago.Efectivo) return false;
+            if (!pay_Transf && x.PayMethodId == (int)MetodosPago.Transferencia) return false;
+            if (!pay_Tarjeta && x.PayMethodId == (int)MetodosPago.Tarjeta) return false;
+
+            // Monto
+            if (minAmt.HasValue && x.Amount < minAmt.Value) return false;
+            if (maxAmt.HasValue && x.Amount > maxAmt.Value) return false;
+
+            return true;
+        };
     }
-}
+
+    // ------- Botones -------
+    private async Task Apply()
+    {
+        UpdatePredicate();
+        if (OnFilterChanged.HasDelegate)
+            await OnFilterChanged.InvokeAsync(currentPredicate);
+
+        HideFilterMenu();
+    }
+
+    private async Task Clear()
+    {
+        EmpleadoId = null;
+        filterCategories = Array.Empty<string>();
+        incomeChecked = expenseChecked = true;
+        efectivoChecked = transferChecked = tarjetaChecked = true;
+        minAmount = maxAmount = null;
+
+        currentPredicate = null;
+
+        if (OnFilterChanged.HasDelegate)
+            await OnFilterChanged.InvokeAsync(null);
+
+        HideFilterMenu();
+    }
 }

@@ -88,6 +88,8 @@ namespace KavaPryct.Components.Models
 
         [JsonPropertyName("EstudiosId")]
         public int EstudiosLast { get; set; }
+        [JsonPropertyName("RolId")]
+        public int RolEmpleo { get; set; }
         [JsonPropertyName("EstudiosObjectId")]
         public string EstudiosObjectId { get; set; }
 
