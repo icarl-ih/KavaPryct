@@ -3,9 +3,13 @@
 @using ExpenseTracker.Service
 @using KavaPryct.Components.Models
 @using KavaPryct.Services
+@using Syncfusion.Blazor.Buttons
 @using Syncfusion.Blazor.Grids
 @using Syncfusion.Blazor.Inputs
 @using Syncfusion.Blazor.Notifications
+@using System.Reflection
+@using System.ComponentModel.DataAnnotations
+@using System.ComponentModel
 @inject ExpenseDataService ExpenseDataServices
 @inject TransactionService transactionService
 @inject EmpleadoRemoteService EmpleadoService
@@ -186,7 +190,7 @@
                                     <SfGrid DataSource="Rows" AllowPaging="true" AllowSorting="true">
                                         <GridColumns>
                                             <GridColumn Field=@nameof(SalaryRow.ShortName) HeaderText="Empleado" Width="160"></GridColumn>
-                                            <GridColumn Field=@nameof(SalaryRow.RoleName) HeaderText="Rol" Width="140"></GridColumn>
+                                            <GridColumn Field=@nameof(SalaryRow.RoleLabel) HeaderText="Rol" Width="140"></GridColumn>
                                             <GridColumn Field=@nameof(SalaryRow.Cash) HeaderText="Efectivo" Format="C2" TextAlign="TextAlign.Right" Width="130"></GridColumn>
                                             <GridColumn Field=@nameof(SalaryRow.Transfer) HeaderText="Transferencia" Format="C2" TextAlign="TextAlign.Right" Width="150"></GridColumn>
                                             <GridColumn Field=@nameof(SalaryRow.Card) HeaderText="Tarjeta" Format="C2" TextAlign="TextAlign.Right" Width="130"></GridColumn>
@@ -232,8 +236,14 @@ else
 @code {
     // Template para el footer del agregado (suma del salario sugerido)
     // Nota: AggregateTemplateContext expone Sum/Count/Avg/etc.
-    private RenderFragment<AggregateTemplateContext> FooterSuggestedTemplate => (context) => @<div class="w-100 text-end pe-2">
-        <strong>Total sugerido: @string.Format(System.Globalization.CultureInfo.CurrentCulture, "{0:C2}", context.Sum)</strong>
+    private RenderFragment<object> FooterSuggestedTemplate => (context) => @<div class="w-100 text-end pe-2">
+    @{
+        var agg = context as Syncfusion.Blazor.Grids.AggregateTemplateContext;
+        // Si tu columna es decimal, Sum será decimal?; por seguridad lo tratamos como object y formateamos
+        var sum = (context as dynamic)?.Sum ?? 0m;
+        var culture = System.Globalization.CultureInfo.CurrentCulture;
+        }
+        <strong>Total sugerido: @string.Format(culture, "{0:C2}", sum)</strong>
     </div>;
     // Estado UI
     private bool isDataLoaded = false;
@@ -405,9 +415,10 @@ else
         orderby emp.NombreCorto
         select new SalaryRow
         {
-            EmployeeId = g.Key, // este es el ObjectId del empleado
+            EmployeeId = g.Key, // ObjectId del empleado
             ShortName = emp.NombreCorto,
-            RoleName = emp.RoleName ?? "Empleado",
+            RoleId = emp.RolEmpleo,                         // <- int
+            RoleLabel = GetEnumDisplayName<RolEmpleo>(emp.RolEmpleo), // <- string desde enum
             Cash = cash,
             Transfer = transfer,
             Card = card,
@@ -415,34 +426,49 @@ else
             SuggestedSalary = Math.Round(total * (SalaryPercent / 100m), 2)
         };
 
-        Rows = query.Where(r => r.Total > 0m).ToList();
+            Rows = query.Where(r => r.Total > 0m).ToList();
+            StateHasChanged();
 
-        StateHasChanged();
     }
 
     private void ClearResults() => Rows = new();
 
     // === Utilidades para mapear método de pago (ajusta a tus valores reales) ===
-    private static bool IsCash(int? m) =>
-        m.Equals(1);
-
-    private static bool IsTransfer(int? m) =>
-        m.Equals(2);
-
-    private static bool IsCard(int? m) =>
-        m.Equals(3);
+    private static bool IsCash(int? id) => id == 1;
+    private static bool IsTransfer(int? id) => id == 2;
+    private static bool IsCard(int? id) => id == 3;
 
     // === Tipos de ejemplo: ajusta a tus modelos ===
     public class SalaryRow
     {
-        public string EmployeeId { get; set; } = string.Empty;
-        public string ShortName { get; set; } = string.Empty;
-        public string RoleName { get; set; } = string.Empty;
+        public string EmployeeId { get; set; } = "";
+        public string ShortName { get; set; } = "";
+        public int RoleId { get; set; }          // int crudo
+        public string RoleLabel { get; set; } = "";    // texto para UI
         public decimal Cash { get; set; }
         public decimal Transfer { get; set; }
         public decimal Card { get; set; }
         public decimal Total { get; set; }
         public decimal SuggestedSalary { get; set; }
+    }
+    private static string GetEnumDisplayName<TEnum>(int value) where TEnum : struct, Enum
+    {
+        if (!Enum.IsDefined(typeof(TEnum), value))
+            return $"Rol {value}";
+
+        var enumVal = (Enum)(object)(TEnum)(object)value;
+        var memInfo = enumVal.GetType().GetMember(enumVal.ToString());
+        if (memInfo.Length > 0)
+        {
+            var display = memInfo[0].GetCustomAttribute<DisplayAttribute>();
+            if (!string.IsNullOrWhiteSpace(display?.GetName()))
+                return display!.GetName()!;
+
+            var desc = memInfo[0].GetCustomAttribute<DescriptionAttribute>();
+            if (!string.IsNullOrWhiteSpace(desc?.Description))
+                return desc!.Description!;
+        }
+        return enumVal.ToString();
     }
 
     // Helpers públicos que pueden invocar tus hijos si lo requieres:

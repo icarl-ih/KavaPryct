@@ -120,9 +120,10 @@
                                         DataSource="@GdoEstudios" @bind-Value="@doctorEditModel.EstudiosLast"
                                         PopupHeight="220px" >
                             <DropDownListFieldSettings Text="Value" Value="Key">
+                            
+                            </DropDownListFieldSettings>
                             <DropDownListEvents TItem="KeyValuePair<int,string>" TValue="int"
                                                 ValueChange="EstudiosChanged" />
-                            </DropDownListFieldSettings>
                         </SfDropDownList>
 @*                         <SfTextBox CssClass='e-field' Placeholder='Education' FloatLabelType="@FloatLabelType.Always" @bind-Value="@doctorEditModel.Education"></SfTextBox>*@
                  </div>

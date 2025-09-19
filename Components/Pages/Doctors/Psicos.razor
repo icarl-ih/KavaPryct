@@ -3,6 +3,7 @@
 @using AppointmentPlanner.Data;
 @using AppointmentPlanner.Models;
 @using Syncfusion.Blazor.Buttons
+@using Syncfusion.Blazor.Calendars
 @using Syncfusion.Blazor.DropDowns
 @using Syncfusion.Blazor.Inputs
 @using Syncfusion.Blazor.Notifications
@@ -124,7 +125,7 @@
                     <ValidationMessage For="@(() => doctorEditModel.Direccion)" />
                 </div>
                 <div class="email-container">
-                    <Syncfusion.Blazor.Calendars.SfDatePicker Placeholder="Fecha de Nacimiento" @bind-Value="@doctorEditModel.FechaNac"></Syncfusion.Blazor.Calendars.SfDatePicker>
+                    <SfDateTimePicker Placeholder="Fecha de Nacimiento" @bind-Value="@doctorEditModel.FechaNac"></SfDateTimePicker>
                     <ValidationMessage For="@(() => doctorEditModel.FechaNac)"></ValidationMessage>
                 </div>
                 <div class="education-container">
@@ -141,17 +142,16 @@
                         <SfDropDownList ID="estudiosint" TItem="KeyValuePair<int,string>" TValue="int"
                                         DataSource="@GdoEstudios" @bind-Value="@doctorEditModel.EstudiosLast"
                                         PopupHeight="220px">
-                            <DropDownListFieldSettings Text="Value" Value="Key">
-                                <DropDownListEvents TItem="KeyValuePair<int,string>" TValue="int"
-                                                    ValueChange="EstudiosChanged" />
-                            </DropDownListFieldSettings>
+                            <DropDownListFieldSettings Text="Value" Value="Key"></DropDownListFieldSettings>
+                            <DropDownListEvents TItem="KeyValuePair<int,string>" TValue="int"
+                                                ValueChange="EstudiosChanged" />
                         </SfDropDownList>
                         @*                         <SfTextBox CssClass='e-field' Placeholder='Education' FloatLabelType="@FloatLabelType.Always" @bind-Value="@doctorEditModel.Education"></SfTextBox>*@
                     </div>
                     @if (doctorEditModel.EstudiosLast != 0)
                     {
                         <!-- === Datos del ESTUDIO (siempre que sea != 0) === -->
-                        <div class="e-card e-mt-2 e-p-2">
+                        <div class="department">
                             <h5 class="e-mb-2">Datos del estudio</h5>
                             <div class="e-row e-g-2">
                                 <div class="e-col-12">
@@ -174,7 +174,7 @@
                         @if (doctorEditModel.EstudiosLast == 4)
                         {
                             <!-- === POSGRADOS (solo cuando el valor es 4) === -->
-                            <div class="e-card e-mt-3 e-p-2">
+                            <div class="education">
                                 
                                 <div class="e-row e-g-2 e-mb-2 e-p-2 e-border">
                                     <SfRadioButton TChecked="string"
