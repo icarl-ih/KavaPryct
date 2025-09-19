@@ -14,13 +14,13 @@
             <div class='underline'></div>
         </div>
     </header>
-    <div class="control-container">
+    @* <div class="control-container">
         <div class='label-text'>Default View</div>
         <SfDropDownList CssClass='preference-drop-down' ID='CurrentView' @bind-Value="@selectedView" Width="335px" DataSource="@views">
             <DropDownListEvents TItem="TextValueData" TValue="string" ValueChange="onViewChange"></DropDownListEvents>
             <DropDownListFieldSettings Text="Text" Value="Value"></DropDownListFieldSettings>
         </SfDropDownList>
-    </div>
+    </div> *@
     <div class="control-container">
         <div class='label-text'>Calendar Start Time</div>
         <SfDropDownList CssClass='preference-drop-down' ID='CalendarStart' @bind-Value="@selectedStartHour" Width="335px" DataSource="@startHours">

@@ -44,7 +44,8 @@
                                 @bind-SelectedDate="@currentDate"
                                 WorkDays="@workDay"
                                 FirstDayOfWeek="@calendarDayOfWeek"
-                                @bind-CurrentView="@sceduleView">
+                                @bind-CurrentView="@sceduleView"
+                                TimeFormat="HH:mm">
 
                         <ScheduleEvents TValue="CitasModel"
                                         OnPopupOpen="OnPopupOpen"
@@ -76,7 +77,7 @@
                                     <div class="e-row">
                                         <div class="e-col-6">
                                             <label>Nombre completo</label>
-                                            <SfTextBox @bind-Value="c.PacienteNombre"></SfTextBox>
+                                            <SfTextBox @bind-Value="c.PacienteNombre" CssClass="input-style input-uppercase"></SfTextBox>
                                         </div>
                                         <div class="e-col-3">
                                             <label>Edad</label>
@@ -104,7 +105,7 @@
                                         </div>
                                         <div class="e-col-8">
                                             <label>Motivo de consulta</label>
-                                            <SfTextBox @bind-Value="c.MotivoConsulta" Multiline="true"></SfTextBox>
+                                            <SfTextBox @bind-Value="c.MotivoConsulta" Multiline="true" CssClass="input-style input-uppercase"></SfTextBox>
                                         </div>
                                         
                                     </div>
@@ -238,7 +239,7 @@
                     </div>
 
                     <div class="title-container">
-                        <h2 class="title-text">Waiting List</h2>
+                        <h2 class="title-text">LISTA DE ESPERA</h2>
                     </div>
 
                     @* ---------- TREEVIEW: todas las citas con StatusCitaId == 1 ---------- *@
@@ -348,6 +349,11 @@ else
     .e-break {
         background: rgba(255, 99, 71, .15);
     }
+
+    .input-uppercase input {
+        text-transform: uppercase;
+    }
+
 </style>
 @code {
     // ----------------- REFERENCIAS Y ESTADO -----------------
@@ -368,7 +374,7 @@ else
     private DateTime currentDate;
     private string startHour;
     private string endHour;
-    private int[] workDay = new int[] { 0, 1, 2, 3, 4, 5, 6 }; // Domingo..Sábado
+    private int[] workDay = new int[] { 1, 2, 3, 4, 5, 6 }; // Domingo..Sábado
     private View sceduleView;
     private List<EmpleadosModel> Psicos = new List<EmpleadosModel>();
     private List<CitasModel> scheduleEventData = new();
@@ -421,7 +427,7 @@ else
     {
         // Trae todas las citas inicialmente (sin filtro)
         var citas = await CitasService.GetAllCitasAsync();
-        scheduleEventData = citas?.Where(c=>c.StatusCitaId>1).OrderBy(c => c.StartLocal).ToList() ?? new();
+        scheduleEventData = citas?.Where(c=>c.StatusCitaId==0||c.StatusCitaId>1).OrderBy(c => c.StartLocal).ToList() ?? new();
 
         // Waiting list = todas con StatusCitaId == 1
         RefreshWaitingListFromCurrent(citas);
@@ -527,9 +533,10 @@ else
             else
             {
                 // aquí puedes aplicar defaults como +1h si hace falta
-                if (c.EndLocal == default || c.EndLocal <= c.StartLocal)
-                    c.EndLocal = c.StartLocal.AddHours(1);
+                // if (c.EndLocal == default || c.EndLocal <= c.StartLocal)
+
             }
+            c.EndLocal = c.StartLocal.AddHours(1);
         }
 
         // Edición de una cita existente: si cambian Start, mantenemos +1h (opcional)
@@ -597,11 +604,11 @@ else
                         PaymentMode = GetDisplay(c.PayMethodId),TransactionTypeId = 1
                     };
                     await transactionService.CreateMovementeAsync(newingreso);
-                    
+
                 }
 
                 await CitasService.CreateCitaAsync(c);
-                
+
 
 
                 // Llama a tu servicio para POST -> /classes/Citas
@@ -627,6 +634,10 @@ else
                         PaymentMode = GetDisplay(c.PayMethodId),TransactionTypeId = 1
                     };
                     await transactionService.CreateMovementeAsync(newingreso);
+                }else if(c.StatusCitaId == 201)
+                {
+                    await CitasService.CreateCitaAsync(c);
+                    break;
                 }
                 await CitasService.UpdateCitaAsync(c);
 
@@ -682,7 +693,7 @@ else
             var citas = await CitasService.GetAllCitasAsync();
             scheduleEventData = citas?.OrderBy(c => c.StartLocal).ToList() ?? new();
 
-            workDay = new int[] {  1, 2, 3, 4, 5};
+            workDay = new int[] {  1, 2, 3, 4, 5,6};
 
             // refresca waiting list
             RefreshWaitingListFromCurrent(citas);

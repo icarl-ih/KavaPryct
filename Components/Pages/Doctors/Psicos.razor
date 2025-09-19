@@ -48,50 +48,72 @@
                     </ValueTemplate>
                 </DropDownListTemplates>
             </SfDropDownList>
-            <SfButton CssClass="e-normal" @onclick="@onAddDoctor" IsPrimary="true">Add New Doctor</SfButton>
+            <SfButton CssClass="e-normal" @onclick="@onAddDoctor" IsPrimary="true">Add New Empleado</SfButton>
         </div>
-        <div class="specialist-display">
-            @foreach (var data in empleados)
-            {
-                <div class="e-cards specialist-item" id="Specialist_@(data.ObjectId)" @onclick="@(e => onSpecialistClick(e, data.ObjectId))">
-                    <div class="e-card-content">
-                        <div class="specialist-image">
-@*                             <img class="profile" src="css/appoinment/assets/images/@(data.Text).png" alt="doctor" /> *@
-                            <span></span>
-                        </div>
-                    </div>
-                    <div class="specialist-detail">
-                        @foreach(var std in estudios)
-                        {
-                            <div class="name">
-                                <span>@((std.Posgrados?.Any() ?? false)? string.Join(", ", std.Posgrados.Select(p => p.Abrv.ToUpperInvariant())): std.Abrv) @data.NombreCorto</span>
+            <div class="specialist-display">
+                @foreach (var data in empleados)
+                {
+                    // Busca el estudio del empleado (si existe)
+                    var estudioEmpleado = estudios.FirstOrDefault(s => s.ObjectId == data.EstudiosObjectId);
+
+                    <div class="e-cards specialist-item"
+                         id="Specialist_@(data.ObjectId)"
+                         @onclick="@(e => onSpecialistClick(e, data.ObjectId))">
+
+                        <div class="e-card-content">
+                            <div class="specialist-image">
+                                @* <img class="profile" src="css/appoinment/assets/images/@(data.Text).png" alt="doctor" /> *@
+                                <span></span>
                             </div>
-                                
-                            if (data.EstudiosObjectId == std.ObjectId)
+                        </div>
+
+                        <div class="specialist-detail">
+                            <div class="name">
+                                @{
+                                    // Texto de prefijo (abreviaturas de posgrados o Abrv del estudio)
+                                    string prefijo = "";
+
+                                    if (estudioEmpleado is not null)
+                                    {
+                                        if (estudioEmpleado.Posgrados?.Any() == true)
+                                            prefijo = string.Join(", ", estudioEmpleado.Posgrados.Select(p => p.Abrv?.ToUpperInvariant()).Where(a => !string.IsNullOrWhiteSpace(a)));
+                                        else
+                                            prefijo = estudioEmpleado.Abrv ?? "";
+                                    }
+                                }
+                                <span>
+                                    @(!string.IsNullOrWhiteSpace(prefijo) ? $"{prefijo} " : "") @data.NombreCorto
+                                </span>
+                            </div>
+
+                            @if (estudioEmpleado is not null && estudioEmpleado.Id != 0)
                             {
                                 <div class="education">
-                                    @(std.Id != 0 ? std.Nombre.ToUpper() : "")
+                                    @estudioEmpleado.Nombre?.ToUpper()
                                 </div>
                             }
 
-                            if (std.ClavePosgrado)
+                            @if (estudioEmpleado?.ClavePosgrado == true)
                             {
                                 <div class="specialist-experience">
                                     <div class="specialization">
                                         <span class="label-text">Especialización</span>
                                         <span class="specialization-text">
-                                            @((std.Posgrados?.Any() ?? false)
-                                                                            ? string.Join(", ", std.Posgrados.Select(p => p.Nombre.ToUpperInvariant()))
-                                                                            : "SIN ESPECIALIZACIÓN (POSGRADO)")
+                                            @{
+                                                var esp = (estudioEmpleado.Posgrados?.Any() == true)
+                                                ? string.Join(", ", estudioEmpleado.Posgrados.Select(p => p.Nombre?.ToUpperInvariant()).Where(n => !string.IsNullOrWhiteSpace(n)))
+                                                : "SIN ESPECIALIZACIÓN (POSGRADO)";
+                                            }
+                                            @esp
                                         </span>
                                     </div>
                                 </div>
                             }
-                        }
+                        </div>
                     </div>
-                </div>
-            }
-        </div>
+                }
+            </div>
+
     </div>
 </div>
 
@@ -545,7 +567,7 @@ else
     private async void LoadData()
     {
         this.dutyTimings = Service.DutyTimings;
-        this.empleados = await EmpleadoService.GetAllEmpleadosAsync();
+        this.empleados = await EmpleadoService.GetAllPsicosAsync();
         this.estudios = await EmpleadoService.GetEstudiosWithPosgradosAsync();
         await Task.Delay(500);
         isDataLoaded = true;

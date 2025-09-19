@@ -58,7 +58,9 @@ namespace KavaPryct.Services
         Asignada = 1,
         ReAgendada = 201,
         Confirmada = 100,
-        Asistencia = 10
+        Asistencia = 10,
+        Inasistencia = 11
+
     }
 
     public enum EstadoCivil

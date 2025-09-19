@@ -197,9 +197,9 @@ namespace KavaPryct.Services
         {
             var parseObject = new Dictionary<string, object>
             {
-                {"Nombres",e.Nombres },
-                {"A_Paterno",e.A_Paterno }, {"A_Materno",e.A_Materno },
-                {"Direccion",e.Direccion },
+                {"Nombres",e.Nombres.ToUpper() },
+                {"A_Paterno",e.A_Paterno.ToUpper()  }, {"A_Materno",e.A_Materno.ToUpper() },
+                {"Direccion",e.Direccion.ToUpper() },
                 {"FechaNac","" }, {"EdoCivilId",e.EdoCivilId},{"EstudiosObjectId",e.EstudiosObjectId},{"EstudiosLast",e.EstudiosLast},
                 { "ContEmergObjectId",e.ContEmergObjectId }, { "RolId", e.RolEmpleo },
                 { "Telefono", e.Telefono }
@@ -233,10 +233,10 @@ namespace KavaPryct.Services
                 var parseObject = new Dictionary<string, object>
                 {
                     {"Id", e.Id },
-                    {"Nombre",e.Nombre },
+                    {"Nombre",e.Nombre.ToUpper() },
                     {"Cedula",e.Cedula },
                     {"ClavePosgrado",e.ClavePosgrado },
-                    {"Abrv",e.Abrv }
+                    {"Abrv",e.Abrv.ToUpper() }
                 };
                 var json = JsonSerializer.Serialize(parseObject);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
@@ -274,7 +274,7 @@ namespace KavaPryct.Services
             {
                 var parseobject = new Dictionary<string, object>
                 {
-                    { "Nombre",e.Nombre},{"Telefono",e.Celular},{"Parentezco",e.Parentezco}
+                    { "Nombre",e.Nombre.ToUpper()},{"Telefono",e.Celular},{"Parentezco",e.Parentezco.ToUpper()}
                 };
                 var json = JsonSerializer.Serialize(parseobject);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
@@ -307,7 +307,7 @@ namespace KavaPryct.Services
         {
             var parseobject = new Dictionary<string, object>
             {
-                { "Nombre",p.Nombre},{"TipoId",p.Id},{"Cedula",p.Cedula},{"Abrv",p.Abrv}
+                { "Nombre",p.Nombre.ToUpper() },{"TipoId",p.Id},{"Cedula",p.Cedula},{"Abrv",p.Abrv.ToUpper()}
             };
             var json = JsonSerializer.Serialize(parseobject);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
