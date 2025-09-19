@@ -4,6 +4,7 @@
 @using AppointmentPlanner.Data
 @using AppointmentPlanner.Models
 @using ExpenseTracker.Models
+@using Syncfusion.Blazor.Buttons
 @using Syncfusion.Blazor.Calendars
 @using Syncfusion.Blazor.Data
 @using Syncfusion.Blazor.Navigations
@@ -51,7 +52,7 @@
                                         OnPopupOpen="OnPopupOpen"
                                         OnCellClick="OnCellClick"
                                         OnActionBegin="OnActionBegin"
-                                        ActionCompleted="OnActionComplete">
+                                        ActionCompleted="OnActionComplete" EventRendered="OnEventRendered">
                         </ScheduleEvents>
 
                         <ScheduleWorkHours Start="09:00" End="20:00"></ScheduleWorkHours>
@@ -72,9 +73,43 @@
                             <EditorTemplate>
                                 @{
                                     var c = context as CitasModel;
+                                    var p = context as PacienteModel;
                                 }
                                 <div class="e-editor">
                                     <div class="e-row">
+                                        <div class="e-col-6">
+                                            <label>Selecciona paciente</label>
+                                            <SfDropDownList TItem="PacienteModel" TValue="string"
+                                                            DataSource="@PacientesDS"
+                                                            Placeholder="Buscar paciente..."
+                                                            AllowFiltering="true"
+                                                            PopupHeight="260px"
+                                                            ShowClearButton="true"
+                                                            @bind-Value="PacienteSeleccionadoId">
+                                                <DropDownListFieldSettings Text="PacienteNombre" Value="ObjectId" />
+                                                <DropDownListEvents TItem="PacienteModel" TValue="string"
+                                                                    ValueChange="@( (Syncfusion.Blazor.DropDowns.ChangeEventArgs<string, PacienteModel> e) => OnPacienteChanged(e, c) )" />
+                                                <DropDownListTemplates TItem="PacienteModel">
+                                                    <ItemTemplate Context="p">
+                                                        <div>
+                                                            <span class="name">@p.PacienteNombre</span>
+                                                        </div>
+                                                    </ItemTemplate>
+                                                    <ValueTemplate Context="sel">
+                                                        <div>
+                                                            <span class="name">@sel.PacienteNombre</span>
+                                                        </div>
+                                                    </ValueTemplate>
+                                                </DropDownListTemplates>
+                                            </SfDropDownList>
+                                        </div>
+                                        <div class="e-col-3">
+                                            <SfCheckBox TValue="bool"
+                                                        Label="Paciente nuevo"
+                                                        Checked="@NuevoPaciente"
+                                                        CheckedChanged="@( (bool v) => OnNuevoPacienteChanged(v,c))">
+                                            </SfCheckBox>
+                                        </div>
                                         <div class="e-col-6">
                                             <label>Nombre completo</label>
                                             <SfTextBox @bind-Value="c.PacienteNombre" CssClass="input-style input-uppercase"></SfTextBox>
@@ -270,6 +305,17 @@
                             </NodeTemplate>
                         </TreeViewTemplates>
                     </SfTreeView>
+                    <div>
+                        @foreach (var item in Legend)
+                        {
+                            <div class="legend-item" title="@item.Text">
+                                <span class="legend-swatch" style="background:@item.Bg;border-color:@item.Bc;"></span>
+                                <span class="legend-text" style="@((item.Strike ? "text-decoration:line-through;" : null))">
+                                    @item.Text
+                                </span>
+                            </div>
+                        }
+                    </div>
                 </div>
             </div>
         </div>
@@ -354,6 +400,35 @@ else
         text-transform: uppercase;
     }
 
+    .schedule-legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .5rem 1rem;
+        align-items: center;
+        margin: .5rem 0 1rem 0;
+        font-size: .925rem;
+    }
+
+        .schedule-legend .legend-item {
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+            white-space: nowrap;
+        }
+
+    .legend-swatch {
+        width: 14px;
+        height: 14px;
+        border: 2px solid transparent;
+        border-radius: 3px;
+        display: inline-block;
+        box-shadow: 0 0 0 1px rgba(0,0,0,.06) inset;
+    }
+
+    .legend-text {
+        line-height: 1;
+    }
+
 </style>
 @code {
     // ----------------- REFERENCIAS Y ESTADO -----------------
@@ -393,6 +468,60 @@ else
     private List<KeyValuePair<int, string>> EstatusCita => Enum.GetValues(typeof(EstatusCita))
                                                                 .Cast<EstatusCita>().Select(c => new KeyValuePair<int, string>((int)c, c.ToString())).ToList();
 
+    // Estado UI (puedes inicializarlos al abrir el editor)
+    private bool NuevoPaciente = true;                // Por defecto, “nuevo”
+    private string? PacienteSeleccionadoId = null;    // Valor del DropDown
+
+    // Fuentes de datos
+    private List<PacienteModel> PacientesDS = new();  // Llénala antes de abrir el editor
+    // Evento: cambio en DropDown de pacientes
+    private void OnPacienteChanged(Syncfusion.Blazor.DropDowns.ChangeEventArgs<string, PacienteModel> args, CitasModel c)
+    {
+        PacienteSeleccionadoId = args?.Value;
+        if (string.IsNullOrWhiteSpace(PacienteSeleccionadoId))
+            return;
+
+        var p = args?.ItemData ?? PacientesDS.FirstOrDefault(x => x.ObjectId == PacienteSeleccionadoId);
+        if (p is null) return;
+
+        // Al elegir un paciente, forzamos “no es nuevo”
+        NuevoPaciente = false;
+
+        // Rellena campos de la cita desde el paciente
+        c.PacienteObjectId = p.ObjectId;
+        c.PacienteNombre = p.PacienteNombre;
+        c.PacienteEdad = p.PacienteEdad;
+        c.PacienteCelular = p.PacienteCelular;
+        c.PacienteTypeId = p.PacienteTypeId;
+
+        // Si quieres traer “MotivoConsulta” guardado en ficha del paciente (opcional):
+        // c.MotivoConsulta = p.MotivoHabitual ?? c.MotivoConsulta;
+
+        StateHasChanged();
+    }
+
+    // Evento: marcar / desmarcar “Paciente nuevo”
+    private void OnNuevoPacienteChanged(bool isChecked, CitasModel c)
+    {
+        NuevoPaciente = isChecked;
+        if (NuevoPaciente)
+        {
+            PacienteSeleccionadoId = null;
+            LimpiarCamposPaciente(c);
+        }
+        StateHasChanged();
+    }
+
+    private static void LimpiarCamposPaciente(CitasModel c)
+    {
+        c.PacienteObjectId = null;
+        c.PacienteNombre = string.Empty;
+        c.PacienteEdad = 0;
+        c.PacienteCelular = string.Empty;
+        // Mantén tipo de paciente si quieres un valor por defecto, o pon 0/null:
+        // c.PacienteTypeId = 0;
+    }
+
     // Waiting list: TODAS las citas con StatusCitaId == 1 (filtrada desde scheduleEventData)
     private List<CitasModel> waitingList = new();
 
@@ -422,7 +551,50 @@ else
             await LoadData();
         }
     }
+    private static (string bg,string bc, string fg, bool strike) GetStatusColor(CitasModel c)
+    {
 
+        switch ((EstatusCita)c.StatusCitaId)
+        {
+            case Services.EstatusCita.Inasistencia: return ("#7B8089","3C3E42", "#FFFFFF", false);
+            case Services.EstatusCita.Cancelada: return ("#FF2A04","#661102", "#FFFFFF", true);
+            case Services.EstatusCita.Confirmada: return ("#1a4c62", "#64D9FF", "#FFFFFF", false);
+            case Services.EstatusCita.ReAgendada: return ("#FFAF3D","#664618" ,"#664618", false);
+            case Services.EstatusCita.Asistencia: return ("#005A00", "#005A00", "#FFFFFF", false);
+            default: return ("#7B8089","3C3E42", "#FFFFFF", false);
+
+        }
+    }
+    private static (string bg, string bc, string fg, bool strike) GetStatusColorsByEnum(EstatusCita s)
+    {
+        // Reutiliza los mismos colores que usas en GetStatusColors
+        return s switch
+        {
+            Services.EstatusCita.Confirmada => ("#1a4c62", "#64D9FF", "#FFFFFF", false),
+            Services.EstatusCita.ReAgendada => ("#FFAF3D","#664618" ,"#664618", false),
+            Services.EstatusCita.Cancelada => ("#FF2A04","#661102", "#FFFFFF", true),
+            Services.EstatusCita.Asistencia => ("#005A00", "#005A00", "#FFFFFF", false),
+            Services.EstatusCita.Inasistencia => ("#7B8089","3C3E42", "#FFFFFF", false),
+            _ => ("#7B8089","3C3E42", "#FFFFFF", false),
+        };
+    }
+    private record LegendItem(string Text, string Bg, string Bc, bool Strike);
+
+    private IEnumerable<LegendItem> Legend =>
+        new[]
+        {
+        (Services.EstatusCita.Confirmada,  "Confirmada"),
+        (Services.EstatusCita.Asignada,    "Asignada"),
+        (Services.EstatusCita.ReAgendada,  "Reagendada"),
+        (Services.EstatusCita.Cancelada,   "Cancelada"),
+        (Services.EstatusCita.Asistencia,  "Asistencia"),
+        (Services.EstatusCita.Inasistencia,"Inasistencia"),
+        }
+        .Select(t =>
+        {
+            var (bg, bc,fg, strike) = GetStatusColorsByEnum(t.Item1);
+            return new LegendItem(t.Item2, bg, bc, strike);
+        });
     private async Task LoadData()
     {
         // Trae todas las citas inicialmente (sin filtro)
@@ -478,8 +650,9 @@ else
     }
     // ----------------- EVENTOS UI -----------------
     // Mejor Task que void para poder hacer awaits si luego los necesitas
-    public Task OnPopupOpen(PopupOpenEventArgs<CitasModel> args)
+    public async Task OnPopupOpen(PopupOpenEventArgs<CitasModel> args)
     {
+        PacientesDS = await PacienteService.GetAllPacientesAsync();
         if (args.Type == PopupType.Editor)
         {
             var c = args.Data ?? new CitasModel();
@@ -511,14 +684,15 @@ else
             // No hagas args.Cancel = true aquí (quieres mostrar el editor)
         }
 
-        return Task.CompletedTask;
+        await InvokeAsync(StateHasChanged);
     }
 
     private bool dialogEsperaVisible;
     private CitasModel? pendiente;
 
-    public void OnActionBegin(ActionEventArgs<CitasModel> args)
+    public async void OnActionBegin(ActionEventArgs<CitasModel> args)
     {
+        PacientesDS = await PacienteService.GetAllPacientesAsync();
         if ((args.ActionType == ActionType.EventCreate || args.ActionType == ActionType.EventChange)
         && (args.AddedRecords?.Count > 0 || args.ChangedRecords?.Count > 0))
         {
@@ -577,33 +751,61 @@ else
     public static string GetDisplay(int id) => Display.TryGetValue(id, out var name) ? name : id.ToString();
     public async void OnActionComplete(ActionEventArgs<CitasModel> args)
     {
+        List<ExpenseData>datas= await   transactionService.GetAllTransactionsAsync();
+        var newpac = new PacienteModel();
+
         if ((args.ActionType == ActionType.EventCreate || args.ActionType == ActionType.EventChange)
         && (args.AddedRecords?.Count > 0 || args.ChangedRecords?.Count > 0))
         {
 
             foreach (var c in args.AddedRecords)
             {
-                var newpac = new PacienteModel();
                 if(c.StatusCitaId == 10)
                 {
-                    var pac = await CreatePacModel(c);
-                    newpac = await PacienteService.CreatePacienteAsync(pac);
-                    c.PacienteObjectId = newpac.ObjectId;
-
-
-                    var empleadoactivo = await EmployeService.GetEmpleadoByIdAsync(c.PsicoObjectId);
-                    var newingreso = new ExpenseData
+                    if(c.PacienteObjectId == null)
                     {
-                        Amount = c.Amount,
-                        Category = "Consulta",
-                        dateTime = DateTime.Now,
-                        Description = $"{c.PacienteNombre}-{c.MotivoConsulta}",
-                        EmployeeName = empleadoactivo.NombreCorto,
-                        EmployeeObjectId = empleadoactivo.ObjectId,
-                        PayMethodId = c.PayMethodId,
-                        PaymentMode = GetDisplay(c.PayMethodId),TransactionTypeId = 1
-                    };
-                    await transactionService.CreateMovementeAsync(newingreso);
+                        var pac = await CreatePacModel(c);
+                        newpac = await PacienteService.CreatePacienteAsync(pac);
+                        c.PacienteObjectId = newpac.ObjectId;
+                    }
+                    var Actualtran = datas.Where(d => d.citaObjectId == c.ObjectId).FirstOrDefault();
+                    var empleadoactivo = await EmployeService.GetEmpleadoByIdAsync(c.PsicoObjectId);
+
+                    if(Actualtran != null)
+                    {
+                        var updateingreso = new ExpenseData
+                        {
+                            Amount = c.Amount,
+                            Category = "Consulta",
+                            dateTime = DateTime.Now,
+                            Description = $"{c.PacienteNombre}-{c.MotivoConsulta}",
+                            EmployeeName = empleadoactivo.NombreCorto,
+                            EmployeeObjectId = empleadoactivo.ObjectId,
+                            PayMethodId = c.PayMethodId,
+                            PaymentMode = GetDisplay(c.PayMethodId),
+                            TransactionTypeId = 1, citaObjectId = c.ObjectId
+                        };
+                        await transactionService.UpdateTransactionAsync(updateingreso);
+                    }
+                    else
+                    {
+                        var newingreso = new ExpenseData
+                        {
+                            Amount = c.Amount,
+                            Category = "Consulta",
+                            dateTime = DateTime.Now,
+                            Description = $"{c.PacienteNombre}-{c.MotivoConsulta}",
+                            EmployeeName = empleadoactivo.NombreCorto,
+                            EmployeeObjectId = empleadoactivo.ObjectId,
+                            PayMethodId = c.PayMethodId,
+                            PaymentMode = GetDisplay(c.PayMethodId),
+                            TransactionTypeId = 1
+                        };
+                        await transactionService.CreateMovementeAsync(newingreso);
+                    }
+
+                    
+                    
 
                 }
 
@@ -615,25 +817,50 @@ else
             }  
             foreach(var c in args.ChangedRecords)
             {
-                var newpac = new PacienteModel();
                 if (c.StatusCitaId == 10)
                 {
-                    var pac = await CreatePacModel(c);
-                    newpac = await PacienteService.CreatePacienteAsync(pac);
-                    c.PacienteObjectId = newpac.ObjectId;
-                    var empleadoactivo = await EmployeService.GetEmpleadoByIdAsync(c.PsicoObjectId);
-                    var newingreso = new ExpenseData
+                    if (c.PacienteObjectId == null)
                     {
-                        Amount = c.Amount,
-                        Category = "Consulta",
-                        dateTime = DateTime.Now,
-                        Description = $"{c.PacienteNombre}-{c.MotivoConsulta}",
-                        EmployeeName = empleadoactivo.NombreCorto,
-                        EmployeeObjectId = empleadoactivo.ObjectId,
-                        PayMethodId = c.PayMethodId,
-                        PaymentMode = GetDisplay(c.PayMethodId),TransactionTypeId = 1
-                    };
-                    await transactionService.CreateMovementeAsync(newingreso);
+                        var pac = await CreatePacModel(c);
+                        newpac = await PacienteService.CreatePacienteAsync(pac);
+                        c.PacienteObjectId = newpac.ObjectId;
+                    }
+                    var Actualtran = datas.Where(d => d.citaObjectId == c.ObjectId).FirstOrDefault();
+                    var empleadoactivo = await EmployeService.GetEmpleadoByIdAsync(c.PsicoObjectId);
+
+                    if (Actualtran != null)
+                    {
+                        var updateingreso = new ExpenseData
+                        {
+                            Amount = c.Amount,
+                            Category = "Consulta",
+                            dateTime = DateTime.Now,
+                            Description = $"{c.PacienteNombre}-{c.MotivoConsulta}",
+                            EmployeeName = empleadoactivo.NombreCorto,
+                            EmployeeObjectId = empleadoactivo.ObjectId,
+                            PayMethodId = c.PayMethodId,
+                            PaymentMode = GetDisplay(c.PayMethodId),
+                            TransactionTypeId = 1,
+                            citaObjectId = c.ObjectId
+                        };
+                        await transactionService.UpdateTransactionAsync(updateingreso);
+                    }
+                    else
+                    {
+                        var newingreso = new ExpenseData
+                        {
+                            Amount = c.Amount,
+                            Category = "Consulta",
+                            dateTime = DateTime.Now,
+                            Description = $"{c.PacienteNombre}-{c.MotivoConsulta}",
+                            EmployeeName = empleadoactivo.NombreCorto,
+                            EmployeeObjectId = empleadoactivo.ObjectId,
+                            PayMethodId = c.PayMethodId,
+                            PaymentMode = GetDisplay(c.PayMethodId),
+                            TransactionTypeId = 1
+                        };
+                        await transactionService.CreateMovementeAsync(newingreso);
+                    }
                 }else if(c.StatusCitaId == 201)
                 {
                     await CitasService.CreateCitaAsync(c);
@@ -725,7 +952,25 @@ else
 
         StateHasChanged();
     }
-    
+    private void OnEventRendered(EventRenderedArgs<CitasModel> args)
+    {
+        if (args?.Data is null) return;
+
+        var (bg, bc, fg, strike) = GetStatusColor(args.Data);
+
+        // Prepara/mezcla atributos de estilo
+        var style = $"background:{bg};border-color:{bc};color:{fg};";
+        if (strike) style += "text-decoration:line-through;opacity:0.9;";
+
+        if (args.Attributes is null)
+            args.Attributes = new Dictionary<string, object>();
+
+        // Si ya hay un style previo, concaténalo
+        if (args.Attributes.TryGetValue("style", out var existing) && existing is string prev && !string.IsNullOrWhiteSpace(prev))
+            args.Attributes["style"] = prev.TrimEnd().TrimEnd(';') + ";" + style;
+        else
+            args.Attributes["style"] = style;
+    }
     public async void NodeDragStop(DragAndDropEventArgs args)
     {
         args.Cancel = true;

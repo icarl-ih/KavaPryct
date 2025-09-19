@@ -14,6 +14,7 @@
 @inject SfDialogService DialogService;
 @inject EmpleadoRemoteService EmployeService
 @inject PacienteService PacienteService
+@inject CitasService citasService
 
 
 @implements IDisposable;
@@ -52,7 +53,8 @@
         </div>
         <div class="patient-display">
                 <SfGrid TItem="PacienteModel" @ref="gridObj" DataSource="@filteredPatients">
-                    <GridEditSettings AllowAdding="true" AllowEditing="true" AllowEditOnDblClick="true" Mode="EditMode.Normal" />
+                    <GridEvents TValue="PacienteModel" RowSelected="onRowSelected" OnRecordDoubleClick="onDoubleClick"></GridEvents>
+                    <GridEditSettings AllowAdding="true" AllowEditing="true" Mode="EditMode.Normal" />
                     <GridColumns>
                         <GridColumn Field=@nameof(PacienteModel.ObjectId) IsPrimaryKey="true" Visible="false" />
                         <GridColumn Field=@nameof(PacienteModel.PacienteNombre) HeaderText="Nombre" Width="180" />
@@ -78,14 +80,8 @@
 
 @if (activePatientData != null && showGridEditDialog)
 {
-        <SfDialog @ref="gridEditDialogObj"
-                  @bind-Visible="showGridEditDialog"
-                  Target="body"
-                  Width="390px"
-                  CssClass="e-edit-dialog"
-                  IsModal="true"
-                  ShowCloseIcon="true"
-                  Header="@gridEditHeader">
+        <SfDialog @ref="gridEditDialogObj" Target="body" Width="390px" @bind-Visible="@showGridEditDialog"
+                  CssClass="e-edit-dialog" IsModal="true" ShowCloseIcon="true" Header="@gridEditHeader">
             <DialogAnimationSettings Effect="@DialogEffect.Zoom"></DialogAnimationSettings>
 
             <!-- Contenido del diálogo (no va dentro de DialogTemplates) -->
@@ -352,13 +348,15 @@ else
     {
         this.showDialog(args.RowData);
     }
-    private void showDialog(PacienteModel data)
+    private async void showDialog(PacienteModel data)
     {
         saveButton = "Update";
         showGridEditDialog = true;
 
         Service.ActivePatients = activePatientData = data;
-        historyData = Service.Hospitals.Where(item => item.ObjectId.Equals(data.ObjectId)).ToList();
+        List<CitasModel> citas = await citasService.GetAllCitasAsync();
+        var citascompletas = citas.Where(c => c.StatusCitaId == 10 && c.PacienteObjectId != null).ToList();
+        historyData = citascompletas.Where(item => item.StatusCitaId == 10 && item.PacienteObjectId != null && item.PacienteObjectId.Equals(data.ObjectId)).ToList();
     }
 
     private async void onDeleteClick()

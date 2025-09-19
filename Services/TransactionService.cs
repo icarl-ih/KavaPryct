@@ -45,7 +45,7 @@ namespace KavaPryct.Services
                     {"PayMethodId",data.PayMethodId},
                     {"PaymentMode",data.PaymentMode},
                     {"EmployeeObjectId",data.EmployeeObjectId},
-                    {"EmployeeName",data.EmployeeName}
+                    {"EmployeeName",data.EmployeeName},{"citaObjectId",data.citaObjectId}
                 };
 
                 if(data.DatFecha != null)

@@ -50,11 +50,11 @@ namespace KavaPryct.Services
             {
                 var parseobject = new Dictionary<string, object>
                 {
-                    {"PacienteNombre" , c.PacienteNombre },
+                    {"PacienteNombre" , c.PacienteNombre.ToUpper() },
                     {"PacienteEdad" , c.PacienteEdad },
                     {"PacienteCelular" , c.PacienteCelular },
                     {"PacienteTypeId" , c.PacienteTypeId },
-                    {"MotivoConsulta" , c.MotivoConsulta },
+                    {"MotivoConsulta" , c.MotivoConsulta.ToUpper() },
                     {"PsicoObjectId" , c.PsicoObjectId },
                 };
 
@@ -85,11 +85,11 @@ namespace KavaPryct.Services
         {
             var parseobject = new Dictionary<string, object>
                 {
-                    {"PacienteNombre" , c.PacienteNombre },
+                    {"PacienteNombre" , c.PacienteNombre.ToUpper() },
                     {"PacienteEdad" , c.PacienteEdad },
                     {"PacienteCelular" , c.PacienteCelular },
                     {"PacienteTypeId" , c.PacienteTypeId },
-                    {"MotivoConsulta" , c.MotivoConsulta },
+                    {"MotivoConsulta" , c.MotivoConsulta.ToUpper() },
                     {"PsicoObjectId" , c.PsicoObjectId },
                 };
 

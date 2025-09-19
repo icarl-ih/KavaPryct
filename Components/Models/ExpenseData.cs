@@ -74,9 +74,12 @@ namespace ExpenseTracker.Models
         [JsonPropertyName("PaymentMode")]
         public string PaymentMode { get; set; }        // nombre del enum (display)
 
+
         // Empleado (para filtrar y calcular salario):
         [JsonPropertyName("EmployeeObjectId")]
         public string EmployeeObjectId { get; set; }
+        [JsonPropertyName("citaObjectId")]
+        public string citaObjectId { get; set; }
         [JsonPropertyName("EmployeeName")]
         public string EmployeeName { get; set; }
 

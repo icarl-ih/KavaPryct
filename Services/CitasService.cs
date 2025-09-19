@@ -57,7 +57,8 @@ namespace KavaPryct.Services
                     {"MotivoConsulta" , c.MotivoConsulta.ToUpper()  },
                     {"StatusCitaId" , c.StatusCitaId },   // 1
                     {"PsicoObjectId" , c.PsicoObjectId },
-                    {"FechaIni", "" },{"FechaFin", "" }, {"PacienteObjecId",c.PacienteObjectId}
+                    {"FechaIni", "" },{"FechaFin", "" }, {"PacienteObjecId",c.PacienteObjectId},
+                    {"Amount",c.Amount },{"IsPaid",c.IsPaid},{ "PayMethodId" ,c.PayMethodId},
                 };
                 if (c.FechaIni != null && c.FechaFin != null)
                 {
@@ -100,7 +101,11 @@ namespace KavaPryct.Services
                 {"MotivoConsulta" , c.MotivoConsulta.ToUpper() },
                 {"StatusCitaId" , c.StatusCitaId },   // 1
                 {"PsicoObjectId" , c.PsicoObjectId },
-                {"FechaIni", "" },{"FechaFin", "" } 
+                {"FechaIni", "" },{"FechaFin", "" },
+                {"Amount",c.Amount },{"IsPaid",c.IsPaid},{ "PayMethodId" ,c.PayMethodId},
+                
+                {"PacienteObjectId",c.PacienteObjectId }
+
             };
             if(c.FechaIni != null && c.FechaFin != null)
             {
