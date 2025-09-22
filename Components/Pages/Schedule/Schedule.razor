@@ -380,6 +380,7 @@
 }
 else
 {
+    <SfMessage Severity="@currentSeverity" Visible="Isvisible">@SfMessageText</SfMessage>
     <div class="planner-dashboard-skeleton">
         <div class="appointments-skeleton">
             <SfSkeleton Shape="Syncfusion.Blazor.Notifications.SkeletonType.Rectangle" Height="780px" Width="90%"></SfSkeleton><br />
@@ -530,6 +531,9 @@ else
     private List<KeyValuePair<int, string>> EstatusCita => Enum.GetValues(typeof(EstatusCita))
                                                                 .Cast<EstatusCita>().Select(c => new KeyValuePair<int, string>((int)c, c.ToString())).ToList();
 
+    private bool Isvisible = false;
+    private MessageSeverity currentSeverity = MessageSeverity.Info;
+    private string SfMessageText;
     // Estado UI (puedes inicializarlos al abrir el editor)
     private bool NuevoPaciente = true;                // Por defecto, “nuevo”
     private string? PacienteSeleccionadoId = null;    // Valor del DropDown
@@ -593,6 +597,8 @@ else
     // ----------------- CICLO DE VIDA -----------------
     protected override async Task OnInitializedAsync()
     {
+        ExpenseTracker.Service.CommonService.OnlineStatusChanged += HandleOnlineChanged;
+
         // Config calendario desde tu servicio
         sceduleView = (View)Enum.Parse(typeof(View), Service.CalendarSettings.CurrentView as string);
         currentDate = Service.StartDate;
@@ -608,7 +614,19 @@ else
         await LoadData();
 
     }
+    private void HandleOnlineChanged(object? sender, bool online)
+    {
+        isDataLoaded = online;
+        Isvisible = !online;
+        if (!online)
+        {
+            SfMessageText = "Sin Conexión a Internet";
+            currentSeverity = MessageSeverity.Info;
+        }
 
+       
+        InvokeAsync(StateHasChanged);
+    }
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
@@ -1141,5 +1159,7 @@ else
     {
         scheduleObj = null;
         ddlObj = null;
+        ExpenseTracker.Service.CommonService.OnlineStatusChanged -= HandleOnlineChanged;
+
     }
 }

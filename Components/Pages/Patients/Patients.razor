@@ -280,7 +280,6 @@ else
     }
     private List<string> historyLines = new();
 
-
     private void onAddPatient(Microsoft.AspNetCore.Components.Web.MouseEventArgs args)
     {
         saveButton = "Save";
@@ -359,7 +358,7 @@ else
     {
         saveButton = "Update";
         showGridEditDialog = true;
-
+        historyLines.Clear();
         Service.ActivePatients = activePatientData = data;
 
         // Carga solo lo necesario y filtra por el paciente
@@ -381,6 +380,8 @@ else
         }
 
         await InvokeAsync(StateHasChanged); // refresca el diálogo ya visible
+
+    }
 
     }
 

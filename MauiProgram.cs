@@ -66,6 +66,16 @@ namespace KavaPryct
                 client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
                 return new TransactionService(client);
             });
+            // Registros necesarios
+            builder.Services.AddSingleton<IConnectivity>(Connectivity.Current);
+            builder.Services.AddHttpClient(); // Para IHttpClientFactory
+
+            var app = builder.Build();
+
+            // Inicializa CommonService con dependencias de conectividad
+            var connectivity = app.Services.GetRequiredService<IConnectivity>();
+            var httpFactory = app.Services.GetRequiredService<IHttpClientFactory>();
+            CommonService.InitConnectivity(connectivity, httpFactory);
 
 #if DEBUG
             builder.Services.AddBlazorWebViewDeveloperTools();
