@@ -54,7 +54,7 @@
         <div class="patient-display">
                 <SfGrid TItem="PacienteModel" @ref="gridObj" DataSource="@filteredPatients">
                     <GridEvents TValue="PacienteModel" RowSelected="onRowSelected" OnRecordDoubleClick="onDoubleClick"></GridEvents>
-                    <GridEditSettings AllowAdding="true" AllowEditing="true" Mode="EditMode.Normal" />
+                    <GridEditSettings AllowAdding="true" AllowEditOnDblClick="false" AllowEditing="true" Mode="EditMode.Normal" />
                     <GridColumns>
                         <GridColumn Field=@nameof(PacienteModel.ObjectId) IsPrimaryKey="true" Visible="false" />
                         <GridColumn Field=@nameof(PacienteModel.PacienteNombre) HeaderText="Nombre" Width="180" />
@@ -102,17 +102,19 @@
                 </div>
 
                 <div class="field-row history-row">
-                    <label>Appointment History</label>
+                    <label>Historial</label>
                     <div id="history-wrapper">
-                        @if (historyData is not null)
+                        @if (historyLines is not null)
                         {
-                            foreach (var item in historyData)
+                            @foreach (var line in historyLines)
                             {
-                                <div class="history-content">@getHistoryFormatDate(item)</div>
+                                <div class="history-content">@line</div>
                             }
                         }
                     </div>
                 </div>
+
+
             </div>
 
             <DialogTemplates>
@@ -268,6 +270,8 @@ else
         resourceDataSource = await EmployeService.GetAllPsicosAsync();
 
     }
+    private List<string> historyLines = new();
+
 
     private void onAddPatient(Microsoft.AspNetCore.Components.Web.MouseEventArgs args)
     {
@@ -352,11 +356,17 @@ else
     {
         saveButton = "Update";
         showGridEditDialog = true;
-
+        historyLines.Clear();
         Service.ActivePatients = activePatientData = data;
         List<CitasModel> citas = await citasService.GetAllCitasAsync();
         var citascompletas = citas.Where(c => c.StatusCitaId == 10 && c.PacienteObjectId != null).ToList();
-        historyData = citascompletas.Where(item => item.StatusCitaId == 10 && item.PacienteObjectId != null && item.PacienteObjectId.Equals(data.ObjectId)).ToList();
+        historyData = citascompletas.Where(item => item.PacienteObjectId.Equals(data.ObjectId)).ToList();
+        foreach(var h in historyData)
+        {
+            var text = await getHistoryFormatDate(h);
+            historyLines.Add(text);
+        }
+
     }
 
     private async void onDeleteClick()
@@ -411,24 +421,35 @@ else
     }
 
 
-    private string getHistoryFormatDate(CitasModel data)
+    // private async Task<string> getHistoryFormatDate(CitasModel data)
+    // {
+    //     string text = "";
+    //     var doctor = await getDoctorName(data.PsicoObjectId); // <-- await
+    //     text = $"{Service.GetFormatDate(data.StartLocal, "MMM dd")} - {Service.GetFormatDate(data.EndLocal, "HH:mm")} • Cita con {doctor}";
+    //     return text;
+    // }
+    private async Task<string> getHistoryFormatDate(CitasModel data)
     {
-        return Service.GetFormatDate(data.StartLocal, "MMMM dd") + "-" + Service.GetFormatDate(data.EndLocal, "hh:mm tt") + " Cita con" + getDoctorName(data.PsicoObjectId);
+        var psico = await getDoctorName(data.PsicoObjectId);
+        var fIni = Service.GetFormatDate(data.StartLocal, "dd MMMM");
+        var hFin = Service.GetFormatDate(data.EndLocal, "HH:mm");
+        return $"{fIni} - {hFin} • Cita con {psico}";
     }
+
 
     private async Task<string> getDoctorName(string Id)
     {
         var psico = await EmployeService.GetEmpleadoByIdAsync(Id);
-        var estudiopsico = await EmployeService.GetEstudioWithPosgradosByIdAsync(psico.ObjectId);
+        var estudiopsico = await EmployeService.GetEstudioWithPosgradosByIdAsync(psico.EstudiosObjectId);
         var namepsico = "";
-        if (estudiopsico.ClavePosgrado)
-        {
-            namepsico = $"{estudiopsico.Posgrados.Select(ps => ps.Abrv)} {psico.NombreCorto}";
-        }
+        string prefijo;
+        if (estudiopsico.Posgrados?.Any() == true)
+            prefijo = string.Join(", ", estudiopsico.Posgrados.Select(p => p.Abrv?.ToUpperInvariant()).Where(a => !string.IsNullOrWhiteSpace(a)));
         else
-        {
-            namepsico = $"{estudiopsico.Abrv} {psico.NombreCorto}";
-        }
+            prefijo = estudiopsico.Abrv ?? "";
+
+        namepsico = !string.IsNullOrWhiteSpace(prefijo) ? $"{prefijo} {psico.NombreCorto} " : $"{psico.NombreCorto}";
+        
         return namepsico;
     }
 

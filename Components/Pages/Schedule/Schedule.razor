@@ -77,39 +77,43 @@
                                 }
                                 <div class="e-editor">
                                     <div class="e-row">
-                                        <div class="e-col-6">
-                                            <label>Selecciona paciente</label>
-                                            <SfDropDownList TItem="PacienteModel" TValue="string"
-                                                            DataSource="@PacientesDS"
-                                                            Placeholder="Buscar paciente..."
-                                                            AllowFiltering="true"
-                                                            PopupHeight="260px"
-                                                            ShowClearButton="true"
-                                                            @bind-Value="PacienteSeleccionadoId">
-                                                <DropDownListFieldSettings Text="PacienteNombre" Value="ObjectId" />
-                                                <DropDownListEvents TItem="PacienteModel" TValue="string"
-                                                                    ValueChange="@( (Syncfusion.Blazor.DropDowns.ChangeEventArgs<string, PacienteModel> e) => OnPacienteChanged(e, c) )" />
-                                                <DropDownListTemplates TItem="PacienteModel">
-                                                    <ItemTemplate Context="p">
-                                                        <div>
-                                                            <span class="name">@p.PacienteNombre</span>
-                                                        </div>
-                                                    </ItemTemplate>
-                                                    <ValueTemplate Context="sel">
-                                                        <div>
-                                                            <span class="name">@sel.PacienteNombre</span>
-                                                        </div>
-                                                    </ValueTemplate>
-                                                </DropDownListTemplates>
-                                            </SfDropDownList>
-                                        </div>
                                         <div class="e-col-3">
                                             <SfCheckBox TValue="bool"
                                                         Label="Paciente nuevo"
                                                         Checked="@NuevoPaciente"
-                                                        CheckedChanged="@( (bool v) => OnNuevoPacienteChanged(v,c))">
+                                                        CheckedChanged="@((bool v) => OnNuevoPacienteChanged(v, c))">
                                             </SfCheckBox>
                                         </div>
+                                        @if (NuevoPaciente)
+                                        {
+                                            <div class="e-col-6">
+                                                <label>Selecciona paciente</label>
+                                                <SfDropDownList TItem="PacienteModel" TValue="string"
+                                                                DataSource="@PacientesDS"
+                                                                Placeholder="Buscar paciente..."
+                                                                AllowFiltering="true"
+                                                                PopupHeight="260px"
+                                                                ShowClearButton="true"
+                                                                @bind-Value="PacienteSeleccionadoId">
+                                                    <DropDownListFieldSettings Text="PacienteNombre" Value="ObjectId" />
+                                                    <DropDownListEvents TItem="PacienteModel" TValue="string"
+                                                                        ValueChange="@( (Syncfusion.Blazor.DropDowns.ChangeEventArgs<string, PacienteModel> e) => OnPacienteChanged(e, c) )" />
+                                                    <DropDownListTemplates TItem="PacienteModel">
+                                                        <ItemTemplate Context="p">
+                                                            <div>
+                                                                <span class="name">@p.PacienteNombre</span>
+                                                            </div>
+                                                        </ItemTemplate>
+                                                        <ValueTemplate Context="sel">
+                                                            <div>
+                                                                <span class="name">@sel.PacienteNombre</span>
+                                                            </div>
+                                                        </ValueTemplate>
+                                                    </DropDownListTemplates>
+                                                </SfDropDownList>
+                                            </div>
+                                        }
+
                                         <div class="e-col-6">
                                             <label>Nombre completo</label>
                                             <SfTextBox @bind-Value="c.PacienteNombre" CssClass="input-style input-uppercase"></SfTextBox>
@@ -716,6 +720,7 @@ else
         // Edición de una cita existente: si cambian Start, mantenemos +1h (opcional)
         if (args.ActionType == ActionType.EventChange && (args.ChangedRecords?.Count > 0))
         {
+            NuevoPaciente = false;
             foreach (var c in args.ChangedRecords)
             {
                 if (c.StartLocal != default && c.EndLocal != default && c.EndLocal <= c.StartLocal)

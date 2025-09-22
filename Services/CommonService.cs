@@ -1,23 +1,38 @@
 ﻿using System.Globalization;
 
+using System.Globalization;
+
 namespace ExpenseTracker.Service
 {
     public static class CommonService
     {
-        public static string GetCurrencyVal(decimal val)
+        private static readonly CultureInfo EsMx = CultureInfo.GetCultureInfo("es-MX");
+
+        /// <summary>
+        /// Formatea moneda en es-MX. Por defecto sin decimales (C0).
+        /// Ej.: 12345 => $12,345 | -12345 => -$12,345
+        /// </summary>
+        public static string GetCurrencyVal(decimal val, int decimals = 0)
         {
-            CultureInfo NewCulture = new CultureInfo("en-US");
+            // Clonamos para poder ajustar el patrón negativo sin tocar la instancia global
+            var culture = (CultureInfo)EsMx.Clone();
+
+            // -$n (1) en lugar de ($n) u otros formatos
             if (val < 0)
-            {
-                NewCulture.NumberFormat.CurrencyNegativePattern = 1;
-            }
-            string formattedValue = val.ToString("C0", NewCulture);
-            return formattedValue;
+                culture.NumberFormat.CurrencyNegativePattern = 1;
+
+            string format = $"C{decimals}"; // C0, C2, etc.
+            return val.ToString(format, culture);
         }
 
-        public static string GetNumberVal(decimal val)
+        /// <summary>
+        /// Formatea número con separadores de miles en es-MX.
+        /// Por defecto sin decimales (N0).
+        /// </summary>
+        public static string GetNumberVal(decimal val, int decimals = 0)
         {
-            return val.ToString("0,0", new CultureInfo("en-US"));
+            string format = $"N{decimals}"; // N0, N2, etc.
+            return val.ToString(format, EsMx);
         }
     }
 }
