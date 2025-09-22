@@ -47,36 +47,41 @@ namespace KavaPryct.Components.Models
 
         [JsonPropertyName("Telefono")]
         public string Telefono { get; set; }
+        // -------- FECHA NACIMIENTO --------
+        // Campo solo para el UI (picker)
+        [JsonIgnore]
+        public DateTime? FechaNacLocal { get; set; }
 
+        // Campo real que va/ viene de Back4App
         [JsonPropertyName("FechaNac")]
-        public FechaModel FechaNac { get; set; }
+        public FechaModel? FechaNac { get; set; }
 
-        // UTC seguro de la fecha de nacimiento
+        // UTC seguro (cuando exista)
         [JsonIgnore]
-        public DateTime FechaNacUtc => FechaNac?.Iso.Kind == DateTimeKind.Utc
-            ? FechaNac.Iso
-            : DateTime.SpecifyKind(FechaNac?.Iso ?? default, DateTimeKind.Utc);
+        public DateTime? FechaNacUtc =>
+            FechaNac?.Iso.Kind == DateTimeKind.Utc
+                ? FechaNac.Iso
+                : FechaNac?.Iso == default ? null
+                : DateTime.SpecifyKind(FechaNac.Iso, DateTimeKind.Utc);
 
-        // Fecha de nacimiento en hora local de Monterrey
         [JsonIgnore]
-        public DateTime NacimientoDate => ConvertUtcToMonterrey(FechaNacUtc);
+        public DateTime? NacimientoLocal =>
+            FechaNacUtc is null ? null : ConvertUtcToMonterrey(FechaNacUtc.Value);
 
-        // >>> Campo calculado: Edad en años
+        // Edad (0 si no hay fecha)
         [JsonIgnore]
         public int Edad
         {
             get
             {
-                if (FechaNacUtc == default) return 0;
-                var hoyLocal = GetNowMonterrey().Date;
-                var nacimiento = NacimientoDate.Date;
-
-                int edad = hoyLocal.Year - nacimiento.Year;
-                if (hoyLocal < nacimiento.AddYears(edad)) edad--; // aún no cumple años este año
+                if (NacimientoLocal is null) return 0;
+                var hoy = GetNowMonterrey().Date;
+                var nac = NacimientoLocal.Value.Date;
+                int edad = hoy.Year - nac.Year;
+                if (hoy < nac.AddYears(edad)) edad--;
                 return Math.Max(0, edad);
             }
         }
-
         [JsonPropertyName("EdoCivilId")]
         public int EdoCivilId { get; set; }
 
@@ -122,6 +127,30 @@ namespace KavaPryct.Components.Models
                 return DateTime.Now; // fallback
             }
         }
+        public void SyncFechaLocalDesdeServidor()
+        {
+            // Llamar después de deserializar desde Back4App
+            FechaNacLocal = FechaNac?.Iso == default ? null : NacimientoLocal;
+        }
+
+        public void MapearFechaNacParaServidor()
+        {
+            // Llamar antes de serializar/guardar a Back4App
+            if (FechaNacLocal is null)
+            {
+                FechaNac = null;
+            }
+            else
+            {
+                var utc = DateTime.SpecifyKind(FechaNacLocal.Value, DateTimeKind.Local).ToUniversalTime();
+                FechaNac = new FechaModel
+                {
+                    Iso = utc  // se serializa como "yyyy-MM-ddTHH:mm:ss.fffZ"
+                };
+            }
+        }
+
+        
     }
 
 

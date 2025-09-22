@@ -53,8 +53,8 @@
         </div>
         <div class="patient-display">
                 <SfGrid TItem="PacienteModel" @ref="gridObj" DataSource="@filteredPatients">
-                    <GridEvents TValue="PacienteModel" RowSelected="onRowSelected" OnRecordDoubleClick="onDoubleClick"></GridEvents>
-                    <GridEditSettings AllowAdding="true" AllowEditOnDblClick="false" AllowEditing="true" Mode="EditMode.Normal" />
+                    <GridEvents TValue="PacienteModel" OnRecordDoubleClick="onDoubleClick"></GridEvents>
+                    <GridEditSettings AllowAdding="true" AllowEditOnDblClick="false" Mode="EditMode.Normal" />
                     <GridColumns>
                         <GridColumn Field=@nameof(PacienteModel.ObjectId) IsPrimaryKey="true" Visible="false" />
                         <GridColumn Field=@nameof(PacienteModel.PacienteNombre) HeaderText="Nombre" Width="180" />
@@ -104,7 +104,15 @@
                 <div class="field-row history-row">
                     <label>Historial</label>
                     <div id="history-wrapper">
-                        @if (historyLines is not null)
+                        @if (historyData is null)
+                        {
+                            <div class="history-empty">Selecciona un paciente…</div>
+                        }
+                        else if (historyLines.Count == 0)
+                        {
+                            <div class="history-empty">Sin citas completadas para este paciente.</div>
+                        }
+                        else
                         {
                             @foreach (var line in historyLines)
                             {
@@ -322,7 +330,9 @@ else
                     PacienteEdad = patientEditModel.PacienteEdad,
                     PacienteTypeId = patientEditModel.PacienteTypeId,
                     PsicoObjectId = patientEditModel.PsicoObjectId,
-                    MotivoConsulta = patientEditModel.MotivoConsulta
+                    MotivoConsulta = patientEditModel.MotivoConsulta,
+                    ObjectId = patientEditModel.ObjectId
+                    
 
                 };
                 await PacienteService.UpdatePacienteAsync(getRecord);
@@ -336,36 +346,41 @@ else
             }
 
         }
-        Service.Activities.Insert(0, new Activity { Name = name, Message = message, Time = "10 mins ago", Type = "patient", ActivityTime = DateTime.Now });
         await this.dialogObj.HideAsync();
     }
 
-    public void onRowSelected(RowSelectEventArgs<PacienteModel> args)
+    
+    private async Task onDoubleClick(RecordDoubleClickEventArgs<PacienteModel> args)
     {
-        if (isPatientClicked)
-        {
-            this.showDialog(args.Data);
-            this.isPatientClicked = false;
-        }
+        if (args?.RowData is null) return;
+        await ShowDialogAsync(args.RowData);
     }
-    public void onDoubleClick(RecordDoubleClickEventArgs<PacienteModel> args)
-    {
-        this.showDialog(args.RowData);
-    }
-    private async void showDialog(PacienteModel data)
+    private async Task ShowDialogAsync(PacienteModel data)
     {
         saveButton = "Update";
         showGridEditDialog = true;
-        historyLines.Clear();
+
         Service.ActivePatients = activePatientData = data;
-        List<CitasModel> citas = await citasService.GetAllCitasAsync();
-        var citascompletas = citas.Where(c => c.StatusCitaId == 10 && c.PacienteObjectId != null).ToList();
-        historyData = citascompletas.Where(item => item.PacienteObjectId.Equals(data.ObjectId)).ToList();
-        foreach(var h in historyData)
+
+        // Carga solo lo necesario y filtra por el paciente
+        var todas = await citasService.GetAllCitasAsync();
+        historyData = todas
+            .Where(c => c.PacienteObjectId != null
+                     && string.Equals(c.PacienteObjectId, data.ObjectId, StringComparison.Ordinal)
+                     && c.StatusCitaId == 10) // quita este filtro si necesitas probar
+            .ToList();
+
+        // Reconstruir líneas
+        historyLines.Clear();
+        if (historyData.Count > 0)
         {
-            var text = await getHistoryFormatDate(h);
-            historyLines.Add(text);
+            // Si getHistoryFormatDate es async:
+            var lines = await Task.WhenAll(historyData.Select(getHistoryFormatDate));
+            historyLines.AddRange(lines);
+            // Si fuera sync: historyLines.AddRange(historyData.Select(getHistoryFormatDate));
         }
+
+        await InvokeAsync(StateHasChanged); // refresca el diálogo ya visible
 
     }
 
@@ -393,7 +408,8 @@ else
             PacienteEdad = activePatientData.PacienteEdad,
             PacienteTypeId = activePatientData.PacienteTypeId,
             PsicoObjectId = activePatientData.PsicoObjectId,
-            MotivoConsulta = activePatientData.MotivoConsulta
+            MotivoConsulta = activePatientData.MotivoConsulta,
+            ObjectId = activePatientData.ObjectId
 
         };
         this.patientHeader = "Edit Patient";
@@ -462,9 +478,9 @@ else
 
     private async Task DeleteBtnClick()
     {
-        filteredPatients = ((List<PacienteModel>)filteredPatients).Where(item => item.ObjectId != activePatientData.ObjectId).ToList();
+        // filteredPatients = ((List<PacienteModel>)filteredPatients).Where(item => item.ObjectId == activePatientData.ObjectId).ToList();
         // Service.WaitingLists = Service.WaitingLists.Where(item => item.PatientId != activePatientData.Id).ToList();
-        var deleteData = ((List<PacienteModel>)filteredPatients).Where(item => item.ObjectId != activePatientData.ObjectId).FirstOrDefault();
+        var deleteData = ((List<PacienteModel>)filteredPatients).Where(item => item.ObjectId == activePatientData.ObjectId).FirstOrDefault();
         await PacienteService.DeletePacienteAsync(deleteData.ObjectId);
         await this.gridObj.DeleteRecordAsync(null, deleteData);
 

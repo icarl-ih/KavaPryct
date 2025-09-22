@@ -402,6 +402,9 @@ header .module-title .underline {
 .iconIHS-calendar:before {
     content: "\e866";
 }
+.iconIHS-phone:before {
+    content: '\ed53';
+}
 
 
 /*font family*/

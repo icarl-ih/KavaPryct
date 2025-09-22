@@ -193,9 +193,11 @@ namespace KavaPryct.Services
 
             return null;
         }
-        public async Task CreateEmpleadoAsync(EmpleadosModel e)
+        public async Task<string> CreateEmpleadoAsync(EmpleadosModel e)
         {
-            var parseObject = new Dictionary<string, object>
+            try
+            {
+                var parseObject = new Dictionary<string, object>
             {
                 {"Nombres",e.Nombres.ToUpper() },
                 {"A_Paterno",e.A_Paterno.ToUpper()  }, {"A_Materno",e.A_Materno.ToUpper() },
@@ -204,27 +206,38 @@ namespace KavaPryct.Services
                 { "ContEmergObjectId",e.ContEmergObjectId }, { "RolId", e.RolEmpleo },
                 { "Telefono", e.Telefono }
             };
-            if(e.FechaNac != null)
-            {
-                parseObject["FechaNac"] = new Dictionary<string, object>
+                if (e.FechaNac != null)
+                {
+                    parseObject["FechaNac"] = new Dictionary<string, object>
                     {
                         { "__type" , "Date"},
                         { "iso", e.FechaNac.Iso.ToUniversalTime() }
                     };
-            }
-            var json = JsonSerializer.Serialize(parseObject);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
+                }
+                var json = JsonSerializer.Serialize(parseObject);
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            var response = await _http.PostAsync("/classes/Empleados", content);
+                var response = await _http.PostAsync("/classes/Empleados", content);
 
-            var body = await response.Content.ReadAsStringAsync();
-            if (!response.IsSuccessStatusCode)
+                var body = await response.Content.ReadAsStringAsync();
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new Exception($"Parse {((int)response.StatusCode)} {response.ReasonPhrase}: {body}");
+
+                }
+
+                response.EnsureSuccessStatusCode();
+                if (!response.IsSuccessStatusCode)
+                    throw new Exception($"Parse {((int)response.StatusCode)} {response.ReasonPhrase}: {body}");
+
+
+                var result = JsonSerializer.Deserialize<EstudiosModel>(body);
+
+                return response.ReasonPhrase;
+            }catch(Exception ex)
             {
-                throw new Exception($"Parse {((int)response.StatusCode)} {response.ReasonPhrase}: {body}");
-
+                return ex.Message;
             }
-
-            response.EnsureSuccessStatusCode();
         }
         public async Task<string> CreateEstudioAsync(EstudiosModel e)
         {

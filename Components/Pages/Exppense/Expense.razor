@@ -4,12 +4,14 @@
 @using KavaPryct.Components.Models
 @using KavaPryct.Services
 @using Syncfusion.Blazor.Buttons
+@using Syncfusion.Blazor.Calendars
 @using Syncfusion.Blazor.Grids
 @using Syncfusion.Blazor.Inputs
 @using Syncfusion.Blazor.Notifications
 @using System.Reflection
 @using System.ComponentModel.DataAnnotations
 @using System.ComponentModel
+@using Syncfusion.Blazor.SplitButtons
 @inject ExpenseDataService ExpenseDataServices
 @inject TransactionService transactionService
 @inject EmpleadoRemoteService EmpleadoService
@@ -175,11 +177,35 @@
                                                       Min="0" Max="100"
                                                       Decimals="2"
                                                       Placeholder="Ej. 10 para 10%" />
-                                    <div class="form-text">Se guarda automáticamente; puedes editarlo cuando quieras.</div>
-                                </div>
+@*                                     <div class="form-text">Se guarda automáticamente; puedes editarlo cuando quieras.</div>
+ *@                                </div>
+                                <div>
+                                  <label class="form-label mb-1">Rango de fechas</label>
+                                  <SfDateRangePicker TValue="DateTime?"
+                                                     Placeholder="dd/MM/yyyy"
+                                                     Format="dd/MM/yyyy"
+                                                     Separator=" a "
+                                                     ShowClearButton="true"
+                                                     @bind-StartDate="RangeStart"
+                                                     @bind-EndDate="RangeEnd">
+                                    <!-- Presets útiles -->
+                                    <DateRangePickerPresets>
 
+                                            <DateRangePickerPreset Label="Hoy" Start="DateTime.Today" End="DateTime.Today" />
+                                            <DateRangePickerPreset Label="Últimos 7 días" Start="DateTime.Today.AddDays(-6)" End="DateTime.Today" />
+                                            <DateRangePickerPreset Label="Este mes" Start="new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1)" End="DateTime.Today" />
+                                            <DateRangePickerPreset Label="Mes anterior"
+                                              Start="new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(-1)"
+                                              End="new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddDays(-1)" />
+                                    </DateRangePickerPresets>
+
+                                    <!-- (Opcional) reaccionar al cambio de rango -->
+                                    <DateRangePickerEvents TValue="DateTime?"
+                                                           ValueChange="@( (RangePickerEventArgs<DateTime?> e) => OnRangeChanged(e) )" />
+                                  </SfDateRangePicker>
+                                </div>
                                 <div class="d-flex gap-2">
-                                    <SfButton CssClass="e-primary" OnClick="CalculateSalaries">Calcular salarios</SfButton>
+                                    <SfProgressButton Content="Calcular salarios" IsPrimary="true" CssClass="e-primary" OnClick="CalculateSalaries"></SfProgressButton>
                                     <SfButton CssClass="e-outline" OnClick="ClearResults" IsPrimary="false">Limpiar</SfButton>
                                 </div>
                             </div>
@@ -197,16 +223,7 @@
                                             <GridColumn Field=@nameof(SalaryRow.Total) HeaderText="Total Ingresos" Format="C2" TextAlign="TextAlign.Right" Width="150"></GridColumn>
                                             <GridColumn Field=@nameof(SalaryRow.SuggestedSalary) HeaderText="Salario sugerido" Format="C2" TextAlign="TextAlign.Right" Width="170"></GridColumn>
                                         </GridColumns>
-                                        <GridAggregates>
-                                            <GridAggregate>
-                                                <GridAggregateColumns>
-                                                    <GridAggregateColumn Field=@nameof(SalaryRow.SuggestedSalary)
-                                                                         Type="AggregateType.Sum"
-                                                                         FooterTemplate="@FooterSuggestedTemplate">
-                                                    </GridAggregateColumn>
-                                                </GridAggregateColumns>
-                                            </GridAggregate>
-                                        </GridAggregates>
+                                        
                                     </SfGrid>
                                 </div>
                             }
@@ -215,9 +232,8 @@
                 </div>
             </div>
         </div>
-        <FilterMenu @ref="FilterRef"></FilterMenu>
-        <TransactDialog @ref="DialogRef" OnSaved="HandleSaved"
-            OnCancel="HandleCancel"></TransactDialog>
+@*         <FilterMenu @ref="FilterRef"></FilterMenu>*@
+           <TransactDialog @ref="DialogRef" OnSaved="HandleSaved" OnCancel="HandleCancel"></TransactDialog>
     </div>
 }
 else
@@ -234,17 +250,43 @@ else
 }
 
 @code {
-    // Template para el footer del agregado (suma del salario sugerido)
-    // Nota: AggregateTemplateContext expone Sum/Count/Avg/etc.
-    private RenderFragment<object> FooterSuggestedTemplate => (context) => @<div class="w-100 text-end pe-2">
-    @{
-        var agg = context as Syncfusion.Blazor.Grids.AggregateTemplateContext;
-        // Si tu columna es decimal, Sum será decimal?; por seguridad lo tratamos como object y formateamos
-        var sum = (context as dynamic)?.Sum ?? 0m;
-        var culture = System.Globalization.CultureInfo.CurrentCulture;
-        }
-        <strong>Total sugerido: @string.Format(culture, "{0:C2}", sum)</strong>
-    </div>;
+
+    // Estado del rango (nullable)
+    private DateTime? RangeStart { get; set; }
+    private DateTime? RangeEnd { get; set; }
+
+    // (Opcional) si quieres reaccionar a cada cambio del rango
+    private void OnRangeChanged(RangePickerEventArgs<DateTime?> e)
+    {
+        RangeStart = e.StartDate;
+        RangeEnd = e.EndDate;
+        // Si prefieres recalcular automáticamente:
+        // _ = CalculateSalaries();
+        StateHasChanged();
+    }
+
+    private static DateTime EndOfDay(DateTime d)
+        => d.Date.AddDays(1).AddTicks(-1);
+
+    // Si quieres conservar el nombre GetTxnDate:
+    private static DateTime GetTxnDate(ExpenseData t) => t?.dateTime ?? default;
+
+
+
+
+    // // Template para el footer del agregado (suma del salario sugerido)
+    // // Nota: AggregateTemplateContext expone Sum/Count/Avg/etc.
+    // private RenderFragment<object> FooterSuggestedTemplate => (context) => @<div class="w-100 text-end pe-2">
+    // @{
+    //     var agg = context as Syncfusion.Blazor.Grids.AggregateTemplateContext;
+    //     // Si tu columna es decimal, Sum será decimal?; por seguridad lo tratamos como object y formateamos
+    //     var sum = (context as dynamic)?.Sum ?? 0m;
+    //     var culture = System.Globalization.CultureInfo.CurrentCulture;
+    //     }
+    //     <strong>Total sugerido: @string.Format(culture, "{0:C2}", sum)</strong>
+    // </div>;
+
+
     // Estado UI
     private bool isDataLoaded = false;
     private string SearchValue = string.Empty;
@@ -258,7 +300,7 @@ else
 
 
     // Porcentaje persistido (ej. 10 = 10%)
-    private decimal SalaryPercent { get; set; } = 10m;
+    private decimal SalaryPercent { get; set; } = 35m;
 
     // Resultado del cálculo
     private List<SalaryRow> Rows = new();
@@ -388,11 +430,28 @@ else
         await PersistPercent();
 
         Rows = new();
+        var transactions = await transactionService.GetAllTransactionsAsync();
 
-        // === Ajusta nombres/condiciones si tus modelos difieren ===
-        // Solo ingresos (Tipo == 1)
-        List<ExpenseData> transactions = await transactionService.GetAllTransactionsAsync();
-        var ingresos = transactions.Where(t => t.TransactionTypeId == 1).ToList();
+        // Normaliza rango local
+        DateTime? start = RangeStart?.Date;
+        DateTime? end = RangeEnd?.Date;
+        if (start.HasValue && end.HasValue && start > end)
+        { var tmp = start; start = end; end = tmp; }
+
+        DateTime? endIncl = end.HasValue ? EndOfDay(end.Value) : (DateTime?)null;
+
+        // Filtro por fecha local + solo ingresos
+        var filtradas = transactions.Where(t =>
+        {
+            if (t is null) return false;
+            var dt = t.dateTime;                // <<=== LOCAL
+            if (dt == default) return false;
+            if (start.HasValue && dt < start.Value) return false;
+            if (endIncl.HasValue && dt > endIncl.Value) return false;
+            return true;
+        });
+
+        var ingresos = filtradas.Where(t => t.TransactionTypeId == 1);
 
         // Join con empleados RoleId == 1
         List<EmpleadosModel> empleadosAll = await EmpleadoService.GetAllPsicosAsync();

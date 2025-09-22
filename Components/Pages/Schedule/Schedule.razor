@@ -38,7 +38,7 @@
                                 @ref="scheduleObj"
                                 Width="100%" Height="800px"
                                 EnableAutoRowHeight="true"
-                                CssClass="doctor-appointment-planner"
+                                CssClass="doctor-appointment-planner sched-compact"
                                 ShowWeekend="false"
                                 StartHour="@startHour"
                                 EndHour="@endHour"
@@ -46,7 +46,7 @@
                                 WorkDays="@workDay"
                                 FirstDayOfWeek="@calendarDayOfWeek"
                                 @bind-CurrentView="@sceduleView"
-                                TimeFormat="HH:mm">
+                                TimeFormat="HH:mm" >
 
                         <ScheduleEvents TValue="CitasModel"
                                         OnPopupOpen="OnPopupOpen"
@@ -55,14 +55,14 @@
                                         ActionCompleted="OnActionComplete" EventRendered="OnEventRendered">
                         </ScheduleEvents>
 
-                        <ScheduleWorkHours Start="09:00" End="20:00"></ScheduleWorkHours>
+                        <ScheduleWorkHours Start="10:00" End="20:00"></ScheduleWorkHours>
 
                         <ScheduleEventSettings DataSource="@scheduleEventData"
                                                ResourceColorField="@resourceColorField"
                                                AllowEditFollowingEvents="@editUpcoming">
                             <ScheduleField>
                                 <FieldId        Name="ObjectId"></FieldId> 
-                                <FieldSubject Name="PacienteNombre"></FieldSubject>
+                                <FieldSubject Name="PacienteNombre" ></FieldSubject>
                                 <FieldStartTime Name="StartLocal" Title="Desde"></FieldStartTime>
                                 <FieldEndTime Name="EndLocal" Title="Hasta"></FieldEndTime>
                                 @* No pedimos End; lo calculamos a +1h *@
@@ -84,7 +84,7 @@
                                                         CheckedChanged="@((bool v) => OnNuevoPacienteChanged(v, c))">
                                             </SfCheckBox>
                                         </div>
-                                        @if (NuevoPaciente)
+                                        @if (!NuevoPaciente)
                                         {
                                             <div class="e-col-6">
                                                 <label>Selecciona paciente</label>
@@ -123,7 +123,7 @@
                                             <SfNumericTextBox TValue="int" @bind-Value="c.PacienteEdad" Min="0" Max="120"></SfNumericTextBox>
                                         </div>
                                         <div class="e-col-3">
-                                            <SfMaskedTextBox CssClass="e-field"
+                                            <SfMaskedTextBox CssClass="e-field with-icon-left"
                                                              @ref="maskObj"
                                                              Placeholder="Celular"
                                                              FloatLabelType="@FloatLabelType.Always"
@@ -432,6 +432,64 @@ else
     .legend-text {
         line-height: 1;
     }
+    /* Compáctalo en todas las vistas */
+    .sched-compact .e-appointment {
+        padding: 2px 4px; /* menos padding */
+    }
+
+        /* Texto del evento (asunto, hora, etc.) */
+        .sched-compact .e-appointment .e-subject,
+        .sched-compact .e-appointment .e-time,
+        .sched-compact .e-appointment .e-location,
+        .sched-compact .e-appointment .e-appointment-details {
+            font-size: 12px !important;
+            line-height: 1.1;
+        }
+
+    /* Mes suele necesitar aún más chico */
+    .sched-compact .e-month-view .e-appointment .e-subject {
+        font-size: 11px !important;
+    }
+
+    /* Timeline / vertical por si quieres ajustar distinto (opcional) */
+    .sched-compact .e-timeline-view .e-appointment .e-subject,
+    .sched-compact .e-vertical-view .e-appointment .e-subject {
+        font-size: 10px !important;
+    }
+
+    /* (Opcional) Compacta la altura de filas en Day/Week */
+    .sched-compact .e-work-cells {
+        line-height: 1.1;
+    }
+
+    .e-control-wrapper.with-icon-left,
+    .e-control-wrapper.with-icon-right {
+        position: center;
+    }
+
+        /* Icono a la izquierda */
+        .e-control-wrapper.with-icon-left input {
+            padding: 1.5em; /* deja espacio para el icono */
+        }
+
+        .e-control-wrapper.with-icon-left::before {
+            content: '\ed53'; /* código del glifo */
+            font-family: "fontello";
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 16px;
+            height: 16px;
+            opacity: .7;
+            pointer-events: none;
+        }
+
+
+        /* Icono a la derecha */
+        .e-control-wrapper.with-icon-right input {
+            padding-right: 2rem;
+        }
+
 
 </style>
 @code {
@@ -497,6 +555,9 @@ else
         c.PacienteEdad = p.PacienteEdad;
         c.PacienteCelular = p.PacienteCelular;
         c.PacienteTypeId = p.PacienteTypeId;
+        c.PacienteObjectId = p.ObjectId;
+        c.MotivoConsulta = p.MotivoConsulta;
+        
 
         // Si quieres traer “MotivoConsulta” guardado en ficha del paciente (opcional):
         // c.MotivoConsulta = p.MotivoHabitual ?? c.MotivoConsulta;
@@ -696,9 +757,10 @@ else
 
     public async void OnActionBegin(ActionEventArgs<CitasModel> args)
     {
-        PacientesDS = await PacienteService.GetAllPacientesAsync();
+@*         PacientesDS = await PacienteService.GetAllPacientesAsync();
+ *@
         if ((args.ActionType == ActionType.EventCreate || args.ActionType == ActionType.EventChange)
-        && (args.AddedRecords?.Count > 0 || args.ChangedRecords?.Count > 0))
+            && (args.AddedRecords?.Count > 0 || args.ChangedRecords?.Count > 0))
         {
             var c = args.AddedRecords?.FirstOrDefault() ?? args.ChangedRecords!.First();
             // Si viene con Status 1 (pendiente) mostramos el diálogo de “Lista de espera”
@@ -721,8 +783,10 @@ else
         if (args.ActionType == ActionType.EventChange && (args.ChangedRecords?.Count > 0))
         {
             NuevoPaciente = false;
+
             foreach (var c in args.ChangedRecords)
             {
+                c.PacienteObjectId = PacienteSeleccionadoId;
                 if (c.StartLocal != default && c.EndLocal != default && c.EndLocal <= c.StartLocal)
                 {
                     var endCalc = c.StartLocal.AddHours(1);
@@ -878,7 +942,7 @@ else
         }
         else if (args.ActionType == ActionType.ViewNavigate || args.ActionType == ActionType.DateNavigate)
         {
-            UpdateBreakHours(scheduleObj.SelectedDate);
+            
             StateHasChanged();
         }
         else if (args.ActionType == ActionType.EventRemove && args.DeletedRecords?.Count > 0)
@@ -938,14 +1002,14 @@ else
         empleadoActivo = resourceDataSource.FirstOrDefault(e => e.ObjectId == args.Value);
 
         // Trae WorkHours del empleado (si no tienes backend aún, aplica defaults desde tu servicio/Models)
-        horasEmpleadoActivo = await EmployeService.GetWorkHoursByEmpleadoAsync(empleadoActivo.ObjectId);
+@*         horasEmpleadoActivo = await EmployeService.GetWorkHoursByEmpleadoAsync(empleadoActivo.ObjectId);
 
         // Anclar a la semana visible y ajustar días laborales del calendario
         UpdateBreakHours(currentDate);
         workDay = horasEmpleadoActivo?.Rules?.Where(r => r.Enable).Select(r => (int)r.Day).Distinct().OrderBy(x => x).ToArray()
                   ?? new int[] { 0, 1, 2, 3, 4, 5, 6 };
 
-        // Filtrar citas por terapeuta (CitasModel.PsicoObjectId)
+ *@        // Filtrar citas por terapeuta (CitasModel.PsicoObjectId)
         var todas = await CitasService.GetAllCitasAsync();
         scheduleEventData = todas?
             .Where(c => c.PsicoObjectId == empleadoActivo.ObjectId)
@@ -979,7 +1043,7 @@ else
     public async void NodeDragStop(DragAndDropEventArgs args)
     {
         args.Cancel = true;
-
+        NuevoPaciente = true;
         var cellData = await scheduleObj.GetTargetCellAsync((int)args.Left, (int)args.Top);
         if (cellData is null) return;
 
