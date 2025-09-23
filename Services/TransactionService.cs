@@ -14,6 +14,8 @@ namespace KavaPryct.Services
         private readonly HttpClient _http;
         private readonly AppSettings _appSetting = new AppSettings();
         public TransactionService(HttpClient httpClient) => _http = httpClient;
+        
+        
 
         public async Task DeleteTransactionAsync(string id)
         {

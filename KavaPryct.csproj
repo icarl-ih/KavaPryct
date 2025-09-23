@@ -1,87 +1,93 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
-    <PropertyGroup>
-        <TargetFrameworks>net9.0-android</TargetFrameworks>
-        <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net9.0-windows10.0.19041.0</TargetFrameworks>
-        <!-- Uncomment to also build the tizen app. You will need to install tizen by following this: https://github.com/Samsung/Tizen.NET -->
-        <!-- <TargetFrameworks>$(TargetFrameworks);net9.0-tizen</TargetFrameworks> -->
+	<Sdk Name="Microsoft.NET.Sdk.Razor" />
 
-        <!-- Note for MacCatalyst:
-            The default runtime is maccatalyst-x64, except in Release config, in which case the default is maccatalyst-x64;maccatalyst-arm64.
-            When specifying both architectures, use the plural <RuntimeIdentifiers> instead of the singular <RuntimeIdentifier>.
-            The Mac App Store will NOT accept apps with ONLY maccatalyst-arm64 indicated;
-            either BOTH runtimes must be indicated or ONLY macatalyst-x64. -->
-        <!-- For example: <RuntimeIdentifiers>maccatalyst-x64;maccatalyst-arm64</RuntimeIdentifiers> -->
+	<PropertyGroup>
+		<TargetFrameworks>net9.0-android;net9.0-windows10.0.19041.0</TargetFrameworks>
+		<UseMaui>true</UseMaui>
+		<SingleProject>true</SingleProject>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<EnableDefaultCssItems>false</EnableDefaultCssItems>
+		<UsingMicrosoftNETSdkWeb>true</UsingMicrosoftNETSdkWeb>
 
-        <OutputType>Exe</OutputType>
-        <RootNamespace>KavaPryct</RootNamespace>
-        <UseMaui>true</UseMaui>
-        <SingleProject>true</SingleProject>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <EnableDefaultCssItems>false</EnableDefaultCssItems>
-        <Nullable>enable</Nullable>
+		<OutputType>Exe</OutputType>
+		<RootNamespace>KavaPryct</RootNamespace>
+		<ApplicationTitle>KAVA: Agenda Virtual</ApplicationTitle>
+		<ApplicationId>com.ihsolutions.kava</ApplicationId>
+		<ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+		<ApplicationVersion>1</ApplicationVersion>
+		<DefaultLanguage>es-MX</DefaultLanguage>
 
-        <!-- Display name -->
-        <ApplicationTitle>KavaPryct</ApplicationTitle>
+		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">24.0</SupportedOSPlatformVersion>
+		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">15.0</SupportedOSPlatformVersion>
+		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">15.0</SupportedOSPlatformVersion>
+		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
+		<TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
+		<GenerateAppInstallerFile>True</GenerateAppInstallerFile>
+		<AppxPackageSigningEnabled>True</AppxPackageSigningEnabled>
+		<PackageCertificateThumbprint>A91F71D1D3631F78B91567406B63C66B688C8D82</PackageCertificateThumbprint>
+		<AppxPackageSigningTimestampDigestAlgorithm>SHA256</AppxPackageSigningTimestampDigestAlgorithm>
+		<AppxAutoIncrementPackageRevision>False</AppxAutoIncrementPackageRevision>
+		<AppxSymbolPackageEnabled>False</AppxSymbolPackageEnabled>
+		<GenerateTestArtifacts>True</GenerateTestArtifacts>
+		<AppInstallerUri>https://drive.google.com/drive/folders/15iARUeuVoVciun7ixLe7XsO8-l-InZSz%3fusp=sharing</AppInstallerUri>
+		<HoursBetweenUpdateChecks>0</HoursBetweenUpdateChecks>
+	</PropertyGroup>
 
-        <!-- App Identifier -->
-        <ApplicationId>com.companyname.kavapryct</ApplicationId>
+	<!-- SOLO Windows -->
+	<PropertyGroup Condition="'$(TargetFramework)'=='net9.0-windows10.0.19041.0'">
+		<WindowsPackageType>MSIX</WindowsPackageType>
+		<RuntimeIdentifier>win-x64</RuntimeIdentifier>
+		<!-- NOTA: win-x64 (no win10-x64) -->
+		<PublishReadyToRun>false</PublishReadyToRun>
+		<DisableTransitiveFrameworkReferenceDownloads>true</DisableTransitiveFrameworkReferenceDownloads>
+		<PublisherDisplayName>IHSolutions</PublisherDisplayName>
+	</PropertyGroup>
+		
 
-        <!-- Versions -->
-        <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
-        <ApplicationVersion>1</ApplicationVersion>
+	<!-- SOLO Android (optimizado para Release) -->
+	<PropertyGroup Condition="'$(TargetFramework)'=='net9.0-android' and '$(Configuration)'=='Release'">
+		<!-- AAB para Play Store (usa apk para pruebas locales) -->
+		<AndroidPackageFormat>aab</AndroidPackageFormat>
+		<!-- Optimizaciones recomendadas -->
+		<RunAOTCompilation>true</RunAOTCompilation>
+		<PublishTrimmed>true</PublishTrimmed>
+		<InvariantGlobalization>true</InvariantGlobalization>
+	</PropertyGroup>
 
-        <!-- To develop, package, and publish an app to the Microsoft Store, see: https://aka.ms/MauiTemplateUnpackaged -->
-        <WindowsPackageType>None</WindowsPackageType>
+	<ItemGroup>
+		<MauiIcon Include="Resources\AppIcon\kavaicon.png" Color="White" />
+		<MauiSplashScreen Include="Resources\Splash\ihs.png" Color="White" />
+		<MauiImage Include="Resources\Images\*" />
+		<MauiImage Update="Resources\Images\dotnet_bot.svg" BaseSize="168,208" />
+		<MauiFont Include="Resources\Fonts\*" />
+		<MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
+	</ItemGroup>
 
-        <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">15.0</SupportedOSPlatformVersion>
-        <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">15.0</SupportedOSPlatformVersion>
-        <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">24.0</SupportedOSPlatformVersion>
-        <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
-        <TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
-        <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'tizen'">6.5</SupportedOSPlatformVersion>
-    </PropertyGroup>
-
-    <ItemGroup>
-        <!-- App Icon -->
-        <MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#512BD4" />
-
-        <!-- Splash Screen -->
-        <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#512BD4" BaseSize="128,128" />
-
-        <!-- Images -->
-        <MauiImage Include="Resources\Images\*" />
-        <MauiImage Update="Resources\Images\dotnet_bot.svg" BaseSize="168,208" />
-
-        <!-- Custom Fonts -->
-        <MauiFont Include="Resources\Fonts\*" />
-
-        <!-- Raw Assets (also remove the "Resources\Raw" prefix) -->
-        <MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.9" />
-        <PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
-        <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="$(MauiVersion)" />
-        <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.5" />
-        <PackageReference Include="Syncfusion.Blazor.Buttons" Version="31.1.18" />
-        <PackageReference Include="Syncfusion.Blazor.Charts" Version="31.1.18" />
-        <PackageReference Include="Syncfusion.Blazor.Data" Version="31.1.18" />
-        <PackageReference Include="Syncfusion.Blazor.DataVizCommon" Version="31.1.18" />
-        <PackageReference Include="Syncfusion.Blazor.DropDowns" Version="31.1.18" />
-        <PackageReference Include="Syncfusion.Blazor.Grid" Version="31.1.18" />
-        <PackageReference Include="Syncfusion.Blazor.Inputs" Version="31.1.18" />
-        <PackageReference Include="Syncfusion.Blazor.Layouts" Version="31.1.18" />
-        <PackageReference Include="Syncfusion.Blazor.Lists" Version="31.1.18" />
-        <PackageReference Include="Syncfusion.Blazor.Navigations" Version="31.1.18" />
-        <PackageReference Include="Syncfusion.Blazor.Notifications" Version="31.1.18" />
-        <PackageReference Include="Syncfusion.Blazor.Popups" Version="31.1.18" />
-        <PackageReference Include="Syncfusion.Blazor.Schedule" Version="31.1.18" />
-        <PackageReference Include="Syncfusion.Blazor.Spinner" Version="31.1.18" />
-        <PackageReference Include="Syncfusion.Blazor.SplitButtons" Version="31.1.18" />
-        <PackageReference Include="Syncfusion.Blazor.Themes" Version="31.1.18" />
-        <PackageReference Include="Syncfusion.Licensing" Version="31.1.18" />
-    </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
+		<PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="$(MauiVersion)" />
+		<PackageReference Include="Microsoft.Extensions.Http" Version="9.0.9" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.5" />
+		<!-- Syncfusion -->
+		<PackageReference Include="Syncfusion.Blazor.Buttons" Version="31.1.18" />
+		<PackageReference Include="Syncfusion.Blazor.Charts" Version="31.1.18" />
+		<PackageReference Include="Syncfusion.Blazor.Data" Version="31.1.18" />
+		<PackageReference Include="Syncfusion.Blazor.DataVizCommon" Version="31.1.18" />
+		<PackageReference Include="Syncfusion.Blazor.DropDowns" Version="31.1.18" />
+		<PackageReference Include="Syncfusion.Blazor.Grid" Version="31.1.18" />
+		<PackageReference Include="Syncfusion.Blazor.Inputs" Version="31.1.18" />
+		<PackageReference Include="Syncfusion.Blazor.Layouts" Version="31.1.18" />
+		<PackageReference Include="Syncfusion.Blazor.Lists" Version="31.1.18" />
+		<PackageReference Include="Syncfusion.Blazor.Navigations" Version="31.1.18" />
+		<PackageReference Include="Syncfusion.Blazor.Notifications" Version="31.1.18" />
+		<PackageReference Include="Syncfusion.Blazor.Popups" Version="31.1.18" />
+		<PackageReference Include="Syncfusion.Blazor.Schedule" Version="31.1.18" />
+		<PackageReference Include="Syncfusion.Blazor.Spinner" Version="31.1.18" />
+		<PackageReference Include="Syncfusion.Blazor.SplitButtons" Version="31.1.18" />
+		<PackageReference Include="Syncfusion.Blazor.Themes" Version="31.1.18" />
+		<PackageReference Include="Syncfusion.Licensing" Version="31.1.18" />
+	</ItemGroup>
 
 </Project>

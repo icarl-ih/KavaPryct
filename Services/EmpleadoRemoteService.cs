@@ -218,7 +218,7 @@ namespace KavaPryct.Services
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
 
                 var response = await _http.PostAsync("/classes/Empleados", content);
-
+                bool status;
                 var body = await response.Content.ReadAsStringAsync();
                 var reason = response.ReasonPhrase ?? response.StatusCode.ToString();
 
@@ -226,19 +226,23 @@ namespace KavaPryct.Services
                 {
                     var created = JsonSerializer.Deserialize<ParseCreateResponse>(body,
                         new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-
+                    status = true;
                     return new ParseResult
                     {
-                        Ok = true,
+                        Ok = status,
                         Reason = reason,
                         ObjectId = created?.ObjectId
                     };
+                }
+                else
+                {
+                    status = false;
                 }
 
                 // Error: devolvemos reason + cuerpo
                 return new ParseResult
                 {
-                    Ok = false,
+                    Ok = status,
                     Reason = reason,
                     ErrorBody = body
                 };
@@ -253,7 +257,71 @@ namespace KavaPryct.Services
                 };
             }
         }
-        public async Task<string> CreateEstudioAsync(EstudiosModel e)
+        public async Task<ParseResult> UpdateEmpleadoAsync(EmpleadosModel e)
+        {
+            try
+            {
+                var parseObject = new Dictionary<string, object>
+            {
+                {"Nombres",e.Nombres.ToUpper() },
+                {"A_Paterno",e.A_Paterno.ToUpper()  }, {"A_Materno",e.A_Materno.ToUpper() },
+                {"Direccion",e.Direccion.ToUpper() },
+                {"FechaNac","" }, {"EdoCivilId",e.EdoCivilId},{"EstudiosObjectId",e.EstudiosObjectId},{"EstudiosLast",e.EstudiosLast},
+                { "ContEmergObjectId",e.ContEmergObjectId }, { "RolId", e.RolEmpleo },
+                { "Telefono", e.Telefono }
+            };
+                if (e.FechaNac != null)
+                {
+                    parseObject["FechaNac"] = new Dictionary<string, object>
+                    {
+                        { "__type" , "Date"},
+                        { "iso", e.FechaNac.Iso.ToUniversalTime() }
+                    };
+                }
+                var json = JsonSerializer.Serialize(parseObject);
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+                var response = await _http.PutAsync($"/classes/Empleados/{e.ObjectId}", content);
+                bool status;
+                var body = await response.Content.ReadAsStringAsync();
+                var reason = response.ReasonPhrase ?? response.StatusCode.ToString();
+
+                if (response.IsSuccessStatusCode) // típicamente 201 Created
+                {
+                    var created = JsonSerializer.Deserialize<ParseCreateResponse>(body,
+                        new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    status = true;
+                    return new ParseResult
+                    {
+                        Ok = status,
+                        Reason = reason,
+                        ObjectId = created?.ObjectId
+                    };
+                }
+                else
+                {
+                    status = false;
+                }
+
+                // Error: devolvemos reason + cuerpo
+                return new ParseResult
+                {
+                    Ok = status,
+                    Reason = reason,
+                    ErrorBody = body
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ParseResult
+                {
+                    Ok = false,
+                    Reason = "Exception",
+                    ErrorBody = ex.Message
+                };
+            }
+        }
+        public async Task<ParseResult> CreateEstudioAsync(EstudiosModel e)
         {
             try
             {
@@ -270,32 +338,47 @@ namespace KavaPryct.Services
 
                 var response = await _http.PostAsync("/classes/Estudios", content);
 
+                bool status;
                 var body = await response.Content.ReadAsStringAsync();
-                if (!response.IsSuccessStatusCode)
-                {
-                    throw new Exception($"Parse {((int)response.StatusCode)} {response.ReasonPhrase}: {body}");
+                var reason = response.ReasonPhrase ?? response.StatusCode.ToString();
 
+                if (response.IsSuccessStatusCode) // típicamente 201 Created
+                {
+                    var created = JsonSerializer.Deserialize<ParseCreateResponse>(body,
+                        new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    status = true;
+                    return new ParseResult
+                    {
+                        Ok = status,
+                        Reason = reason,
+                        ObjectId = created?.ObjectId
+                    };
+                }
+                else
+                {
+                    status = false;
                 }
 
-                response.EnsureSuccessStatusCode();
-                
-                
-                if (!response.IsSuccessStatusCode)
-                    throw new Exception($"Parse {((int)response.StatusCode)} {response.ReasonPhrase}: {body}");
-               
-                
-                var result = JsonSerializer.Deserialize<EstudiosModel>(body);
-
-                return result.ObjectId;
-
+                // Error: devolvemos reason + cuerpo
+                return new ParseResult
+                {
+                    Ok = status,
+                    Reason = reason,
+                    ErrorBody = body
+                };
             }
-            catch
+            catch (Exception ex)
             {
-                return null;
+                return new ParseResult
+                {
+                    Ok = false,
+                    Reason = "Exception",
+                    ErrorBody = ex.Message
+                };
             }
         }
 
-        public async Task<string> CreateNewContactAsync(EmergContact e)
+        public async Task<ParseResult> CreateNewContactAsync(EmergContact e)
         {
             try
             {
@@ -308,48 +391,95 @@ namespace KavaPryct.Services
 
                 var response = await _http.PostAsync("/classes/ContactosEmergencia", content);
 
+                bool status;
                 var body = await response.Content.ReadAsStringAsync();
-                if (!response.IsSuccessStatusCode)
-                {
-                    throw new Exception($"Parse {((int)response.StatusCode)} {response.ReasonPhrase}: {body}");
+                var reason = response.ReasonPhrase ?? response.StatusCode.ToString();
 
+                if (response.IsSuccessStatusCode) // típicamente 201 Created
+                {
+                    var created = JsonSerializer.Deserialize<ParseCreateResponse>(body,
+                        new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    status = true;
+                    return new ParseResult
+                    {
+                        Ok = status,
+                        Reason = reason,
+                        ObjectId = created?.ObjectId
+                    };
+                }
+                else
+                {
+                    status = false;
                 }
 
-                response.EnsureSuccessStatusCode();
-                
-                if (!response.IsSuccessStatusCode)
-                    throw new Exception($"Parse {((int)response.StatusCode)} {response.ReasonPhrase}: {body}");
-               
-                
-                var result = JsonSerializer.Deserialize<EmergContact>(body);
-
-                return result.ObjectId;
-                
-            }catch(Exception ex)
+                // Error: devolvemos reason + cuerpo
+                return new ParseResult
+                {
+                    Ok = status,
+                    Reason = reason,
+                    ErrorBody = body
+                };
+            }
+            catch (Exception ex)
             {
-                return null;
+                return new ParseResult
+                {
+                    Ok = false,
+                    Reason = "Exception",
+                    ErrorBody = ex.Message
+                };
             }
         }
-        public async Task CreatePosgradoAsync(PosgradosModel p)
+        public async Task<ParseResult> CreatePosgradoAsync(PosgradosModel p)
         {
-            var parseobject = new Dictionary<string, object>
+            try
             {
-                { "Nombre",p.Nombre.ToUpper() },{"TipoId",p.Id},{"Cedula",p.Cedula},{"Abrv",p.Abrv.ToUpper()}
-            };
-            var json = JsonSerializer.Serialize(parseobject);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
+                var parseobject = new Dictionary<string, object>
+                {
+                    { "Nombre",p.Nombre.ToUpper() },{"TipoId",p.Id},{"Cedula",p.Cedula},{"Abrv",p.Abrv.ToUpper()}
+                };
+                var json = JsonSerializer.Serialize(parseobject);
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            var response = await _http.PostAsync("/classes/Posgrados", content);
+                var response = await _http.PostAsync("/classes/Posgrados", content);
+                bool status;
+                var body = await response.Content.ReadAsStringAsync();
+                var reason = response.ReasonPhrase ?? response.StatusCode.ToString();
 
-            var body = await response.Content.ReadAsStringAsync();
-            if (!response.IsSuccessStatusCode)
-            {
-                throw new Exception($"Parse {((int)response.StatusCode)} {response.ReasonPhrase}: {body}");
+                if (response.IsSuccessStatusCode) // típicamente 201 Created
+                {
+                    var created = JsonSerializer.Deserialize<ParseCreateResponse>(body,
+                        new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    status = true;
+                    return new ParseResult
+                    {
+                        Ok = status,
+                        Reason = reason,
+                        ObjectId = created?.ObjectId
+                    };
+                }
+                else
+                {
+                    status = false;
+                }
 
+                // Error: devolvemos reason + cuerpo
+                return new ParseResult
+                {
+                    Ok = status,
+                    Reason = reason,
+                    ErrorBody = body
+                };
             }
-
-            response.EnsureSuccessStatusCode();
-
+            catch (Exception ex)
+            {
+                return new ParseResult
+                {
+                    Ok = false,
+                    Reason = "Exception",
+                    ErrorBody = ex.Message
+                };
+            }
         }
     }
 }

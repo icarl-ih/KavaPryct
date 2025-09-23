@@ -44,7 +44,7 @@ namespace KavaPryct.Services
             return cita;
 
         }
-        public async Task CreateCitaAsync(CitasModel c)
+        public async Task<ParseResult> CreateCitaAsync(CitasModel c)
         {
             try
             {
@@ -57,7 +57,7 @@ namespace KavaPryct.Services
                     {"MotivoConsulta" , c.MotivoConsulta.ToUpper()  },
                     {"StatusCitaId" , c.StatusCitaId },   // 1
                     {"PsicoObjectId" , c.PsicoObjectId },
-                    {"FechaIni", "" },{"FechaFin", "" }, {"PacienteObjecId",c.PacienteObjectId},
+                    {"FechaIni", "" },{"FechaFin", "" }, {"PacienteObjectId",c.PacienteObjectId},
                     {"Amount",c.Amount },{"IsPaid",c.IsPaid},{ "PayMethodId" ,c.PayMethodId},
                 };
                 if (c.FechaIni != null && c.FechaFin != null)
@@ -79,17 +79,46 @@ namespace KavaPryct.Services
 
                 var response = await _http.PostAsync("/classes/Citas", content);
 
+                bool status;
                 var body = await response.Content.ReadAsStringAsync();
-                if (!response.IsSuccessStatusCode)
-                    throw new Exception($"Parse {((int)response.StatusCode)} {response.ReasonPhrase}: {body}");
-                response.EnsureSuccessStatusCode();
+                var reason = response.ReasonPhrase ?? response.StatusCode.ToString();
+
+                if (response.IsSuccessStatusCode) // típicamente 201 Created
+                {
+                    var created = JsonSerializer.Deserialize<ParseCreateResponse>(body,
+                        new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    status = true;
+                    return new ParseResult
+                    {
+                        Ok = status,
+                        Reason = reason,
+                        ObjectId = created?.ObjectId
+                    };
+                }
+                else
+                {
+                    status = false;
+                }
+
+                // Error: devolvemos reason + cuerpo
+                return new ParseResult
+                {
+                    Ok = status,
+                    Reason = reason,
+                    ErrorBody = body
+                };
             }
-            catch (Exception ex) 
+            catch (Exception ex)
             {
-                
+                return new ParseResult
+                {
+                    Ok = false,
+                    Reason = "Exception",
+                    ErrorBody = ex.Message
+                };
             }
         }
-        
+
         public async Task UpdateCitaAsync(CitasModel c)
         {
             var parseobject = new Dictionary<string, object>
@@ -120,6 +149,45 @@ namespace KavaPryct.Services
                     { "iso", c.FechaFin.Iso.ToUniversalTime() }
                 };
             }
+
+            var json = JsonSerializer.Serialize(parseobject);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            var response = await _http.PutAsync(
+                $"https://parseapi.back4app.com/classes/Citas/{c.ObjectId}",
+                content);
+
+            if (response.IsSuccessStatusCode)
+            {
+                // ¡Éxito!
+                var respuestaString = await response.Content.ReadAsStringAsync();
+                // Opcional: puedes extraer el objeto actualizado aquí
+            }
+            else
+            {
+                // Manejo de error
+                var errorContent = await response.Content.ReadAsStringAsync();
+                throw new Exception($"Error: {response.StatusCode} - {errorContent}");
+            }
+        }
+        public async Task UpdateCitaReagendadaAsync(CitasModel c)
+        {
+            var parseobject = new Dictionary<string, object>
+            {
+                {"PacienteNombre" , c.PacienteNombre.ToUpper() },
+                {"PacienteEdad" , c.PacienteEdad },
+                {"PacienteCelular" , c.PacienteCelular },
+                {"PacienteTypeId" , c.PacienteTypeId },
+                {"MotivoConsulta" , c.MotivoConsulta.ToUpper() },
+                {"StatusCitaId" , c.StatusCitaId },   // 1
+                {"PsicoObjectId" , c.PsicoObjectId },
+                
+                {"Amount",c.Amount },{"IsPaid",c.IsPaid},{ "PayMethodId" ,c.PayMethodId},
+                
+                {"PacienteObjectId",c.PacienteObjectId }
+
+            };
+            
 
             var json = JsonSerializer.Serialize(parseobject);
             var content = new StringContent(json, Encoding.UTF8, "application/json");

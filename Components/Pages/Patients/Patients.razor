@@ -277,8 +277,7 @@ else
     }
     protected override async Task OnInitializedAsync()
     {
-        ExpenseTracker.Service.CommonService.OnlineStatusChanged += HandleOnlineChanged;
-
+        CommonService.OnlineStatusChanged += HandleOnlineChanged;
         filteredPatients = await PacienteService.GetAllPacientesAsync();
         this.doctorsData = await EmployeService.GetAllPsicosAsync();
         resourceDataSource = await EmployeService.GetAllPsicosAsync();
@@ -502,8 +501,7 @@ else
 
     public void Dispose()
     {
-        ExpenseTracker.Service.CommonService.OnlineStatusChanged -= HandleOnlineChanged;
-
+        CommonService.OnlineStatusChanged += HandleOnlineChanged;
         gridObj = null;
         gridEditDialogObj = null;
         dialogObj = null;

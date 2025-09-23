@@ -1,0 +1,259 @@
+﻿@page "/about"
+@using KavaPryct.Services
+@using Microsoft.Maui.ApplicationModel
+@using Microsoft.Maui.Devices
+@using Syncfusion.Blazor.Buttons
+@using Syncfusion.Blazor.Navigations
+@using Syncfusion.Blazor.Notifications
+@inject UpdaterService Updater
+
+<div class="about-wrap">
+    <div class="about-card shadow-smooth">
+        <div class="about-header">
+            <div class="about-title">
+                <span class="logo-chip">IHS</span>
+                <div>
+                    <h1>Acerca de esta app</h1>
+                    <p class="subtitle">Información de versión y contacto</p>
+                </div>
+            </div>
+
+            <div class="badges">
+                @if (status == UpdateStatus.UpToDate)
+                {
+                    <SfBadge Content="Al día" CssClass="e-badge-success e-badge-pill" />
+                }
+                else if (status == UpdateStatus.UpdateAvailable)
+                {
+                    <SfBadge Content="Actualización disponible" CssClass="e-badge-warning e-badge-pill" />
+                }
+                else if (status == UpdateStatus.Mandatory)
+                {
+                    <SfBadge Content="Actualización obligatoria" CssClass="e-badge-danger e-badge-pill" />
+                }
+            </div>
+        </div>
+
+        <div class="about-body">
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="label">Versión actual</span>
+                    <span class="value">@currentVersion (@currentBuild)</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Última disponible</span>
+                    <span class="value">@((latest?.Version ?? latest?.VersionCode.ToString()) ?? "—")</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Plataforma</span>
+                    <span class="value">@platformLabel</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Estado</span>
+                    <span class="value">
+                        @statusText
+                    </span>
+                </div>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(latest?.Notes))
+            {
+                <div class="notes">
+                    <h3>Notas de la versión</h3>
+                    <p>@latest?.Notes</p>
+                </div>
+            }
+
+            <div class="actions">
+                @if (status != UpdateStatus.UpToDate && !string.IsNullOrWhiteSpace(latest?.FileUrl))
+                {
+                    <SfButton CssClass="e-primary e-success" IsPrimary="true" OnClick="InstallUpdate">
+                        Actualizar ahora
+                    </SfButton>
+                }
+                <SfButton CssClass="e-outline" OnClick="CheckAgain">
+                    Volver a comprobar
+                </SfButton>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="about-footer">
+            <div class="credits">
+                <div class="avatar">CI</div>
+                <div>
+                    <div class="by">Creado por el <strong>Ing. Carlos Ibarra</strong></div>
+                    <div class="company">Empresa <strong>IH Solutions</strong></div>
+                </div>
+            </div>
+
+            <div class="socials">
+                <!-- 🔧 Reemplaza estas URLs por tus redes oficiales -->
+@*                 <SfButton CssClass="e-primary e-round" OnClick="()=>OpenUrlAsync(ihsSite)">Sitio</SfButton>
+ *@                <SfButton CssClass="e-outline e-round " OnClick="()=>OpenUrlAsync(ihsFacebook)">Facebook</SfButton>
+@*                 <SfButton CssClass="e-outline e-round" OnClick="()=>OpenUrlAsync(ihsInstagram)">Instagram</SfButton>
+              <SfButton CssClass="e-outline e-round" OnClick="()=>OpenUrlAsync(ihsX)">X</SfButton>
+ *@            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    // --- Configura tus enlaces de redes aquí ---
+    private readonly string ihsSite = "https://tu-dominio.com";
+    private readonly string ihsFacebook = "https://www.facebook.com/ihsolutions.mva";
+    private readonly string ihsInstagram = "https://www.instagram.com/tuperfil";
+    private readonly string ihsX = "https://x.com/tuperfil";
+    // -------------------------------------------
+
+    AppVersionInfo? latest;
+    string platform = "windows";
+    string platformLabel = "Windows";
+    string currentVersion = "—";
+    string currentBuild = "—";
+    UpdateStatus status = UpdateStatus.UpToDate;
+    string statusText = "Al día";
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Datos locales de versión
+        currentVersion = AppInfo.Current?.VersionString ?? VersionTracking.CurrentVersion ?? "—";
+        currentBuild   = AppInfo.Current?.BuildString   ?? VersionTracking.CurrentBuild   ?? "—";
+
+        // Plataforma
+        platform = DeviceInfo.Platform == DevicePlatform.Android ? "android" : "windows";
+        platformLabel = platform == "android" ? "Android" : "Windows";
+
+        // Consulta última versión publicada en Back4App (Parse)
+        await RefreshLatestAsync();
+    }
+
+    private async Task RefreshLatestAsync()
+    {
+        latest = await Updater.GetLatestAsync(platform);
+
+        // Decide estado
+        var currBuildNum = int.TryParse(currentBuild, out var b) ? b : 0;
+        var latestBuild  = latest?.VersionCode ?? 0;
+
+        if (latest is null || latestBuild <= 0 || latestBuild <= currBuildNum)
+        {
+            status = UpdateStatus.UpToDate;
+            statusText = "Al día";
+            return;
+        }
+
+        status = latest.Mandatory ? UpdateStatus.Mandatory : UpdateStatus.UpdateAvailable;
+        statusText = latest.Mandatory ? "Actualización obligatoria" : "Actualización disponible";
+        StateHasChanged();
+    }
+
+    private async Task CheckAgain()
+    {
+        await RefreshLatestAsync();
+    }
+
+    private async Task InstallUpdate()
+    {
+        if (!string.IsNullOrWhiteSpace(latest?.FileUrl))
+        {
+            await Launcher.Default.OpenAsync(latest.FileUrl);
+        }
+    }
+
+    private async Task OpenUrlAsync(string url)
+    {
+        if (!string.IsNullOrWhiteSpace(url))
+            await Launcher.Default.OpenAsync(url);
+    }
+
+    enum UpdateStatus { UpToDate, UpdateAvailable, Mandatory }
+}
+<style>
+/* ——— Estilos elegantes y sobrios ——— */
+.about-wrap {
+    max-width: 980px;
+    margin: 2.5rem auto;
+    padding: 0 1rem;
+}
+
+.about-card {
+    background: var(--e-surface, #fff);
+    border-radius: 16px;
+    padding: 1.25rem 1.25rem 0.75rem;
+    border: 1px solid rgba(0,0,0,.06);
+}
+
+.shadow-smooth {
+    box-shadow: 0 12px 28px rgba(0,0,0,.06), 0 2px 6px rgba(0,0,0,.04);
+}
+
+.about-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+    margin-bottom: .75rem;
+}
+
+.about-title {
+    display: flex; align-items: center; gap: .75rem;
+}
+.logo-chip {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 44px; height: 44px; border-radius: 12px;
+    background: linear-gradient(135deg, #0ea5e9, #6366f1);
+    color:#fff; font-weight: 700; letter-spacing:.5px;
+}
+.about-title h1 {
+    margin: 0; font-size: 1.35rem; line-height: 1.2;
+}
+.subtitle { margin: .15rem 0 0; color: #6b7280; }
+
+.badges :where(.e-badge) {
+    font-size: .8rem;
+}
+
+.about-body { padding: .5rem 0 1rem; }
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0,1fr));
+    gap: .75rem;
+    margin-bottom: 1rem;
+}
+.info-item {
+    background: #fafafa; border: 1px solid #eee;
+    padding: .75rem .9rem; border-radius: 12px;
+}
+.info-item .label { display:block; font-size:.8rem; color:#6b7280; }
+.info-item .value { display:block; font-weight:600; margin-top:.15rem; }
+
+.notes {
+    background: #f8fbff; border:1px solid #e6f0ff; padding: .9rem; border-radius: 12px;
+}
+.notes h3 { margin:.1rem 0 .35rem; font-size:1rem; }
+
+.actions { display:flex; gap:.5rem; margin-top: .9rem; flex-wrap: wrap; }
+
+.divider { height:1px; background: rgba(0,0,0,.06); margin: .75rem 0; }
+
+.about-footer {
+    display:flex; align-items:center; justify-content:space-between;
+    gap: .75rem; padding: .75rem 0 1rem;
+    flex-wrap: wrap;
+}
+.credits { display:flex; align-items:center; gap:.6rem; }
+.avatar {
+    width: 40px; height:40px; border-radius: 50%;
+    background: #111827; color:#fff; display:flex; align-items:center; justify-content:center;
+    font-weight:700;
+}
+.company, .by { color:#374151; }
+
+.socials { display:flex; gap:.5rem; flex-wrap: wrap; }
+
+/* Botones redondeados sutiles */
+.e-round { border-radius: 9999px; padding-inline: 1rem; }
+</style>

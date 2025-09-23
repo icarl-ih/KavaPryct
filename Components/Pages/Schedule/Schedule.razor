@@ -27,6 +27,7 @@
 @implements IDisposable
 
 @* ----------------------------- UI ----------------------------- *@
+<SfMessage Severity="@currentSeverity" Visible="isMsgVisible">@SfMessageText</SfMessage>
 @if (isDataLoaded)
 {
     <div class="planner-calendar">
@@ -344,7 +345,7 @@
                 <button class="e-btn e-primary e-ml-2" @onclick="ConfirmarReagendo">Guardar</button>
             </div>
         </SfDialog>
-    }
+    } // -------- REAGENDAR -------- 
     @if (dialogPayVisible)
     {
         <SfDialog @bind-Visible="dialogPayVisible"
@@ -366,7 +367,7 @@
                 <button class="e-btn e-primary e-ml-2" @onclick="ConfirmarPago">Guardar</button>
             </div>
         </SfDialog>
-    }
+    } // -------- CONFIRMAR PAGO -------- 
     @if (dialogEsperaVisible)
     {
         <SfDialog Visible="true" IsModal="true" Width="460px" Header="Enviar a lista de espera"
@@ -376,11 +377,11 @@
                 <button class="e-btn e-flat" @onclick="() => dialogEsperaVisible = false">Ok</button>
             </div>
         </SfDialog>
-    }
+    } // -------- AVISO LISTA DE ESPERA -------- 
 }
 else
 {
-    <SfMessage Severity="@currentSeverity" Visible="Isvisible">@SfMessageText</SfMessage>
+    
     <div class="planner-dashboard-skeleton">
         <div class="appointments-skeleton">
             <SfSkeleton Shape="Syncfusion.Blazor.Notifications.SkeletonType.Rectangle" Height="780px" Width="90%"></SfSkeleton><br />
@@ -395,7 +396,7 @@ else
             }
         </div>
     </div>
-}
+} 
 <style>
     .e-break {
         background: rgba(255, 99, 71, .15);
@@ -491,10 +492,17 @@ else
             padding-right: 2rem;
         }
 
+        .net-msg {
+          position: sticky;
+          top: 0;
+          z-index: 1000;
+          margin-bottom: .5rem;
+        }
+
 
 </style>
 @code {
-    // ----------------- REFERENCIAS Y ESTADO -----------------
+    #region REFERENCIAS Y ESTADO
     private SfMaskedTextBox maskObj { get; set; }
     SfSchedule<CitasModel> scheduleObj { get; set; }
     SfDropDownList<string, EmpleadosModel> ddlObj { get; set; }
@@ -531,7 +539,7 @@ else
     private List<KeyValuePair<int, string>> EstatusCita => Enum.GetValues(typeof(EstatusCita))
                                                                 .Cast<EstatusCita>().Select(c => new KeyValuePair<int, string>((int)c, c.ToString())).ToList();
 
-    private bool Isvisible = false;
+    private bool isMsgVisible = false;
     private MessageSeverity currentSeverity = MessageSeverity.Info;
     private string SfMessageText;
     // Estado UI (puedes inicializarlos al abrir el editor)
@@ -540,65 +548,27 @@ else
 
     // Fuentes de datos
     private List<PacienteModel> PacientesDS = new();  // Llénala antes de abrir el editor
-    // Evento: cambio en DropDown de pacientes
-    private void OnPacienteChanged(Syncfusion.Blazor.DropDowns.ChangeEventArgs<string, PacienteModel> args, CitasModel c)
-    {
-        PacienteSeleccionadoId = args?.Value;
-        if (string.IsNullOrWhiteSpace(PacienteSeleccionadoId))
-            return;
-
-        var p = args?.ItemData ?? PacientesDS.FirstOrDefault(x => x.ObjectId == PacienteSeleccionadoId);
-        if (p is null) return;
-
-        // Al elegir un paciente, forzamos “no es nuevo”
-        NuevoPaciente = false;
-
-        // Rellena campos de la cita desde el paciente
-        c.PacienteObjectId = p.ObjectId;
-        c.PacienteNombre = p.PacienteNombre;
-        c.PacienteEdad = p.PacienteEdad;
-        c.PacienteCelular = p.PacienteCelular;
-        c.PacienteTypeId = p.PacienteTypeId;
-        c.PacienteObjectId = p.ObjectId;
-        c.MotivoConsulta = p.MotivoConsulta;
-        
-
-        // Si quieres traer “MotivoConsulta” guardado en ficha del paciente (opcional):
-        // c.MotivoConsulta = p.MotivoHabitual ?? c.MotivoConsulta;
-
-        StateHasChanged();
-    }
-
-    // Evento: marcar / desmarcar “Paciente nuevo”
-    private void OnNuevoPacienteChanged(bool isChecked, CitasModel c)
-    {
-        NuevoPaciente = isChecked;
-        if (NuevoPaciente)
-        {
-            PacienteSeleccionadoId = null;
-            LimpiarCamposPaciente(c);
-        }
-        StateHasChanged();
-    }
-
-    private static void LimpiarCamposPaciente(CitasModel c)
-    {
-        c.PacienteObjectId = null;
-        c.PacienteNombre = string.Empty;
-        c.PacienteEdad = 0;
-        c.PacienteCelular = string.Empty;
-        // Mantén tipo de paciente si quieres un valor por defecto, o pon 0/null:
-        // c.PacienteTypeId = 0;
-    }
 
     // Waiting list: TODAS las citas con StatusCitaId == 1 (filtrada desde scheduleEventData)
     private List<CitasModel> waitingList = new();
 
-    // ----------------- CICLO DE VIDA -----------------
+    private readonly TimeSpan _pollEvery = TimeSpan.FromSeconds(7); // frecuencia de chequeo
+    private const int LowBarsThreshold = 1; // 0–1 barras = señal baja
+    private CancellationTokenSource? _sigCts;
+
+    #endregion
+
+
+
+
+
+    #region CICLO DE VIDA 
     protected override async Task OnInitializedAsync()
     {
-        ExpenseTracker.Service.CommonService.OnlineStatusChanged += HandleOnlineChanged;
-
+        CommonService.OnlineStatusChanged += HandleOnlineChanged;
+        // Arranca el sondeo de intensidad de señal
+        _sigCts = new CancellationTokenSource();
+        _ = WatchSignalAsync(_sigCts.Token);
         // Config calendario desde tu servicio
         sceduleView = (View)Enum.Parse(typeof(View), Service.CalendarSettings.CurrentView as string);
         currentDate = Service.StartDate;
@@ -617,16 +587,77 @@ else
     private void HandleOnlineChanged(object? sender, bool online)
     {
         isDataLoaded = online;
-        Isvisible = !online;
+        isMsgVisible = !online;
         if (!online)
         {
             SfMessageText = "Sin Conexión a Internet";
             currentSeverity = MessageSeverity.Info;
         }
 
-       
+
         InvokeAsync(StateHasChanged);
     }
+    private async Task WatchSignalAsync(CancellationToken ct)
+    {
+        try
+        {
+            var timer = new PeriodicTimer(_pollEvery);
+            while (await timer.WaitForNextTickAsync(ct))
+            {
+                var sig = CommonService.GetSignalInfo();           // Bars: 0..4 (Android y Windows normalizado)
+                var online = await CommonService.IsInternetReachableAsync(ct);
+
+                // Definición de “señal baja”:
+                // - barras 0..LowBarsThreshold  => baja
+                // - barras null pero sin Internet => baja
+                bool lowSignal = (sig.Bars.HasValue && sig.Bars.Value <= LowBarsThreshold)
+                                 || (!sig.Bars.HasValue && !online);
+
+                if (!online)
+                {
+                    currentSeverity = MessageSeverity.Error;
+                    SfMessageText = "Sin conexión a Internet. Algunas acciones pueden fallar.";
+                    isMsgVisible = true;
+                }
+                else if (lowSignal)
+                {
+                    currentSeverity = MessageSeverity.Warning;
+                    SfMessageText = BuildLowSignalText(sig);
+                    isMsgVisible = true;
+                }
+                else
+                {
+                    // Buena señal y online → ocultar
+                    if (isMsgVisible)
+                        isMsgVisible = false;
+                }
+
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch (OperationCanceledException) { /* cierre normal */ }
+    }
+
+    private static string BuildLowSignalText(SignalInfo sig)
+    {
+        // Ejemplos:
+        // Wi-Fi “MiRed” — señal baja (1/4 barras, −70 dBm)
+        // Celular — señal baja (0/4 barras)
+        var transport = sig.Transport switch
+        {
+            NetTransport.Wifi => "Wi-Fi",
+            NetTransport.Cellular => "Celular",
+            NetTransport.Ethernet => "Ethernet",
+            _ => "Red"
+        };
+
+        var name = !string.IsNullOrWhiteSpace(sig.Extra) ? $" “{sig.Extra}”" : string.Empty;
+        var bars = sig.Bars.HasValue ? $"{sig.Bars}/4 barras" : "barras desconocidas";
+        var rssi = sig.RssiDbm.HasValue ? $", {sig.RssiDbm} dBm" : string.Empty;
+
+        return $"{transport}{name} — señal baja ({bars}{rssi}). Pueden ocurrir lentitudes o fallos.";
+    }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
@@ -695,47 +726,15 @@ else
         isDataLoaded = true;
         StateHasChanged();
     }
-    private void MarcarConfirmar(CitasModel c)
-    {
-        // tu regla de negocio al “confirmar”
-        // ej. StatusCitaId = 2 (confirmada), o bandera temporal:
-        // c.StatusCitaId = 2;
-        dialogPayVisible = true;
-        editando = c;
+    #endregion
 
-    }
 
-    private void AbrirReagendar(CitasModel c)
-    {
-        dialogReagendarVisible = true;
-        editando = c;
-        nuevoInicio = c.StartLocal;
-        nuevoFin = c.EndLocal == default ? c.StartLocal.AddHours(1) : c.EndLocal;
-    }
-    private async Task ConfirmarReagendo()
-    {
-        if (editando is null) return;
-        editando.StartLocal = nuevoInicio;
-        editando.EndLocal = nuevoFin <= nuevoInicio ? nuevoInicio.AddHours(1) : nuevoFin;
-        dialogReagendarVisible = false;
-        // no guardamos aquí; el usuario sigue y presiona Save del editor
-        await InvokeAsync(StateHasChanged);
-    }
-    private async Task ConfirmarPago()
-    {
-        if (editando is null) return;
-        editando.StatusCitaId = 10;
-        editando.IsPaid = true;
-        editando.PayMethodId = Paymethod;
-        dialogPayVisible = false;
-        // no guardamos aquí; el usuario sigue y presiona Save del editor
-        await InvokeAsync(StateHasChanged);
-    }
-    // ----------------- EVENTOS UI -----------------
+    #region EVENTOS UI
     // Mejor Task que void para poder hacer awaits si luego los necesitas
     public async Task OnPopupOpen(PopupOpenEventArgs<CitasModel> args)
     {
-        PacientesDS = await PacienteService.GetAllPacientesAsync();
+        List<PacienteModel> Pacintes = await PacienteService.GetAllPacientesAsync();
+        PacientesDS = Pacintes.OrderByDescending(p => p.PacienteNombre).ToList();
         if (args.Type == PopupType.Editor)
         {
             var c = args.Data ?? new CitasModel();
@@ -775,10 +774,9 @@ else
 
     public async void OnActionBegin(ActionEventArgs<CitasModel> args)
     {
-@*         PacientesDS = await PacienteService.GetAllPacientesAsync();
- *@
+
         if ((args.ActionType == ActionType.EventCreate || args.ActionType == ActionType.EventChange)
-            && (args.AddedRecords?.Count > 0 || args.ChangedRecords?.Count > 0))
+                            && (args.AddedRecords?.Count > 0 || args.ChangedRecords?.Count > 0))
         {
             var c = args.AddedRecords?.FirstOrDefault() ?? args.ChangedRecords!.First();
             // Si viene con Status 1 (pendiente) mostramos el diálogo de “Lista de espera”
@@ -840,9 +838,9 @@ else
     {
         List<ExpenseData>datas= await   transactionService.GetAllTransactionsAsync();
         var newpac = new PacienteModel();
-
+        var citaCrtd = new ParseResult();
         if ((args.ActionType == ActionType.EventCreate || args.ActionType == ActionType.EventChange)
-        && (args.AddedRecords?.Count > 0 || args.ChangedRecords?.Count > 0))
+    && (args.AddedRecords?.Count > 0 || args.ChangedRecords?.Count > 0))
         {
 
             foreach (var c in args.AddedRecords)
@@ -891,12 +889,29 @@ else
                         await transactionService.CreateMovementeAsync(newingreso);
                     }
 
-                    
-                    
+
+
 
                 }
 
-                await CitasService.CreateCitaAsync(c);
+                citaCrtd = await CitasService.CreateCitaAsync(c);
+                if(citaCrtd.Ok && string.Equals(citaCrtd.Reason, "Created", StringComparison.OrdinalIgnoreCase))
+                {
+                    SfMessageText = $"Cita creada con éxito";
+                    currentSeverity = MessageSeverity.Success;
+                    isMsgVisible = true;
+                }
+                else
+                {
+                    // Mensaje de error combinando Reason + cuerpo devuelto (si existe)
+                    SfMessageText = $"No se pudo crear el empleado. Motivo: {citaCrtd.Reason}" +
+                              (string.IsNullOrWhiteSpace(citaCrtd.ErrorBody) ? "" : $" | Detalle: {citaCrtd.ErrorBody}");
+
+                    currentSeverity = MessageSeverity.Error;
+                    isMsgVisible = true;
+                    // Muestra tu SfToast / diálogo con 'msg'
+                }
+                ResetPacienteValues();
 
 
 
@@ -950,7 +965,26 @@ else
                     }
                 }else if(c.StatusCitaId == 201)
                 {
-                    await CitasService.CreateCitaAsync(c);
+                    await CitasService.UpdateCitaReagendadaAsync(c);
+                    c.StatusCitaId = 1;
+                    citaCrtd = await CitasService.CreateCitaAsync(c);
+                    if(citaCrtd.Ok && string.Equals(citaCrtd.Reason, "Created", StringComparison.OrdinalIgnoreCase))
+                    {
+                        SfMessageText = $"Cita Re-Agendada con éxito";
+                        currentSeverity = MessageSeverity.Success;
+                        isMsgVisible = true;
+                    }
+                    else
+                    {
+                        // Mensaje de error combinando Reason + cuerpo devuelto (si existe)
+                        SfMessageText = $"No se pudo crear el empleado. Motivo: {citaCrtd.Reason}" +
+                                  (string.IsNullOrWhiteSpace(citaCrtd.ErrorBody) ? "" : $" | Detalle: {citaCrtd.ErrorBody}");
+
+                        currentSeverity = MessageSeverity.Error;
+                        isMsgVisible = true;
+                        // Muestra tu SfToast / diálogo con 'msg'
+                    }
+                    ResetPacienteValues();
                     break;
                 }
                 await CitasService.UpdateCitaAsync(c);
@@ -994,50 +1028,6 @@ else
         };
 
         await scheduleObj.OpenEditorAsync(nuevo, CurrentAction.Add);
-    }
-    private async void OnEmpleadoChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<string, EmpleadosModel> args)
-    {
-        if (string.IsNullOrEmpty(args?.Value))
-        {
-            // Sin filtro por terapeuta → todas las citas
-            empleadoActivo = null;
-            horasEmpleadoActivo = null;
-            semanaHoras = null;
-
-            var citas = await CitasService.GetAllCitasAsync();
-            scheduleEventData = citas?.OrderBy(c => c.StartLocal).ToList() ?? new();
-
-            workDay = new int[] {  1, 2, 3, 4, 5,6};
-
-            // refresca waiting list
-            RefreshWaitingListFromCurrent(citas);
-
-            StateHasChanged();
-            return;
-        }
-
-        // Empleado activo
-        empleadoActivo = resourceDataSource.FirstOrDefault(e => e.ObjectId == args.Value);
-
-        // Trae WorkHours del empleado (si no tienes backend aún, aplica defaults desde tu servicio/Models)
-@*         horasEmpleadoActivo = await EmployeService.GetWorkHoursByEmpleadoAsync(empleadoActivo.ObjectId);
-
-        // Anclar a la semana visible y ajustar días laborales del calendario
-        UpdateBreakHours(currentDate);
-        workDay = horasEmpleadoActivo?.Rules?.Where(r => r.Enable).Select(r => (int)r.Day).Distinct().OrderBy(x => x).ToArray()
-                  ?? new int[] { 0, 1, 2, 3, 4, 5, 6 };
-
- *@        // Filtrar citas por terapeuta (CitasModel.PsicoObjectId)
-        var todas = await CitasService.GetAllCitasAsync();
-        scheduleEventData = todas?
-            .Where(c => c.PsicoObjectId == empleadoActivo.ObjectId)
-            .OrderBy(c => c.StartLocal)
-            .ToList() ?? new();
-
-        // Waiting list según el nuevo conjunto
-        RefreshWaitingListFromCurrent(scheduleEventData);
-
-        StateHasChanged();
     }
     private void OnEventRendered(EventRenderedArgs<CitasModel> args)
     {
@@ -1106,9 +1096,147 @@ else
         // Abre el editor en modo EDICIÓN (no alta) para NO duplicar
         await scheduleObj.OpenEditorAsync(src, CurrentAction.Save);
     }
+    #endregion
 
+    #region FUNCIONES
+    private async void OnEmpleadoChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<string, EmpleadosModel> args)
+    {
+        if (string.IsNullOrEmpty(args?.Value))
+        {
+            // Sin filtro por terapeuta → todas las citas
+            empleadoActivo = null;
+            horasEmpleadoActivo = null;
+            semanaHoras = null;
 
-    // ----------------- HELPERS UI -----------------
+            var citas = await CitasService.GetAllCitasAsync();
+            scheduleEventData = citas?.OrderBy(c => c.StartLocal).ToList() ?? new();
+
+            workDay = new int[] {  1, 2, 3, 4, 5,6};
+
+            // refresca waiting list
+            RefreshWaitingListFromCurrent(citas);
+
+            StateHasChanged();
+            return;
+        }
+
+        // Empleado activo
+        empleadoActivo = resourceDataSource.FirstOrDefault(e => e.ObjectId == args.Value);
+
+        // Trae WorkHours del empleado (si no tienes backend aún, aplica defaults desde tu servicio/Models)
+@*         horasEmpleadoActivo = await EmployeService.GetWorkHoursByEmpleadoAsync(empleadoActivo.ObjectId);
+
+        // Anclar a la semana visible y ajustar días laborales del calendario
+        UpdateBreakHours(currentDate);
+        workDay = horasEmpleadoActivo?.Rules?.Where(r => r.Enable).Select(r => (int)r.Day).Distinct().OrderBy(x => x).ToArray()
+                  ?? new int[] { 0, 1, 2, 3, 4, 5, 6 };
+
+ *@
+        // Filtrar citas por terapeuta (CitasModel.PsicoObjectId)
+        var todas = await CitasService.GetAllCitasAsync();
+        scheduleEventData = todas?
+            .Where(c => c.PsicoObjectId == empleadoActivo.ObjectId)
+            .OrderBy(c => c.StartLocal)
+            .ToList() ?? new();
+
+        // Waiting list según el nuevo conjunto
+        RefreshWaitingListFromCurrent(scheduleEventData);
+
+        StateHasChanged();
+    }
+    private void MarcarConfirmar(CitasModel c)
+    {
+        // tu regla de negocio al “confirmar”
+        // ej. StatusCitaId = 2 (confirmada), o bandera temporal:
+        // c.StatusCitaId = 2;
+        dialogPayVisible = true;
+        editando = c;
+
+    }
+    private void ResetPacienteValues()
+    {
+        NuevoPaciente = true;
+        PacienteSeleccionadoId = null;
+    }
+
+    private void AbrirReagendar(CitasModel c)
+    {
+        dialogReagendarVisible = true;
+        editando = c;
+        nuevoInicio = c.StartLocal;
+        nuevoFin = c.EndLocal == default ? c.StartLocal.AddHours(1) : c.EndLocal;
+    }
+    private async Task ConfirmarReagendo()
+    {
+        if (editando is null) return;
+        editando.StartLocal = nuevoInicio;
+        editando.EndLocal = nuevoFin <= nuevoInicio ? nuevoInicio.AddHours(1) : nuevoFin;
+        editando.StatusCitaId = 201;
+        dialogReagendarVisible = false;
+        // no guardamos aquí; el usuario sigue y presiona Save del editor
+        await InvokeAsync(StateHasChanged);
+    }
+    private async Task ConfirmarPago()
+    {
+        if (editando is null) return;
+        editando.StatusCitaId = 10;
+        editando.IsPaid = true;
+        editando.PayMethodId = Paymethod;
+        dialogPayVisible = false;
+        // no guardamos aquí; el usuario sigue y presiona Save del editor
+        await InvokeAsync(StateHasChanged);
+    }
+    // Evento: cambio en DropDown de pacientes
+    private void OnPacienteChanged(Syncfusion.Blazor.DropDowns.ChangeEventArgs<string, PacienteModel> args, CitasModel c)
+    {
+        PacienteSeleccionadoId = args?.Value;
+        if (string.IsNullOrWhiteSpace(PacienteSeleccionadoId))
+            return;
+
+        var p = args?.ItemData ?? PacientesDS.FirstOrDefault(x => x.ObjectId == PacienteSeleccionadoId);
+        if (p is null) return;
+
+        // Al elegir un paciente, forzamos “no es nuevo”
+        NuevoPaciente = false;
+
+        // Rellena campos de la cita desde el paciente
+        c.PacienteObjectId = p.ObjectId;
+        c.PacienteNombre = p.PacienteNombre;
+        c.PacienteEdad = p.PacienteEdad;
+        c.PacienteCelular = p.PacienteCelular;
+        c.PacienteTypeId = p.PacienteTypeId;
+        c.PacienteObjectId = p.ObjectId;
+        c.MotivoConsulta = p.MotivoConsulta;
+        
+
+        // Si quieres traer “MotivoConsulta” guardado en ficha del paciente (opcional):
+        // c.MotivoConsulta = p.MotivoHabitual ?? c.MotivoConsulta;
+
+        StateHasChanged();
+    }
+
+    // Evento: marcar / desmarcar “Paciente nuevo”
+    private void OnNuevoPacienteChanged(bool isChecked, CitasModel c)
+    {
+        NuevoPaciente = isChecked;
+        if (NuevoPaciente)
+        {
+            PacienteSeleccionadoId = null;
+            LimpiarCamposPaciente(c);
+        }
+        StateHasChanged();
+    }
+
+    private static void LimpiarCamposPaciente(CitasModel c)
+    {
+        c.PacienteObjectId = null;
+        c.PacienteNombre = string.Empty;
+        c.PacienteEdad = 0;
+        c.PacienteCelular = string.Empty;
+        // Mantén tipo de paciente si quieres un valor por defecto, o pon 0/null:
+        // c.PacienteTypeId = 0;
+    }
+    #endregion
     #region HELPERS UI
     private string getDateHeaderText(DateTime? date)
         => Service.GetFormatDate((DateTime)date, "ddd, MMMM d");
@@ -1125,7 +1253,7 @@ else
     }
     #endregion
 
-    // ----------------- HORARIOS: ANCLAR A SEMANA VISIBLE (usa tus modelos) -----------------
+    #region HORARIOS: ANCLAR A SEMANA VISIBLE (usa tus modelos)
     private void UpdateBreakHours(DateTime current)
     {
         if (horasEmpleadoActivo?.Rules is null || horasEmpleadoActivo.Rules.Count == 0)
@@ -1153,13 +1281,16 @@ else
             };
         }).ToList();
     }
-
+    #endregion
+    
     // ----------------- DISPOSE -----------------
     public void Dispose()
     {
         scheduleObj = null;
         ddlObj = null;
-        ExpenseTracker.Service.CommonService.OnlineStatusChanged -= HandleOnlineChanged;
+        CommonService.OnlineStatusChanged -= HandleOnlineChanged;
+        _sigCts?.Cancel();
+        _sigCts?.Dispose();
 
     }
 }

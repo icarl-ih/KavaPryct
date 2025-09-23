@@ -6,10 +6,20 @@ using System.Threading;
 
 using System.Globalization;
 
-namespace ExpenseTracker.Service
+namespace KavaPryct.Services
 {
-    public static class CommonService
+    public enum NetTransport { None, Wifi, Cellular, Ethernet, Other }
+
+    public sealed record SignalInfo(
+        NetTransport Transport,
+        int? Bars,      // 0..4
+        int? RssiDbm,   // solo si disponible (Wi-Fi Android)
+        string? Extra   // SSID / Perfil / etc.
+    );
+    public static partial class CommonService
     {
+        
+
         // ---------- Formato / Cultura ----------
         private static readonly CultureInfo EsMx = CultureInfo.GetCultureInfo("es-MX");
 
@@ -42,6 +52,11 @@ namespace ExpenseTracker.Service
         private static IConnectivity? _connectivity;
         private static HttpClient? _http;
         private static CancellationTokenSource? _probeCts;
+        // Exposición pública simple
+        public static SignalInfo GetSignalInfo() => PlatformGetSignalInfo();
+
+        // DECLARACIÓN partial con modificador de acceso (← importante)
+        private static partial SignalInfo PlatformGetSignalInfo();
 
         /// <summary>
         /// Evento que notifica cambio de estado online (true = con Internet real).

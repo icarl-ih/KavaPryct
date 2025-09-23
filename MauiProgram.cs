@@ -86,6 +86,14 @@ namespace KavaPryct
                 client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
                 return new TransactionService(client);
             });
+            builder.Services.AddScoped<UpdaterService>(sp =>
+            {
+                var client = new HttpClient { BaseAddress = new Uri(settings.ParseBaseUrl) };
+                client.DefaultRequestHeaders.Add("X-Parse-Application-Id", settings.ApplicationId);
+                client.DefaultRequestHeaders.Add("X-Parse-REST-API-Key", settings.RestApiKey);
+                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                return new UpdaterService(client);
+            });
 
             // (si usas estos, mantén también)
             builder.Services.AddScoped<AppointmentService>();

@@ -301,8 +301,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        ExpenseTracker.Service.CommonService.OnlineStatusChanged += HandleOnlineChanged;
-
+        CommonService.OnlineStatusChanged += HandleOnlineChanged;
         // Suscríbete a cambios globales del servicio (cuando Expense/Schedule guarden, o cambies el rango)
         ExpenseDataServices.OnChanged += OnServiceChanged;
 
@@ -541,8 +540,7 @@ else
 
     public void Dispose()
     {
-        ExpenseTracker.Service.CommonService.OnlineStatusChanged -= HandleOnlineChanged;
-
+        CommonService.OnlineStatusChanged += HandleOnlineChanged;
         ExpenseDataServices.OnChanged -= OnServiceChanged;
     }
 }

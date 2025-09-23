@@ -1,8 +1,11 @@
 {
+  "$schema": "https://json.schemastore.org/launchsettings.json",
   "profiles": {
-    "Windows Machine": {
-      "commandName": "Project",
-      "nativeDebugging": false
+    "KavaPryct (Unpackaged)": {
+      "commandName": "Project"
+    },
+    "KavaPryct (MSIX)": {
+      "commandName": "MsixPackage"
     }
   }
 }

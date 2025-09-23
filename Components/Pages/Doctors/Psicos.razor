@@ -190,9 +190,9 @@
                                     <label>Cédula</label>
                                     <SfTextBox @bind-Value="estudioEditModel.Cedula" Placeholder="Número de cédula (opcional)" />
                                 </div>
-                                <div class="e-col-12">
+                                @* <div class="e-col-12">
                                     <SfCheckBox @bind-Checked="estudioEditModel.ClavePosgrado" Label="Cuenta con Posgrado (Maestría/Doctorado)" />
-                                </div>
+                                </div> *@
                             </div>
                         </div>
 
@@ -450,7 +450,7 @@ else
 
     protected override void OnInitialized()
     {
-        ExpenseTracker.Service.CommonService.OnlineStatusChanged += HandleOnlineChanged;
+        CommonService.OnlineStatusChanged += HandleOnlineChanged;
 
         this.specializationData = Service.Specializations;
         this.experienceData = Service.Experience;
@@ -470,7 +470,7 @@ else
     }
     public void Dispose()
     {
-        ExpenseTracker.Service.CommonService.OnlineStatusChanged -= HandleOnlineChanged;
+        CommonService.OnlineStatusChanged -= HandleOnlineChanged;
     }
     // Estado del checkbox (inicia en false)
     private bool AddContactoEmergencia { get; set; } = false;
@@ -544,18 +544,19 @@ else
     private async Task handleSubmit()
     {
         if (isSaving) return;
-        isSaving = true; string emerg;
+        isSaving = true;
         try
-        {
-
+        {   string empleadoId;
+            bool emplcrtd = false;
             doctorEditModel.MapearFechaNacParaServidor();
             var res = await EmpleadoService.CreateEmpleadoAsync(doctorEditModel);
 
             // Prefieren checar explícitamente "Created"
             if (res.Ok && string.Equals(res.Reason, "Created", StringComparison.OrdinalIgnoreCase))
             {
-                var empleadoId = res.ObjectId; // úsalo aquí
+                empleadoId = res?.ObjectId; // úsalo aquí
                 // ... continuar flujo
+                emplcrtd = res.Ok;
             }
             else
             {
@@ -568,24 +569,45 @@ else
                 // Muestra tu SfToast / diálogo con 'msg'
             }
 
-
-            if (AddContactoEmergencia)
+            if (emplcrtd)
             {
-                emerg = await EmpleadoService.CreateNewContactAsync(ContactoEditModel);
-                doctorEditModel.ContEmergObjectId = emerg;
+                var estudios = await EmpleadoService.CreateEstudioAsync(estudioEditModel);
+                if (estudios.Ok && estudios.ObjectId != null)
+                {
+                    doctorEditModel.EstudiosObjectId = estudios.ObjectId;
 
+                }
+                if(doctorEditModel.EstudiosLast == 4)
+                {
+                    estudioEditModel.ClavePosgrado = true;
+                    var pos = await EmpleadoService.CreatePosgradoAsync(posgradosEditModel);
+                    if (!pos.Ok && !string.Equals(res.Reason, "Created", StringComparison.OrdinalIgnoreCase))
+                    {
+                        SfMessageText = $"No se pudo crear el posgrado del empleado {doctorEditModel.NombreCorto}. Motivo: {res.Reason}" +
+                          (string.IsNullOrWhiteSpace(res.ErrorBody) ? "" : $" | Detalle: {res.ErrorBody}");
+
+                        currentSeverity = MessageSeverity.Error;
+                        Service.ShowDeleteMsg = true;
+                    }
+                }
+                if (AddContactoEmergencia)
+                {
+                    var emerg = await EmpleadoService.CreateNewContactAsync(ContactoEditModel);
+                    if(emerg.Ok && emerg.ObjectId != null)
+                    {
+                        doctorEditModel.ContEmergObjectId = emerg.ObjectId;
+                    }
+
+                }
             }
 
-            await EmpleadoService.CreatePosgradoAsync(posgradosEditModel);
-
-            string estudios = await EmpleadoService.CreateEstudioAsync(estudioEditModel);
-            
-            doctorEditModel.EstudiosObjectId = estudios;
-
-
-            
-
-            
+            var updt = await EmpleadoService.UpdateEmpleadoAsync(doctorEditModel);
+            if (updt.Ok && string.Equals(updt.Reason, "Created", StringComparison.OrdinalIgnoreCase))
+            {
+                SfMessageText = "Empleado creado correctamente";
+                currentSeverity = MessageSeverity.Success;
+                Service.ShowDeleteMsg = true;
+            }
 
             // 2) Cerrar diálogo y actualizar lista local
             isShowNewDialog = false;
