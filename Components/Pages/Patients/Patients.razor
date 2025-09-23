@@ -202,6 +202,8 @@
 }
 else
 {
+    <SfMessage Severity="@currentSeverity" Visible="Isvisible">@SfMessageText</SfMessage>
+
     <div class="planner-patient-skeleton">
         <div class="patients-container1">
              <SfSkeleton Shape="Syncfusion.Blazor.Notifications.SkeletonType.Rectangle" Height="15px" Width="97%"></SfSkeleton>
@@ -232,7 +234,9 @@ else
     SfGrid<PacienteModel> gridObj;
     SfDialog dialogObj, gridEditDialogObj;
     private List<EmpleadosModel> resourceDataSource = new();
-
+    private bool Isvisible = false;
+    private MessageSeverity currentSeverity = MessageSeverity.Info;
+    private string SfMessageText;
     private string searchValue { get; set; }
     private SfMaskedTextBox maskObj { get; set; }
 
@@ -273,10 +277,25 @@ else
     }
     protected override async Task OnInitializedAsync()
     {
+        ExpenseTracker.Service.CommonService.OnlineStatusChanged += HandleOnlineChanged;
+
         filteredPatients = await PacienteService.GetAllPacientesAsync();
         this.doctorsData = await EmployeService.GetAllPsicosAsync();
         resourceDataSource = await EmployeService.GetAllPsicosAsync();
 
+    }
+    private void HandleOnlineChanged(object? sender, bool online)
+    {
+        isDataLoaded = online;
+        Isvisible = !online;
+        if (!online)
+        {
+            SfMessageText = "Sin Conexión a Internet";
+            currentSeverity = MessageSeverity.Info;
+        }
+
+
+        InvokeAsync(StateHasChanged);
     }
     private List<string> historyLines = new();
 
@@ -383,7 +402,7 @@ else
 
     }
 
-    }
+    
 
     private async void onDeleteClick()
     {
@@ -437,14 +456,6 @@ else
         StateHasChanged();
     }
 
-
-    // private async Task<string> getHistoryFormatDate(CitasModel data)
-    // {
-    //     string text = "";
-    //     var doctor = await getDoctorName(data.PsicoObjectId); // <-- await
-    //     text = $"{Service.GetFormatDate(data.StartLocal, "MMM dd")} - {Service.GetFormatDate(data.EndLocal, "HH:mm")} • Cita con {doctor}";
-    //     return text;
-    // }
     private async Task<string> getHistoryFormatDate(CitasModel data)
     {
         var psico = await getDoctorName(data.PsicoObjectId);
@@ -491,6 +502,8 @@ else
 
     public void Dispose()
     {
+        ExpenseTracker.Service.CommonService.OnlineStatusChanged -= HandleOnlineChanged;
+
         gridObj = null;
         gridEditDialogObj = null;
         dialogObj = null;

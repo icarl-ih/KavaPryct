@@ -238,6 +238,8 @@
 }
 else
 {
+    <SfMessage Severity="@currentSeverity" Visible="Isvisible">@SfMessageText</SfMessage>
+
     <div class="search-skeleton">
         <SfSkeleton Shape="Syncfusion.Blazor.Notifications.SkeletonType.Rectangle" Height="30px" Width="100%"></SfSkeleton>
     </div>
@@ -254,7 +256,9 @@ else
     // Estado del rango (nullable)
     private DateTime? RangeStart { get; set; }
     private DateTime? RangeEnd { get; set; }
-
+    private bool Isvisible = false;
+    private MessageSeverity currentSeverity = MessageSeverity.Info;
+    private string SfMessageText;
     // (Opcional) si quieres reaccionar a cada cambio del rango
     private void OnRangeChanged(RangePickerEventArgs<DateTime?> e)
     {
@@ -272,19 +276,6 @@ else
     private static DateTime GetTxnDate(ExpenseData t) => t?.dateTime ?? default;
 
 
-
-
-    // // Template para el footer del agregado (suma del salario sugerido)
-    // // Nota: AggregateTemplateContext expone Sum/Count/Avg/etc.
-    // private RenderFragment<object> FooterSuggestedTemplate => (context) => @<div class="w-100 text-end pe-2">
-    // @{
-    //     var agg = context as Syncfusion.Blazor.Grids.AggregateTemplateContext;
-    //     // Si tu columna es decimal, Sum será decimal?; por seguridad lo tratamos como object y formateamos
-    //     var sum = (context as dynamic)?.Sum ?? 0m;
-    //     var culture = System.Globalization.CultureInfo.CurrentCulture;
-    //     }
-    //     <strong>Total sugerido: @string.Format(culture, "{0:C2}", sum)</strong>
-    // </div>;
 
 
     // Estado UI
@@ -310,6 +301,8 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        ExpenseTracker.Service.CommonService.OnlineStatusChanged += HandleOnlineChanged;
+
         // Suscríbete a cambios globales del servicio (cuando Expense/Schedule guarden, o cambies el rango)
         ExpenseDataServices.OnChanged += OnServiceChanged;
 
@@ -317,6 +310,19 @@ else
         await ExpenseDataServices.ReloadWindowAsync();
 
         isDataLoaded = true;
+    }
+    private void HandleOnlineChanged(object? sender, bool online)
+    {
+        isDataLoaded = online;
+        Isvisible = !online;
+        if (!online)
+        {
+            SfMessageText = "Sin Conexión a Internet";
+            currentSeverity = MessageSeverity.Info;
+        }
+
+
+        InvokeAsync(StateHasChanged);
     }
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -535,6 +541,8 @@ else
 
     public void Dispose()
     {
+        ExpenseTracker.Service.CommonService.OnlineStatusChanged -= HandleOnlineChanged;
+
         ExpenseDataServices.OnChanged -= OnServiceChanged;
     }
 }

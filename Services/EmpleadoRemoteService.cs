@@ -193,7 +193,7 @@ namespace KavaPryct.Services
 
             return null;
         }
-        public async Task<string> CreateEmpleadoAsync(EmpleadosModel e)
+        public async Task<ParseResult> CreateEmpleadoAsync(EmpleadosModel e)
         {
             try
             {
@@ -220,23 +220,37 @@ namespace KavaPryct.Services
                 var response = await _http.PostAsync("/classes/Empleados", content);
 
                 var body = await response.Content.ReadAsStringAsync();
-                if (!response.IsSuccessStatusCode)
-                {
-                    throw new Exception($"Parse {((int)response.StatusCode)} {response.ReasonPhrase}: {body}");
+                var reason = response.ReasonPhrase ?? response.StatusCode.ToString();
 
+                if (response.IsSuccessStatusCode) // típicamente 201 Created
+                {
+                    var created = JsonSerializer.Deserialize<ParseCreateResponse>(body,
+                        new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+                    return new ParseResult
+                    {
+                        Ok = true,
+                        Reason = reason,
+                        ObjectId = created?.ObjectId
+                    };
                 }
 
-                response.EnsureSuccessStatusCode();
-                if (!response.IsSuccessStatusCode)
-                    throw new Exception($"Parse {((int)response.StatusCode)} {response.ReasonPhrase}: {body}");
-
-
-                var result = JsonSerializer.Deserialize<EstudiosModel>(body);
-
-                return response.ReasonPhrase;
-            }catch(Exception ex)
+                // Error: devolvemos reason + cuerpo
+                return new ParseResult
+                {
+                    Ok = false,
+                    Reason = reason,
+                    ErrorBody = body
+                };
+            }
+            catch (Exception ex)
             {
-                return ex.Message;
+                return new ParseResult
+                {
+                    Ok = false,
+                    Reason = "Exception",
+                    ErrorBody = ex.Message
+                };
             }
         }
         public async Task<string> CreateEstudioAsync(EstudiosModel e)

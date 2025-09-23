@@ -7,31 +7,49 @@ using Syncfusion.Blazor;
 using Syncfusion.Blazor.Popups;
 using System.Net.Http.Headers;
 
+using System;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using Microsoft.Extensions.Logging;
+using Microsoft.Maui;
+using Microsoft.Maui.Controls.Hosting;
+using Microsoft.Maui.Hosting;
+using Microsoft.Maui.Networking;     // IConnectivity
+using Syncfusion.Blazor;
+using KavaPryct;                      // tu namespace de App
+using ExpenseTracker.Service;         // CommonService
+
 namespace KavaPryct
 {
     public static class MauiProgram
     {
         public static MauiApp CreateMauiApp()
         {
-            Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1JFaF5cXGRCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWXZedXVTQmRcWExzWEJWYEg=");
+            Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense(
+                "Ngo9BigBOggjHTQxAR8/V1JFaF5cXGRCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWXZedXVTQmRcWExzWEJWYEg="
+            );
 
             var builder = MauiApp.CreateBuilder();
+
             builder
                 .UseMauiApp<App>()
                 .ConfigureFonts(fonts =>
                 {
                     fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
                 });
-            builder.Services.AddSyncfusionBlazor();
+
+            // UI / Blazor
             builder.Services.AddMauiBlazorWebView();
+            builder.Services.AddSyncfusionBlazor();
             builder.Services.AddScoped<SfDialogService>();
-            builder.Services.AddScoped<AppointmentService>();
-            builder.Services.AddScoped<ExpenseDataService>();
-            builder.Services.AddSingleton<EmpleadoRemoteService>();
-            builder.Services.AddSingleton < CitasService > ();
-            builder.Services.AddSingleton < PacienteService > ();
-            builder.Services.AddSingleton < TransactionService > ();
-            var settings = new AppSettings(); // usa tu clase/valores
+
+#if DEBUG
+            builder.Services.AddBlazorWebViewDeveloperTools();
+            builder.Logging.AddDebug();
+#endif
+
+            // --- Tus servicios de dominio ---
+            var settings = new AppSettings(); // tu clase/valores
 
             builder.Services.AddScoped<CitasService>(sp =>
             {
@@ -41,6 +59,7 @@ namespace KavaPryct
                 client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
                 return new CitasService(client);
             });
+
             builder.Services.AddScoped<PacienteService>(sp =>
             {
                 var client = new HttpClient { BaseAddress = new Uri(settings.ParseBaseUrl) };
@@ -58,6 +77,7 @@ namespace KavaPryct
                 client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
                 return new EmpleadoRemoteService(client);
             });
+
             builder.Services.AddScoped<TransactionService>(sp =>
             {
                 var client = new HttpClient { BaseAddress = new Uri(settings.ParseBaseUrl) };
@@ -66,23 +86,24 @@ namespace KavaPryct
                 client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
                 return new TransactionService(client);
             });
-            // Registros necesarios
-            builder.Services.AddSingleton<IConnectivity>(Connectivity.Current);
-            builder.Services.AddHttpClient(); // Para IHttpClientFactory
 
+            // (si usas estos, mantén también)
+            builder.Services.AddScoped<AppointmentService>();
+            builder.Services.AddScoped<ExpenseDataService>();
+
+            // --- Conectividad para CommonService ---
+            builder.Services.AddSingleton<IConnectivity>(Connectivity.Current);
+            builder.Services.AddHttpClient(); // para IHttpClientFactory
+
+            // IMPORTANTÍSIMO: construir SOLO UNA VEZ
             var app = builder.Build();
 
-            // Inicializa CommonService con dependencias de conectividad
+            // Inicializa CommonService (internet reachability + eventos)
             var connectivity = app.Services.GetRequiredService<IConnectivity>();
             var httpFactory = app.Services.GetRequiredService<IHttpClientFactory>();
             CommonService.InitConnectivity(connectivity, httpFactory);
 
-#if DEBUG
-            builder.Services.AddBlazorWebViewDeveloperTools();
-    		builder.Logging.AddDebug();
-#endif
-
-            return builder.Build();
+            return app;
         }
     }
 }
