@@ -52,7 +52,12 @@ namespace KavaPryct.Services
                 {
                     {"PacienteNombre" , c.PacienteNombre.ToUpper()  },
                     {"PacienteEdad" , c.PacienteEdad },
+                    {"PacienteEdad1" , c.PacienteEdad1 },
+                    {"PacienteDomicilio" , c.PacienteDomicilio },
+                    {"EstudiosId" , c.EstudiosLast },
+                    {"EstudiosId1" , c.EstudiosLast1 },
                     {"PacienteCelular" , c.PacienteCelular },
+                    {"PacienteCelular1" , c.PacienteCelular1 },
                     {"PacienteTypeId" , c.PacienteTypeId },
                     {"MotivoConsulta" , c.MotivoConsulta.ToUpper()  },
                     {"StatusCitaId" , c.StatusCitaId },   // 1
@@ -125,7 +130,12 @@ namespace KavaPryct.Services
             {
                 {"PacienteNombre" , c.PacienteNombre.ToUpper() },
                 {"PacienteEdad" , c.PacienteEdad },
-                {"PacienteCelular" , c.PacienteCelular },
+                    {"PacienteEdad1" , c.PacienteEdad1 },
+                    {"PacienteDomicilio" , c.PacienteDomicilio },
+                    {"EstudiosId" , c.EstudiosLast },
+                    {"EstudiosId1" , c.EstudiosLast1 },
+                    {"PacienteCelular" , c.PacienteCelular },
+                    {"PacienteCelular1" , c.PacienteCelular1 },
                 {"PacienteTypeId" , c.PacienteTypeId },
                 {"MotivoConsulta" , c.MotivoConsulta.ToUpper() },
                 {"StatusCitaId" , c.StatusCitaId },   // 1

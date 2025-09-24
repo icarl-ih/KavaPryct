@@ -550,11 +550,12 @@ else
             bool emplcrtd = false;
             doctorEditModel.MapearFechaNacParaServidor();
             var res = await EmpleadoService.CreateEmpleadoAsync(doctorEditModel);
-
+            
             // Prefieren checar explícitamente "Created"
             if (res.Ok && string.Equals(res.Reason, "Created", StringComparison.OrdinalIgnoreCase))
             {
                 empleadoId = res?.ObjectId; // úsalo aquí
+                doctorEditModel.ObjectId = res.ObjectId;
                 // ... continuar flujo
                 emplcrtd = res.Ok;
             }
@@ -709,7 +710,7 @@ else
     private async void LoadData()
     {
         this.dutyTimings = Service.DutyTimings;
-        this.empleados = await EmpleadoService.GetAllPsicosAsync();
+        this.empleados = await EmpleadoService.GetAllEmpleadosAsync();
         this.estudios = await EmpleadoService.GetEstudiosWithPosgradosAsync();
         await Task.Delay(500);
         isDataLoaded = true;

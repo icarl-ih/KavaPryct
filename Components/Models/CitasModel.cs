@@ -19,12 +19,22 @@ namespace KavaPryct.Components.Models
 
         [JsonPropertyName("PacienteEdad")]
         public int PacienteEdad { get; set; }
+        [JsonPropertyName("PacienteEdad1")]
+        public int PacienteEdad1 { get; set; }
 
         [JsonPropertyName("PacienteCelular")]
         public string PacienteCelular { get; set; }
+        [JsonPropertyName("PacienteCelular1")]
+        public string PacienteCelular1 { get; set; }
+        [JsonPropertyName("PacienteDomicilio")]
+        public string PacienteDomicilio { get; set; }
 
         [JsonPropertyName("PacienteTypeId")]
         public int PacienteTypeId { get; set; }
+        [JsonPropertyName("EstudiosId")]
+        public int EstudiosLast { get; set; }
+        [JsonPropertyName("EstudiosId1")]
+        public int EstudiosLast1 { get; set; }
 
         [JsonPropertyName("MotivoConsulta")]
         public string MotivoConsulta { get; set; }

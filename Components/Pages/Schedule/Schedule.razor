@@ -119,36 +119,95 @@
                                             <label>Nombre completo</label>
                                             <SfTextBox @bind-Value="c.PacienteNombre" CssClass="input-style input-uppercase"></SfTextBox>
                                         </div>
-                                        <div class="e-col-3">
-                                            <label>Edad</label>
-                                            <SfNumericTextBox TValue="int" @bind-Value="c.PacienteEdad" Min="0" Max="120"></SfNumericTextBox>
-                                        </div>
-                                        <div class="e-col-3">
-                                            <SfMaskedTextBox CssClass="e-field with-icon-left"
-                                                             @ref="maskObj"
-                                                             Placeholder="Celular"
-                                                             FloatLabelType="@FloatLabelType.Always"
-                                                             @bind-Value="@c.PacienteCelular"
-                                                             Mask="(999) 999-9999"></SfMaskedTextBox>
-                                        </div>
-                                    </div>
+                                        <div class="e-row">
+                                            <div class="e-col-4">
+                                                <label>Tipo de paciente</label>
+                                                <SfDropDownList TItem="KeyValuePair<int,string>" TValue="int"
+                                                                DataSource="@tipoPacienteOptions"
+                                                                @bind-Value="c.PacienteTypeId"
+                                                                PopupHeight="220px">
+                                                    <DropDownListFieldSettings Text="Value" Value="Key" />
+                                                    <DropDownListEvents TItem="KeyValuePair<int,string>" TValue="int"
+                                                                        ValueChange="@(e => OnPacienteTypeChanged(e, c))" />
+                                                </SfDropDownList>
 
-                                    <div class="e-row">
-                                        <div class="e-col-4">
-                                            <label>Tipo de paciente</label>
-                                            <SfDropDownList TItem="KeyValuePair<int,string>" TValue="int"
-                                                            DataSource="@tipoPacienteOptions"
-                                                            @bind-Value="c.PacienteTypeId"
-                                                            PopupHeight="220px">
-                                                <DropDownListFieldSettings Text="Value" Value="Key"></DropDownListFieldSettings>
-                                            </SfDropDownList>
+                                            </div>
+                                            <div class="e-col-8">
+                                                <label>Motivo de consulta</label>
+                                                <SfTextBox @bind-Value="c.MotivoConsulta" Multiline="true" CssClass="input-style input-uppercase"></SfTextBox>
+                                            </div>
+
                                         </div>
-                                        <div class="e-col-8">
-                                            <label>Motivo de consulta</label>
-                                            <SfTextBox @bind-Value="c.MotivoConsulta" Multiline="true" CssClass="input-style input-uppercase"></SfTextBox>
+
+                                        <div class="education-container">
+                                            <div class="department">
+                                                <label>Edad</label>
+                                                <SfNumericTextBox TValue="int" @bind-Value="c.PacienteEdad" Min="0" Max="120"></SfNumericTextBox>
+                                            </div>
+                                            @if(c.PacienteTypeId == 2 || c.PacienteTypeId == 3)
+                                            {
+
+                                                <div class="department">
+                                                    <label>Edad</label>
+                                                    <SfNumericTextBox TValue="int" @bind-Value="c.PacienteEdad1" Min="0" Max="120"></SfNumericTextBox>
+                                                </div>
+                                            }
+                                            
+                                        </div>
+                                        <div class="education-container">
+                                            <div class="department">
+                                                <SfMaskedTextBox CssClass="e-field with-icon-left"
+                                                                 @ref="maskObj"
+                                                                 Placeholder="Celular"
+                                                                 FloatLabelType="@FloatLabelType.Always"
+                                                                 @bind-Value="@c.PacienteCelular"
+                                                                 Mask="(999) 999-9999"></SfMaskedTextBox>
+                                            </div>
+                                            @if (c.PacienteTypeId == 2 || c.PacienteTypeId == 3)
+                                            {
+
+                                                <div class="department">
+                                                    <SfMaskedTextBox CssClass="e-field with-icon-left"
+                                                                     @ref="maskObj"
+                                                                     Placeholder="Celular"
+                                                                     FloatLabelType="@FloatLabelType.Always"
+                                                                     @bind-Value="@c.PacienteCelular1"
+                                                                     Mask="(999) 999-9999"></SfMaskedTextBox>
+                                                </div>
+                                            }
+                                            
                                         </div>
                                         
                                     </div>
+                                    <div class="email-container">
+                                        <SfTextBox CssClass='e-field' Placeholder='Dirección (Ej. Calle ##, Colonia)' FloatLabelType="@FloatLabelType.Always" @bind-Value="@c.PacienteDomicilio"></SfTextBox>
+                                        <ValidationMessage For="@(() => c.PacienteDomicilio)" />
+                                    </div>
+                                    <div class="Education" style="width:345px">
+                                        <div class="education-container">
+                                            <div class="department">
+                                                <label>Último grado de Estudios</label>
+                                                <SfDropDownList ID="estudiosint" TItem="KeyValuePair<int,string>" TValue="int"
+                                                                DataSource="@GdoEstudios" @bind-Value="@c.EstudiosLast"
+                                                                PopupHeight="220px">
+                                                    <DropDownListFieldSettings Text="Value" Value="Key"></DropDownListFieldSettings>
+                                                    </SfDropDownList>
+                                            </div>
+                                            @if (c.PacienteTypeId == 2 || c.PacienteTypeId == 3)
+                                            {
+
+                                                <div class="department">
+                                                    <label>Último grado de Estudios</label>
+                                                    <SfDropDownList ID="estudiosint" TItem="KeyValuePair<int,string>" TValue="int"
+                                                                    DataSource="@GdoEstudios" @bind-Value="@c.EstudiosLast1"
+                                                                    PopupHeight="220px">
+                                                        <DropDownListFieldSettings Text="Value" Value="Key"></DropDownListFieldSettings>
+                                                    </SfDropDownList>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                        
                                     <div class="e-row">
                                         <div class="e-col-8">
                                             <label>Costo</label>
@@ -538,6 +597,11 @@ else
 
     private List<KeyValuePair<int, string>> EstatusCita => Enum.GetValues(typeof(EstatusCita))
                                                                 .Cast<EstatusCita>().Select(c => new KeyValuePair<int, string>((int)c, c.ToString())).ToList();
+    private List<KeyValuePair<int, string>> GdoEstudios =>
+    Enum.GetValues(typeof(UltimoGradoEstudios))
+        .Cast<UltimoGradoEstudios>()
+        .Select(e => new KeyValuePair<int, string>((int)e, e.ToString()))
+        .ToList();
 
     private bool isMsgVisible = false;
     private MessageSeverity currentSeverity = MessageSeverity.Info;
@@ -670,6 +734,7 @@ else
 
         switch ((EstatusCita)c.StatusCitaId)
         {
+            case Services.EstatusCita.Asignada: return ("#7575ff", "#363675", "#FFFFFF", false);
             case Services.EstatusCita.Inasistencia: return ("#7B8089","3C3E42", "#FFFFFF", false);
             case Services.EstatusCita.Cancelada: return ("#FF2A04","#661102", "#FFFFFF", true);
             case Services.EstatusCita.Confirmada: return ("#1a4c62", "#64D9FF", "#FFFFFF", false);
@@ -684,9 +749,11 @@ else
         // Reutiliza los mismos colores que usas en GetStatusColors
         return s switch
         {
+            
+            Services.EstatusCita.Asignada => ("#7575ff", "#363675", "#FFFFFF", false),
             Services.EstatusCita.Confirmada => ("#1a4c62", "#64D9FF", "#FFFFFF", false),
             Services.EstatusCita.ReAgendada => ("#FFAF3D","#664618" ,"#664618", false),
-            Services.EstatusCita.Cancelada => ("#FF2A04","#661102", "#FFFFFF", true),
+            Services.EstatusCita.Cancelada => ("#FF2A04","#661102", "#FFFFFF", false),
             Services.EstatusCita.Asistencia => ("#005A00", "#005A00", "#FFFFFF", false),
             Services.EstatusCita.Inasistencia => ("#7B8089","3C3E42", "#FFFFFF", false),
             _ => ("#7B8089","3C3E42", "#FFFFFF", false),
@@ -713,7 +780,7 @@ else
     {
         // Trae todas las citas inicialmente (sin filtro)
         var citas = await CitasService.GetAllCitasAsync();
-        scheduleEventData = citas?.Where(c=>c.StatusCitaId==0||c.StatusCitaId>1).OrderBy(c => c.StartLocal).ToList() ?? new();
+        scheduleEventData = citas?.Where(c=>c.StatusCitaId != 2).OrderBy(c => c.StartLocal).ToList() ?? new();
 
         // Waiting list = todas con StatusCitaId == 1
         RefreshWaitingListFromCurrent(citas);
@@ -1207,10 +1274,30 @@ else
         c.PacienteTypeId = p.PacienteTypeId;
         c.PacienteObjectId = p.ObjectId;
         c.MotivoConsulta = p.MotivoConsulta;
-        
+
 
         // Si quieres traer “MotivoConsulta” guardado en ficha del paciente (opcional):
         // c.MotivoConsulta = p.MotivoHabitual ?? c.MotivoConsulta;
+
+        StateHasChanged();
+    }
+    // Evento: cambio en DropDown de Tipo pacientes         (Syncfusion.Blazor.DropDowns.ChangeEventArgs t
+    int IdpacType;
+    private void OnPacienteTypeChanged(
+    ChangeEventArgs<int, KeyValuePair<int, string>> e, CitasModel c)
+    {
+        // Con @bind ya se asignó, pero por claridad:
+        c.PacienteTypeId = e.Value;
+
+        // Si quieres usar el texto seleccionado:
+        var item = e.ItemData;                 // KeyValuePair<int,string>
+        var nombreTipo = item.Value;           // "Nuevo" | "Frecuente" | ...
+
+        // Lógica tuya:
+        NuevoPaciente = false;
+
+        // (Opcional) si guardas el nombre del tipo en el modelo:
+        // c.PacienteTipoNombre = nombreTipo;
 
         StateHasChanged();
     }
@@ -1247,7 +1334,7 @@ else
     private void RefreshWaitingListFromCurrent(List<CitasModel> citas)
     {
         waitingList = (citas ?? new())
-            .Where(c => c.StatusCitaId == 1)
+            .Where(c => c.StatusCitaId == 2)
             .OrderBy(c => c.StartLocal)
             .ToList();
     }

@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<AppInstaller
+    Uri="https://raw.githubusercontent.com/icarl-ih/KavaPryct/main/deploy/windows/KavaPryct.appinstaller"
+    Version="1.0.1.0"
+    xmlns="http://schemas.microsoft.com/appx/appinstaller/2018">
+
+	<!-- Usa MainPackage si generas .msix; si generas .msixbundle usa MainBundle (ver ejemplo abajo) -->
+	<MainPackage>
+		Name="IHSolutions.KavaPryct"               <!-- Ajusta: coincide con Package Identity Name -->
+	Publisher="CN=IHSolutions"                 <!-- Ajusta: coincide con Publisher de tu certificado -->
+	Version="1.0.1.0"
+	ProcessorArchitecture="x64"
+	Uri="https://drive.google.com/uc?export=download&id=1MYQdKbUwT4TWdqZhJtBBM7BoHBMbxHFz"
+	</MainPackage>
+
+	<UpdateSettings>
+		<!-- Busca actualización al lanzar la app cada 6 horas, muestra prompt, no bloquea el arranque -->
+		<OnLaunch HoursBetweenUpdateChecks="6" ShowPrompt="true" UpdateBlocksActivation="false" />
+	</UpdateSettings>
+</AppInstaller>

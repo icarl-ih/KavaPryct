@@ -4,6 +4,22 @@
     color: #9aa5bb;
     letter-spacing: 0.05px;
 }
+.new-doctor-dialog .e-dlg-content .new-doctor-form .education-container .department #Specialization .department-value span:nth-child(1) {
+    border-radius: 6px;
+    height: 10px;
+    width: 10px;
+}
+.new-doctor-dialog .e-dlg-content .new-doctor-form .gender-container, .new-doctor-dialog .e-dlg-content .new-doctor-form .education-container, .new-doctor-dialog .e-dlg-content .new-doctor-form .experience-container {
+    display: flex;
+}
+
+    .new-doctor-dialog .e-dlg-content .new-doctor-form .gender-container .gender, .new-doctor-dialog .e-dlg-content .new-doctor-form .education-container .department, .new-doctor-dialog .e-dlg-content .new-doctor-form .experience-container .experience {
+        padding-right: 8px;
+    }
+
+    .new-doctor-dialog .e-dlg-content .new-doctor-form .gender-container .mobile, .new-doctor-dialog .e-dlg-content .new-doctor-form .education-container .education, .new-doctor-dialog .e-dlg-content .new-doctor-form .experience-container .designation {
+        padding-left: 8px;
+    }
 
     .planner-calendar .e-all-day-appointment-wrapper, .planner-calendar .e-timeline-wrapper {
         font-size: 0;

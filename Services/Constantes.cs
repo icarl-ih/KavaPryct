@@ -56,6 +56,7 @@ namespace KavaPryct.Services
     {
         Cancelada = 0,
         Asignada = 1,
+        Espera=2,
         ReAgendada = 201,
         Confirmada = 100,
         Asistencia = 10,

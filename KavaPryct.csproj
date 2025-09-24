@@ -28,7 +28,7 @@
 		<AppxPackageSigningEnabled>True</AppxPackageSigningEnabled>
 		<PackageCertificateThumbprint>A91F71D1D3631F78B91567406B63C66B688C8D82</PackageCertificateThumbprint>
 		<AppxPackageSigningTimestampDigestAlgorithm>SHA256</AppxPackageSigningTimestampDigestAlgorithm>
-		<AppxAutoIncrementPackageRevision>False</AppxAutoIncrementPackageRevision>
+		<AppxAutoIncrementPackageRevision>True</AppxAutoIncrementPackageRevision>
 		<AppxSymbolPackageEnabled>False</AppxSymbolPackageEnabled>
 		<GenerateTestArtifacts>True</GenerateTestArtifacts>
 		<AppInstallerUri>https://drive.google.com/drive/folders/15iARUeuVoVciun7ixLe7XsO8-l-InZSz%3fusp=sharing</AppInstallerUri>
@@ -43,6 +43,7 @@
 		<PublishReadyToRun>false</PublishReadyToRun>
 		<DisableTransitiveFrameworkReferenceDownloads>true</DisableTransitiveFrameworkReferenceDownloads>
 		<PublisherDisplayName>IHSolutions</PublisherDisplayName>
+		
 	</PropertyGroup>
 		
 
@@ -57,7 +58,8 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<MauiIcon Include="Resources\AppIcon\kavaicon.png" Color="White" />
+		<MauiIcon Include="Resources\AppIcon\kavaicon.png" Color="White" ForegroundScale="0.5" Condition="'$(TargetFramework)'=='net9.0-android'" />
+		<MauiIcon Include="Resources\AppIcon\kavaicon.png" Color="#FFFFFF00" Condition="'$(TargetFramework)'=='net9.0-windows10.0.19041.0'" />
 		<MauiSplashScreen Include="Resources\Splash\ihs.png" Color="White" />
 		<MauiImage Include="Resources\Images\*" />
 		<MauiImage Update="Resources\Images\dotnet_bot.svg" BaseSize="168,208" />
