@@ -5,6 +5,7 @@
 @using Syncfusion.Blazor.Buttons
 @using Syncfusion.Blazor.Navigations
 @using Syncfusion.Blazor.Notifications
+@using System.Globalization
 @inject UpdaterService Updater
 
 <div class="about-wrap">
@@ -38,7 +39,7 @@
             <div class="info-grid">
                 <div class="info-item">
                     <span class="label">Versión actual</span>
-                    <span class="value">@currentVersion (@currentBuild)</span>
+                    <span class="value">@currentVersion</span>
                 </div>
                 <div class="info-item">
                     <span class="label">Última disponible</span>
@@ -133,21 +134,72 @@
     {
         latest = await Updater.GetLatestAsync(platform);
 
-        // Decide estado
-        var currBuildNum = int.TryParse(currentBuild, out var b) ? b : 0;
-        var latestBuild  = latest?.VersionCode ?? 0;
+        // currentVersion ya lo llenas en OnInitializedAsync
+        var cmp = CompareAppVersions(currentVersion, latest?.Version, latest?.VersionCode ?? 0);
 
-        if (latest is null || latestBuild <= 0 || latestBuild <= currBuildNum)
+        if (latest is null || cmp >= 0) // cmp >= 0 ⇒ ya estás al día o más nuevo
         {
             status = UpdateStatus.UpToDate;
             statusText = "Al día";
             return;
         }
 
-        status = latest.Mandatory ? UpdateStatus.Mandatory : UpdateStatus.UpdateAvailable;
+        status = latest!.Mandatory ? UpdateStatus.Mandatory : UpdateStatus.UpdateAvailable;
         statusText = latest.Mandatory ? "Actualización obligatoria" : "Actualización disponible";
         StateHasChanged();
     }
+    // 1) Utilidad para normalizar y comparar versiones
+    static bool TryParseVersionLoose(string? input, out Version result)
+    {
+        result = new Version(0, 0, 0, 0);
+        if (string.IsNullOrWhiteSpace(input)) return false;
+
+        // Quita sufijos tipo -beta, +build
+        var s = input.Trim();
+        var cut = s.IndexOfAny(new[] { '-', '+' });
+        if (cut >= 0) s = s[..cut];
+
+        // Divide por puntos y rellena hasta 4 partes
+        var parts = s.Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        int[] nums = new int[4];
+        for (int i = 0; i < Math.Min(parts.Length, 4); i++)
+            nums[i] = int.TryParse(parts[i], NumberStyles.Integer, CultureInfo.InvariantCulture, out var n) ? Math.Max(n, 0) : 0;
+
+        try
+        {
+            result = parts.Length switch
+            {
+                1 => new Version(nums[0], 0),
+                2 => new Version(nums[0], nums[1]),
+                3 => new Version(nums[0], nums[1], nums[2]),
+                _ => new Version(nums[0], nums[1], nums[2], nums[3]),
+            };
+            return true;
+        }
+        catch { return false; }
+    }
+
+    // 2) Comparación por versión semántica (con fallback a VersionCode)
+    static int CompareAppVersions(string? currentVersionStr, string? latestVersionStr, int latestVersionCode)
+    {
+        var okCurrent = TryParseVersionLoose(currentVersionStr, out var vCurr);
+        var okLatest = TryParseVersionLoose(latestVersionStr, out var vLat);
+
+        if (okCurrent && okLatest)
+            return vCurr.CompareTo(vLat); // <0 si current < latest
+
+        // Si no hay versión de texto válida, comparamos por VersionCode (si >0)
+        if (latestVersionCode > 0)
+        {
+            // Si tienes currentBuild numérico puedes usarlo; si no, asume 0
+            var currCode = 0;
+            return currCode.CompareTo(latestVersionCode);
+        }
+
+        // Sin datos comparables, considera igual
+        return 0;
+    }
+
 
     private async Task CheckAgain()
     {
