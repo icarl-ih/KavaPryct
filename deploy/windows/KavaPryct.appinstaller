@@ -5,11 +5,12 @@
     xmlns="http://schemas.microsoft.com/appx/appinstaller/2018">
 
   <MainPackage
-      Name="IHSolutions.KavaPryct"
-      Publisher="CN=IHSolutions"
-      Version="1.0.0.0"
-      ProcessorArchitecture="x64"
-      Uri="https://drive.google.com/uc?export=download&id=1MYQdKbUwT4TWdqZhJtBBM7BoHBMbxHFz" />
+    Name="IHSolutions.KavaPryct"
+    Publisher="CN=IHSolutions"
+    Version="1.0.0.0"
+    ProcessorArchitecture="x64"
+    Uri="https://drive.google.com/uc?export=download&id=1MYQdKbUwT4TWdqZhJtBBM7BoHBMbxHFz" />
+
 
   <UpdateSettings>
     <OnLaunch HoursBetweenUpdateChecks="6" ShowPrompt="true" UpdateBlocksActivation="false" />
