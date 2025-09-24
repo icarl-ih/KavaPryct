@@ -56,6 +56,9 @@
 		<PublishTrimmed>true</PublishTrimmed>
 		<InvariantGlobalization>true</InvariantGlobalization>
 	</PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net9.0-android|AnyCPU'">
+	  <AndroidPackageFormat>apk</AndroidPackageFormat>
+	</PropertyGroup>
 
 	<ItemGroup>
 		<MauiIcon Include="Resources\AppIcon\kavaicon.png" Color="White" ForegroundScale="0.5" Condition="'$(TargetFramework)'=='net9.0-android'" />
@@ -65,6 +68,10 @@
 		<MauiImage Update="Resources\Images\dotnet_bot.svg" BaseSize="168,208" />
 		<MauiFont Include="Resources\Fonts\*" />
 		<MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Remove="deploy\windows\KavaPryct.appinstaller" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -90,6 +97,10 @@
 		<PackageReference Include="Syncfusion.Blazor.SplitButtons" Version="31.1.18" />
 		<PackageReference Include="Syncfusion.Blazor.Themes" Version="31.1.18" />
 		<PackageReference Include="Syncfusion.Licensing" Version="31.1.18" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="deploy\windows\" />
 	</ItemGroup>
 
 </Project>
