@@ -50,11 +50,11 @@
 	<!-- SOLO Android (optimizado para Release) -->
 	<PropertyGroup Condition="'$(TargetFramework)'=='net9.0-android' and '$(Configuration)'=='Release'">
 		<!-- AAB para Play Store (usa apk para pruebas locales) -->
-		<AndroidPackageFormat>aab</AndroidPackageFormat>
+		<AndroidPackageFormat>apk</AndroidPackageFormat>
 		<!-- Optimizaciones recomendadas -->
-		<RunAOTCompilation>true</RunAOTCompilation>
-		<PublishTrimmed>true</PublishTrimmed>
-		<InvariantGlobalization>true</InvariantGlobalization>
+		<RunAOTCompilation>false</RunAOTCompilation>
+		<PublishTrimmed>false</PublishTrimmed>
+		<InvariantGlobalization>false</InvariantGlobalization>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net9.0-android|AnyCPU'">
 	  <AndroidPackageFormat>apk</AndroidPackageFormat>
