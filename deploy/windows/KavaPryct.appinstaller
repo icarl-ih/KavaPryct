@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <AppInstaller
-    Uri="https://raw.githubusercontent.com/icarl-ih/KavaPryct/main/deploy/windows/KavaPryct.appinstaller"
+    Uri="https://raw.githubusercontent.com/icarl-ih/KavaPryct/master/deploy/windows/KavaPryct.appinstaller"
     Version="1.0.1.0"
     xmlns="http://schemas.microsoft.com/appx/appinstaller/2018">
 
