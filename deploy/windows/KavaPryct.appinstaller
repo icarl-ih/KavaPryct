@@ -1,16 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <AppInstaller
     Uri="https://raw.githubusercontent.com/icarl-ih/KavaPryct/master/deploy/windows/KavaPryct.appinstaller"
-    Version="1.0.0.0"
+    Version="1.0.1.0"
     xmlns="http://schemas.microsoft.com/appx/appinstaller/2018">
 
   <MainPackage
     Name="IHSolutions.KavaPryct"
-    Publisher="CN=IHSolutions"
-    Version="1.0.0.0"
+    Publisher="CN=carlos.ibarra"
+    Version="1.0.1.0"
     ProcessorArchitecture="x64"
     Uri="https://drive.google.com/uc?export=download&id=1MYQdKbUwT4TWdqZhJtBBM7BoHBMbxHFz" />
-
 
   <UpdateSettings>
     <OnLaunch HoursBetweenUpdateChecks="6" ShowPrompt="true" UpdateBlocksActivation="false" />
