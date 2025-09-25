@@ -107,9 +107,32 @@
                                                 @esp
                                             </span>
                                         </div>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="specialist-experience">
+                                    <div class="specialization">
+                                        <span class="label-text">Funciones</span>
+                                        <span class="specialization-text">
+                                            @{
+                                                var funct = Services.RolEmpleo.Terapeuta.ToString();
+                                                var func = data.RolEmpleo;
+                                                if(func == (int)Services.RolEmpleo.Administrativo)
+                                                {
+                                                    funct = Services.RolEmpleo.Administrativo.ToString();
+                                                }else if(func == (int)Services.RolEmpleo.Empleado)
+                                                {
+                                                    funct = Services.RolEmpleo.Empleado.ToString();
+                                                }
+
+                                            }
+                                            @funct.ToUpper()
+                                            </span>
+                                        </div>
                                     </div>
                                 }
-                            </div>
+                        </div>
                         </div>
                     }
                 </div>
@@ -462,7 +485,7 @@ else
         if (!online)
         {
             SfMessageText = "Sin Conexión a Internet";
-            currentSeverity = MessageSeverity.Info;
+            currentSeverity = MessageSeverity.Error;
         }
 
 

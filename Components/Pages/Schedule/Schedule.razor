@@ -456,6 +456,7 @@ else
         </div>
     </div>
 } 
+
 <style>
     .e-break {
         background: rgba(255, 99, 71, .15);
@@ -655,7 +656,7 @@ else
         if (!online)
         {
             SfMessageText = "Sin Conexión a Internet";
-            currentSeverity = MessageSeverity.Info;
+            currentSeverity = MessageSeverity.Error;
         }
 
 
@@ -679,8 +680,8 @@ else
 
                 if (!online)
                 {
-                    currentSeverity = MessageSeverity.Error;
-                    SfMessageText = "Sin conexión a Internet. Algunas acciones pueden fallar.";
+                    currentSeverity = MessageSeverity.Info;
+                    SfMessageText = "Conexión a Internet fallando. Algunas acciones pueden funcionar con error.";
                     isMsgVisible = true;
                 }
                 else if (lowSignal)

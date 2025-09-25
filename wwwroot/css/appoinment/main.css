@@ -405,6 +405,9 @@ header .module-title .underline {
 .iconIHS-phone:before {
     content: '\ed53';
 }
+.iconIHS-facebook-logo:before {
+    content: '\f230';
+}
 
 
 /*font family*/

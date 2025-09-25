@@ -1,23 +1,23 @@
 ﻿using AppointmentPlanner.Data;
 using ExpenseTracker.Service;
+using ExpenseTracker.Service;         // CommonService
+using KavaPryct;                      // tu namespace de App
 using KavaPryct.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Syncfusion.Blazor;
-using Syncfusion.Blazor.Popups;
-using System.Net.Http.Headers;
-
-using System;
-using System.Net.Http;
-using System.Net.Http.Headers;
 using Microsoft.Extensions.Logging;
 using Microsoft.Maui;
 using Microsoft.Maui.Controls.Hosting;
 using Microsoft.Maui.Hosting;
+using Microsoft.Maui.LifecycleEvents;
 using Microsoft.Maui.Networking;     // IConnectivity
 using Syncfusion.Blazor;
-using KavaPryct;                      // tu namespace de App
-using ExpenseTracker.Service;         // CommonService
+using Syncfusion.Blazor;
+using Syncfusion.Blazor.Popups;
+using System;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Net.Http.Headers;
 
 namespace KavaPryct
 {
@@ -103,6 +103,20 @@ namespace KavaPryct
             builder.Services.AddSingleton<IConnectivity>(Connectivity.Current);
             builder.Services.AddHttpClient(); // para IHttpClientFactory
 
+            builder
+                        .UseMauiApp<App>()
+                        .ConfigureLifecycleEvents(events =>
+                        {
+#if WINDOWS
+                events.AddWindows(windows =>
+                {
+                    windows.OnWindowCreated((window) =>
+                    {
+                        window.Title = "KAVA: Agenda Virtual"; // O dejar en blanco ""
+                    });
+                });
+#endif
+                        });
             // IMPORTANTÍSIMO: construir SOLO UNA VEZ
             var app = builder.Build();
 
