@@ -52,12 +52,12 @@
             </SfButton>
         </div>
         <div class="patient-display">
-                <SfGrid TItem="PacienteModel" @ref="gridObj" DataSource="@filteredPatients">
-                    <GridEvents TValue="PacienteModel" OnRecordDoubleClick="onDoubleClick"></GridEvents>
-                    <GridEditSettings AllowAdding="true" AllowEditOnDblClick="false" Mode="EditMode.Normal" />
-                    <GridColumns>
+                <SfGrid ID="Grid" @ref="gridObj" DataSource="@filteredPatients" AllowReordering="true" AllowExcelExport="true" AllowSorting="true">
+                    <GridEvents TValue="PacienteModel" RowSelected="onRowSelected" OnRecordDoubleClick="onDoubleClick"></GridEvents>
+                    <GridEditSettings  AllowAdding="true" AllowEditing="true" AllowEditOnDblClick="false" Mode="EditMode.Dialog" />
+                    <GridColumns >
                         <GridColumn Field=@nameof(PacienteModel.ObjectId) IsPrimaryKey="true" Visible="false" />
-                        <GridColumn Field=@nameof(PacienteModel.PacienteNombre) HeaderText="Nombre" Width="180" />
+                        <GridColumn Field=@nameof(PacienteModel.PacienteNombre) HeaderText="Nombre" Width="100%" />
                         <GridColumn Field=@nameof(PacienteModel.PacienteCelular) HeaderText="Celular" Width="140" />
                         <GridColumn Field=@nameof(PacienteModel.PacienteTypeId) HeaderText="Paciente Tipo" Width="160">
                             <Template>
@@ -349,7 +349,7 @@ else
                     PsicoObjectId = patientEditModel.PsicoObjectId,
                     MotivoConsulta = patientEditModel.MotivoConsulta,
                     ObjectId = patientEditModel.ObjectId
-                    
+
 
                 };
                 await PacienteService.UpdatePacienteAsync(getRecord);
@@ -366,7 +366,14 @@ else
         await this.dialogObj.HideAsync();
     }
 
-    
+    public async Task onRowSelected(RowSelectEventArgs<PacienteModel> args)
+    {
+        if (isPatientClicked)
+        {
+            await ShowDialogAsync(args.Data);
+            this.isPatientClicked = false;
+        }
+    }
     private async Task onDoubleClick(RecordDoubleClickEventArgs<PacienteModel> args)
     {
         if (args?.RowData is null) return;

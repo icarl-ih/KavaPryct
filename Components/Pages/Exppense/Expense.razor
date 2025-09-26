@@ -143,8 +143,11 @@
 {
     <div class="expense-page">
         <div class='exp-content-container'>
+            <div class="control-section">
+                <KavaPryct.Components.Pages.Dashboard.ExpCards></KavaPryct.Components.Pages.Dashboard.ExpCards>
+            </div>
             <div>
-                <p class="page-title">All Transactions</p>
+                <p class="page-title">Transacciones</p>
             </div>
             <div>
                 <div class="col-md-12 margin-top col-lg-12">
@@ -252,7 +255,6 @@ else
 }
 
 @code {
-
     // Estado del rango (nullable)
     private DateTime? RangeStart { get; set; }
     private DateTime? RangeEnd { get; set; }

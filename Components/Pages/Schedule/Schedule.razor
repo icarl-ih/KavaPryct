@@ -112,6 +112,7 @@
                                                         </ValueTemplate>
                                                     </DropDownListTemplates>
                                                 </SfDropDownList>
+                                                <span>ID: @c.PacienteObjectId</span>
                                             </div>
                                         }
 
@@ -130,7 +131,7 @@
                                                     <DropDownListEvents TItem="KeyValuePair<int,string>" TValue="int"
                                                                         ValueChange="@(e => OnPacienteTypeChanged(e, c))" />
                                                 </SfDropDownList>
-
+                                                
                                             </div>
                                             <div class="e-col-8">
                                                 <label>Motivo de consulta</label>
@@ -750,7 +751,7 @@ else
         // Reutiliza los mismos colores que usas en GetStatusColors
         return s switch
         {
-            
+
             Services.EstatusCita.Asignada => ("#7575ff", "#363675", "#FFFFFF", false),
             Services.EstatusCita.Confirmada => ("#1a4c62", "#64D9FF", "#FFFFFF", false),
             Services.EstatusCita.ReAgendada => ("#FFAF3D","#664618" ,"#664618", false),
@@ -848,7 +849,7 @@ else
         {
             var c = args.AddedRecords?.FirstOrDefault() ?? args.ChangedRecords!.First();
             // Si viene con Status 1 (pendiente) mostramos el diálogo de “Lista de espera”
-            if (c.StatusCitaId == 1)
+            if (c.StatusCitaId == 2)
             {
                 // args.Cancel = true;       // detenemos el Save interno
                 pendiente = c;
@@ -861,6 +862,7 @@ else
 
             }
             c.EndLocal = c.StartLocal.AddHours(1);
+            c.PacienteObjectId = PacienteSeleccionadoId;
         }
 
         // Edición de una cita existente: si cambian Start, mantenemos +1h (opcional)
@@ -907,8 +909,9 @@ else
         List<ExpenseData>datas= await   transactionService.GetAllTransactionsAsync();
         var newpac = new PacienteModel();
         var citaCrtd = new ParseResult();
-        if ((args.ActionType == ActionType.EventCreate || args.ActionType == ActionType.EventChange)
-    && (args.AddedRecords?.Count > 0 || args.ChangedRecords?.Count > 0))
+        var Actualtran = new ExpenseData();
+        if ((args.ActionType == ActionType.EventCreate || args.ActionType == ActionType.EventChange) 
+        && (args.AddedRecords?.Count > 0 || args.ChangedRecords?.Count > 0))
         {
 
             foreach (var c in args.AddedRecords)
@@ -921,7 +924,15 @@ else
                         newpac = await PacienteService.CreatePacienteAsync(pac);
                         c.PacienteObjectId = newpac.ObjectId;
                     }
-                    var Actualtran = datas.Where(d => d.citaObjectId == c.ObjectId).FirstOrDefault();
+                    if(c.ObjectId != null)
+                    {
+                        Actualtran = datas.Where(d => d.citaObjectId == c.ObjectId).FirstOrDefault();
+                    }
+                    else
+                    {
+                        Actualtran = null;
+                    }
+
                     var empleadoactivo = await EmployeService.GetEmpleadoByIdAsync(c.PsicoObjectId);
 
                     if(Actualtran != null)
@@ -930,7 +941,7 @@ else
                         {
                             Amount = c.Amount,
                             Category = "Consulta",
-                            dateTime = DateTime.Now,
+                            dateTime = c.EndLocal,
                             Description = $"{c.PacienteNombre}-{c.MotivoConsulta}",
                             EmployeeName = empleadoactivo.NombreCorto,
                             EmployeeObjectId = empleadoactivo.ObjectId,
@@ -946,7 +957,7 @@ else
                         {
                             Amount = c.Amount,
                             Category = "Consulta",
-                            dateTime = DateTime.Now,
+                            dateTime = c.EndLocal,
                             Description = $"{c.PacienteNombre}-{c.MotivoConsulta}",
                             EmployeeName = empleadoactivo.NombreCorto,
                             EmployeeObjectId = empleadoactivo.ObjectId,
@@ -989,13 +1000,20 @@ else
             {
                 if (c.StatusCitaId == 10)
                 {
-                    if (c.PacienteObjectId == null)
+                    if (PacienteSeleccionadoId == null)
                     {
                         var pac = await CreatePacModel(c);
                         newpac = await PacienteService.CreatePacienteAsync(pac);
                         c.PacienteObjectId = newpac.ObjectId;
                     }
-                    var Actualtran = datas.Where(d => d.citaObjectId == c.ObjectId).FirstOrDefault();
+                    if(c.ObjectId != null)
+                    {
+                        Actualtran = datas.Where(d => d.citaObjectId == c.ObjectId).FirstOrDefault();
+                    }
+                    else
+                    {
+                        Actualtran = null;
+                    }                    
                     var empleadoactivo = await EmployeService.GetEmpleadoByIdAsync(c.PsicoObjectId);
 
                     if (Actualtran != null)
@@ -1004,7 +1022,7 @@ else
                         {
                             Amount = c.Amount,
                             Category = "Consulta",
-                            dateTime = DateTime.Now,
+                            dateTime = c.EndLocal,
                             Description = $"{c.PacienteNombre}-{c.MotivoConsulta}",
                             EmployeeName = empleadoactivo.NombreCorto,
                             EmployeeObjectId = empleadoactivo.ObjectId,
@@ -1021,7 +1039,7 @@ else
                         {
                             Amount = c.Amount,
                             Category = "Consulta",
-                            dateTime = DateTime.Now,
+                            dateTime = c.EndLocal,
                             Description = $"{c.PacienteNombre}-{c.MotivoConsulta}",
                             EmployeeName = empleadoactivo.NombreCorto,
                             EmployeeObjectId = empleadoactivo.ObjectId,
@@ -1092,7 +1110,8 @@ else
             StatusCitaId = 1,                             // requerido
             StartLocal = args.StartTime,                // tu setter ajusta FechaIni.Iso
             EndLocal = args.StartTime.AddHours(1),
-            PsicoObjectId = empleadoActivo?.ObjectId       // si tienes uno seleccionado
+            PsicoObjectId = empleadoActivo?.ObjectId,       // si tienes uno seleccionado
+            PacienteObjectId = PacienteSeleccionadoId
         };
 
         await scheduleObj.OpenEditorAsync(nuevo, CurrentAction.Add);
@@ -1160,6 +1179,7 @@ else
         var idx = scheduleEventData.FindIndex(x => x.ObjectId == src.ObjectId);
         if (idx >= 0) scheduleEventData[idx] = src;
         else scheduleEventData.Add(src);
+
 
         // Abre el editor en modo EDICIÓN (no alta) para NO duplicar
         await scheduleObj.OpenEditorAsync(src, CurrentAction.Save);
@@ -1273,7 +1293,7 @@ else
         c.PacienteEdad = p.PacienteEdad;
         c.PacienteCelular = p.PacienteCelular;
         c.PacienteTypeId = p.PacienteTypeId;
-        c.PacienteObjectId = p.ObjectId;
+        c.PacienteObjectId = PacienteSeleccionadoId;
         c.MotivoConsulta = p.MotivoConsulta;
 
 
