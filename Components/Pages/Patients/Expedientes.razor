@@ -1,0 +1,18 @@
+﻿@page "/patients/{PacienteId}"
+@using KavaPryct.Services  
+
+@inject PacienteService pacienteService
+
+<h3>Expedientes</h3>
+<span><strong>@message</strong></span>
+
+@code {
+
+    [Parameter] public string PacienteId { get; set; }
+    string message;
+    protected override async Task OnInitializedAsync(){
+        var pac = await pacienteService.GetPacienteById(PacienteId);
+        message = pac.PacienteNombre;
+    }
+
+}
