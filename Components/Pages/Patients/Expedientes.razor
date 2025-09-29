@@ -1,18 +1,41 @@
 ﻿@page "/patients/{PacienteId}"
 @using KavaPryct.Services  
-
+@using Syncfusion.Blazor.Navigations
 @inject PacienteService pacienteService
 
-<h3>Expedientes</h3>
-<span><strong>@message</strong></span>
-
+<h3>Expediente</h3>
+<span><strong>@paciente</strong></span>
+<SfTab Height="Syncfusion.Blazor.Navigations.HeightStyles.Content"
+    ShowCloseButton = "false" HeaderPlacement="Syncfusion.Blazor.Navigations.HeaderPosition.Top">
+    <TabItems>
+        <TabItem>
+            <HeaderTemplate><div>DATOS DEL PACIENTE</div></HeaderTemplate>
+            <ContentTemplate>
+                <div class="card grid-2">
+                    <div><label>Nombre:</label><span>@paciente.NombreCompleto</span></div>
+                    <div><label>Sexo:</label><span>@paciente.Sexo</span></div>
+                    <div><label>Edad:</label><span>@paciente.Edad</span></div>
+                    <div><label>Fecha de nacimiento:</label><span>@Fmt(paciente.FechaNacimiento)</span></div>
+                    <div><label>Domicilio:</label><span>@paciente.Domicilio</span></div>
+                    <div><label>Teléfono:</label><span>@paciente.Telefono</span></div>
+                    <div><label>Estado civil:</label><span>@paciente.EstadoCivil</span></div>
+                    <div><label>Último grado de estudios:</label><span>@paciente.UltimoGradoEstudios</span></div>
+                    <div><label>Ocupación:</label><span>@expediente.Ocupacion</span></div>
+                    <div><label>¿Ha asistido antes a terapia?</label><span>@(expediente.AsistioTerapiaAntes ? "Sí" : "No")</span></div>
+                    <div><label>Vive con (H/M):</label><span>@($"{expediente.ViveConHombres} / {expediente.ViveConMujeres}")</span></div>
+                </div>
+                </div>
+            </ContentTemplate>
+        </TabItem>
+    </TabItems>
+</SfTab>
 @code {
 
     [Parameter] public string PacienteId { get; set; }
-    string message;
+    string paciente;
     protected override async Task OnInitializedAsync(){
         var pac = await pacienteService.GetPacienteById(PacienteId);
-        message = pac.PacienteNombre;
+        paciente = pac.PacienteNombre;
     }
 
 }
