@@ -428,7 +428,8 @@ else
     }
     private async Task onExpedientView()
     {
-        navigationManager.NavigateTo($"/patients/{activePatientData?.ObjectId}");
+        string id = activePatientData.ObjectId;
+        navigationManager.NavigateTo($"/patients/{id}");
     }
     private void hideGridEditDialog()
     {

@@ -23,6 +23,8 @@ namespace KavaPryct.Components.Models
         // (opcional) útil si quieres “Nombre + Apellido”
         [JsonIgnore]
         public string NombreCorto => string.IsNullOrWhiteSpace(PrimerNombre) ? string.Empty : $"{PrimerNombre} {A_Paterno}".Trim();
+        [JsonIgnore]
+        public string NombreCompleto => string.IsNullOrWhiteSpace(PrimerNombre) ? string.Empty : $"{Nombres} {A_Paterno} {A_Materno}".Trim();
 
         private static string ObtenerPrimerToken(string? texto)
         {
@@ -80,6 +82,7 @@ namespace KavaPryct.Components.Models
                 int edad = hoy.Year - nac.Year;
                 if (hoy < nac.AddYears(edad)) edad--;
                 return Math.Max(0, edad);
+                
             }
         }
         [JsonPropertyName("EdoCivilId")]

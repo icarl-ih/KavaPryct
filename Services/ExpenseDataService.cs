@@ -30,15 +30,48 @@ namespace ExpenseTracker.Service
             if (start.HasValue) StartDate = start.Value.Date;
             if (end.HasValue) EndDate = end.Value.Date.AddDays(1).AddTicks(-1); // fin de día
         }
+        private readonly IExpenseRepository repo; // o el servicio que uses para traer todo
+
+        public ExpenseDataService(IExpenseRepository repo)
+        {
+            this.repo = repo;
+        }
 
         public void UpdateCurrentBalance(string currentBalance)
         {
             CurrentBalance = currentBalance;
             OnChange?.Invoke();
         }
-        public async Task ReloadWindowAsync(string? empleadoId = null, int? giro = null)
+        public void SetWindow(DateTime start, DateTime end)
         {
-            ExpenseData = await _remote.GetAllTransactionsAsync();
+            // Normaliza (por si vienen invertidas)
+            if (end < start) (start, end) = (end, start);
+
+            StartDate = start.Date;
+            EndDate = end.Date;
+
+            // Lanza recarga (fire-and-forget safe)
+            _ = ReloadWindowAsync();
+        }
+
+        public async Task ReloadWindowAsync()
+        {
+            // Trae todo o, mejor, pide al backend por rango si ya lo soportas
+            var all = await _remote.GetAllTransactionsAsync(); // IEnumerable<ExpenseData>
+
+            // Fin de día inclusivo
+            var endIncl = EndDate.Date.AddDays(1).AddTicks(-1);
+
+            ExpenseData = all
+                .Where(t =>
+                {
+                    // Usa tu campo de fecha real; ejemplo: t.dateTime (LOCAL)
+                    var dt = t.dateTime;
+                    if (dt == default) return false;
+                    return dt >= StartDate && dt <= endIncl;
+                })
+                .ToList();
+
             OnChanged?.Invoke();
         }
 

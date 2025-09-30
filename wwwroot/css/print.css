@@ -1,0 +1,11 @@
+﻿/* wwwroot/css/print.css */
+@media print {
+    .page-break {
+        break-before: page;
+    }
+    /* Chrome/Edge/Firefox modernos */
+    /* fallback */
+    .page-break {
+        page-break-before: always;
+    }
+}

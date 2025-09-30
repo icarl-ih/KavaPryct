@@ -13,17 +13,36 @@ namespace KavaPryct.Services
     {   
         private readonly HttpClient _http;
         private readonly AppSettings _appSetting = new AppSettings();
+        private static readonly JsonSerializerOptions _jsonOpts = new()
+        {
+            PropertyNameCaseInsensitive = true
+        };
         public CitasService(HttpClient httpClient) => _http = httpClient;
 
-        public async Task<List<CitasModel>> GetAllCitasAsync()
-        {   
-            var response = await _http.GetAsync("/classes/Citas");
-            response.EnsureSuccessStatusCode();
+        public async Task<List<CitasModel>> GetAllCitasAsync(CancellationToken ct = default)
+        {
+            var all = new List<CitasModel>();
+            const int pageSize = 1000;
+            int skip = 0;
 
-            var json = await response.Content.ReadAsStringAsync();
-            var result = JsonSerializer.Deserialize<ParseResponse<CitasModel>>(json);
+            while (true)
+            {
+                var url = $"/classes/Citas?limit={pageSize}&skip={skip}&order=createdAt";
 
-            return result?.Results ?? new List<CitasModel>();
+                using var res = await _http.GetAsync(url, ct);
+                res.EnsureSuccessStatusCode();
+
+                await using var s = await res.Content.ReadAsStreamAsync(ct);
+                var page = await JsonSerializer.DeserializeAsync<ParseResponse<CitasModel>>(s, _jsonOpts, ct);
+                var batch = page?.Results ?? [];
+
+                all.AddRange(batch);
+
+                if (batch.Count < pageSize) break; // última página
+                skip += pageSize;
+            }
+
+            return all;
 
         }
         public async Task DeleteCitaAsync(string id)
@@ -71,6 +90,7 @@ namespace KavaPryct.Services
                     {
                         { "__type" , "Date"},
                         { "iso", c.FechaIni.Iso.ToUniversalTime() }
+                        
                     };
                     parseobject["FechaFin"] = new Dictionary<string, object>
                     {

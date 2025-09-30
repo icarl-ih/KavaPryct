@@ -4,14 +4,18 @@ using System.Linq;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
-
 namespace KavaPryct.Components.Models
 {
     public class ParseResponse<T>
     {
         [JsonPropertyName("results")]
         public List<T> Results { get; set; } = new();
+
+        // Opcional, útil cuando llamas con &count=1
+        [JsonPropertyName("count")]
+        public int? Count { get; set; }
     }
+
     public sealed class ParseCreateResponse
     {
         [JsonPropertyName("objectId")]
@@ -24,8 +28,8 @@ namespace KavaPryct.Components.Models
     public sealed class ParseResult
     {
         public bool Ok { get; init; }
-        public string Reason { get; init; } = string.Empty; // "Created", "Bad Request", etc.
+        public string Reason { get; init; } = string.Empty;
         public string? ObjectId { get; init; }
-        public string? ErrorBody { get; init; }            // cuerpo de error devuelto por Parse
+        public string? ErrorBody { get; init; }
     }
 }

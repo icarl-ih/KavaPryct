@@ -11,7 +11,12 @@ namespace KavaPryct.Services
         Ingreso = 1,
         Egreso = 2
     }
-
+    public enum Sexo
+    {
+        Otro = 0,
+        Femenino = 1,
+        Masculino = 2
+    }
     public enum MetodosPago
     {
         Efectivo = 1,

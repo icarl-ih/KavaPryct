@@ -12,6 +12,8 @@
 @using System.ComponentModel.DataAnnotations
 @using System.ComponentModel
 @using Syncfusion.Blazor.SplitButtons
+@using Microsoft.AspNetCore.Components.Rendering
+
 @inject ExpenseDataService ExpenseDataServices
 @inject TransactionService transactionService
 @inject EmpleadoRemoteService EmpleadoService
@@ -143,6 +145,33 @@
 {
     <div class="expense-page">
         <div class='exp-content-container'>
+            <div class="row" style="margin-bottom: 16px;">
+                <div class="col-md-3 col-xs-12 col-xl-6 col-lg-3 daterange overview-range-picker">
+                    <div id="daterange-overlay">
+                        <div id="daterange-wrapper">
+                            @if (isDataLoaded)
+                            {
+                                <SfDateRangePicker TValue="DateTime?" AllowEdit="false" ShowClearButton="false" Format="MM/dd/yyyy" StartDate="@ExpenseDataServices.StartDate" EndDate="@ExpenseDataServices.EndDate" Min="@minDate" Max="@maxDate">
+                                    
+                                    <DateRangePickerPresets>
+
+                                        <DateRangePickerPreset Label="Hoy" Start="DateTime.Today" End="DateTime.Today" />
+                                        <DateRangePickerPreset Label="Últimos 7 días" Start="DateTime.Today.AddDays(-6)" End="DateTime.Today" />
+                                        <DateRangePickerPreset Label="Este mes" Start="new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1)" End="DateTime.Today" />
+                                        <DateRangePickerPreset Label="Mes anterior"
+                                                               Start="new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(-1)"
+                                                               End="new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddDays(-1)" />
+                                    </DateRangePickerPresets>
+                                    <DateRangePickerEvents TValue="DateTime?"
+                                                           ValueChange="@( (RangePickerEventArgs<DateTime?> e) => OnDateRangeChange(e) )">
+                                    </DateRangePickerEvents>
+                                </SfDateRangePicker>
+                            }
+
+                        </div>
+                    </div>
+                </div>
+            </div>
             <div class="control-section">
                 <KavaPryct.Components.Pages.Dashboard.ExpCards></KavaPryct.Components.Pages.Dashboard.ExpCards>
             </div>
@@ -184,7 +213,7 @@
  *@                                </div>
                                 <div>
                                   <label class="form-label mb-1">Rango de fechas</label>
-                                  <SfDateRangePicker TValue="DateTime?"
+                                    <SfDateRangePicker TValue="DateTime?" AllowEdit="false"
                                                      Placeholder="dd/MM/yyyy"
                                                      Format="dd/MM/yyyy"
                                                      Separator=" a "
@@ -226,7 +255,17 @@
                                             <GridColumn Field=@nameof(SalaryRow.Total) HeaderText="Total Ingresos" Format="C2" TextAlign="TextAlign.Right" Width="150"></GridColumn>
                                             <GridColumn Field=@nameof(SalaryRow.SuggestedSalary) HeaderText="Salario sugerido" Format="C2" TextAlign="TextAlign.Right" Width="170"></GridColumn>
                                         </GridColumns>
-                                        
+                                        <GridAggregates>
+                                            <GridAggregate>
+                                                <GridAggregateColumns>
+                                                    <GridAggregateColumn Field=@nameof(SalaryRow.Total)
+                                                                         Type="AggregateType.Sum"
+                                                                         FooterTemplate="@FooterTotalTemplate">
+                                                    </GridAggregateColumn>
+                                                </GridAggregateColumns>
+                                            </GridAggregate>
+                                        </GridAggregates>
+
                                     </SfGrid>
                                 </div>
                             }
@@ -254,7 +293,53 @@ else
     </div>
 }
 
+
 @code {
+    private DateTime minDate = DateTime.Today.AddMonths(-1);
+    private DateTime maxDate = DateTime.Today;
+    private RenderFragment<object> FooterTotalTemplate => (context) =>
+    {
+        return (RenderTreeBuilder builder) =>
+        {
+            // Cast seguro al contexto de agregados
+            var agg = context as Syncfusion.Blazor.Grids.AggregateTemplateContext;
+            var sumObj = agg?.Sum;
+
+            // Normaliza a decimal
+            decimal sum = 0m;
+            try
+            {
+                if (sumObj is IConvertible conv)
+                {
+                    sum = Convert.ToDecimal(conv, System.Globalization.CultureInfo.CurrentCulture);
+                }
+                else if (sumObj is not null)
+                {
+                    // Intento extra por si llega string con otra cultura
+                    var s = sumObj.ToString();
+                    if (!string.IsNullOrWhiteSpace(s) &&
+                        decimal.TryParse(s, System.Globalization.NumberStyles.Any,
+                                         System.Globalization.CultureInfo.CurrentCulture, out var d))
+                    {
+                        sum = d;
+                    }
+                }
+            }
+            catch { /* ignora conversiones fallidas */ }
+
+            var culture = System.Globalization.CultureInfo.CurrentCulture;
+            var text = $"Total: {sum.ToString("C2", culture)}";
+
+            // <div class="w-100 text-end pe-2"><strong>...</strong></div>
+            builder.OpenElement(0, "div");
+            builder.AddAttribute(1, "class", "w-100 text-end pe-2");
+            builder.OpenElement(2, "strong");
+            builder.AddContent(3, text);
+            builder.CloseElement(); // strong
+            builder.CloseElement(); // div
+        };
+    };
+
     // Estado del rango (nullable)
     private DateTime? RangeStart { get; set; }
     private DateTime? RangeEnd { get; set; }
@@ -277,6 +362,14 @@ else
     // Si quieres conservar el nombre GetTxnDate:
     private static DateTime GetTxnDate(ExpenseData t) => t?.dateTime ?? default;
 
+    private void OnDateRangeChange(RangePickerEventArgs<DateTime?> args)
+    {
+        var start = args?.StartDate ?? DateTime.Today;
+        var end = args?.EndDate ?? start;
+
+        ExpenseDataServices.SetWindow(start, end);   // tu método que recarga y notifica
+        StateHasChanged();
+    }
 
 
 

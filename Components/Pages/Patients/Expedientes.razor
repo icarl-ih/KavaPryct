@@ -1,41 +1,209 @@
 ﻿@page "/patients/{PacienteId}"
 @using KavaPryct.Services  
+@using Syncfusion.Blazor.Grids
 @using Syncfusion.Blazor.Navigations
+@using KavaPryct.Components.Models
+@using System.Globalization
 @inject PacienteService pacienteService
+@inject EmpleadoRemoteService empleadoService
 
-<h3>Expediente</h3>
-<span><strong>@paciente</strong></span>
-<SfTab Height="Syncfusion.Blazor.Navigations.HeightStyles.Content"
+<PageTitle>Expediente</PageTitle>
+<div class="grid-3">
+    <h4 class="section">DATOS DEL PACIENTE</h4>
+    <br />
+    <div class="img-header"><img src="css/appoinment/assets/images/kavaheader.jpg" width="100%" alt="header" /></div>
+</div>
+<div id="exp-form" class="card">
+    <div class="card grid-2">
+        <div><label>Nombre:</label><span>@pac.nombre</span></div>
+        <div><label>Sexo:</label><span>@(Enum.IsDefined(typeof(Sexo), pac.SexoID) ? ((Sexo)(pac.SexoID)).ToString() : "No Espcificado")</span></div>
+        <div><label>Edad:</label><span>@pac.Edad</span></div>
+        <div><label>Domicilio:</label><span>@pac.domicilio</span></div>
+        <div><label>Teléfono:</label><span>@pac.celular</span></div>
+        <div><label>Estado civil:</label><span>@(Enum.IsDefined(typeof(EstadoCivil), pac.edoCivilId) ? ((EstadoCivil)(pac.edoCivilId)).ToString() : "No Espcificado")</span></div>
+        <div><label>Fecha de nacimiento:</label><span>@Fmt(pac.NacimientoLocal)</span></div>
+        <div><label>Último grado de estudios:</label><span>@(Enum.IsDefined(typeof(UltimoGradoEstudios), pac.LastEstudiosId) ? ((UltimoGradoEstudios)(pac.LastEstudiosId)).ToString() : "No Espcificado")</span></div>
+        <div><label>Ocupación:</label><span>@pac.Ocupacion</span></div>
+    </div>
+    <div class="card grid-2">
+        <div><label>¿Ha asistido antes a terapia?</label><span>@(pac.prevTerapia ? "Sí" : "No")</span></div>
+        <div><label>Vive con (H/M):</label><span>@($"{pac.hLive} / {pac.mLive}")</span></div>
+    </div>
+    <h4 class="section">Composición familiar</h4>
+    @* <SfGrid DataSource="expediente.Familia" AllowPaging="true" Height="240">
+                        <GridColumns>
+                            <GridColumn Field=@nameof(Familiar.Nombre)     HeaderText="Nombre"    Width="200"></GridColumn>
+                            <GridColumn Field=@nameof(Familiar.Edad)       HeaderText="Edad"      Width="90" TextAlign="TextAlign.Center"></GridColumn>
+                            <GridColumn Field=@nameof(Familiar.Parentesco) HeaderText="Parentesco" Width="140"></GridColumn>
+                            <GridColumn Field=@nameof(Familiar.Ocupacion)  HeaderText="Ocupación" Width="180"></GridColumn>
+                        </GridColumns>
+                    </SfGrid> *@
+    <h4 class="section">Motivo de consulta</h4>
+    <div class="card">
+        <p class="pre">@pac.mConsulta</p>
+    </div>
+</div>
+<div class="page-break"></div>
+<div class="grid-3">
+    <h4 class="section">CONSENTIMIENTO</h4><br />
+    <div class="img-header"><img src="css/appoinment/assets/images/kavaheader.jpg" width="100%%" alt="header" /></div>
+</div>
+
+<div id="exp-cons" class="card">
+    <span>
+        Los abajo firmantes manifiestan estar de acuerdo con las siguientes condiciones de trabajo terapéutico propuestos por la Terapeuta <strong>Karla Vanessa Ibarra Hernández</strong> haciendo práctica su profesión con un estricto régimen de intervenciones terapéuticas comprobadas y corroboradas por terapeutas especializados de renombre.<br />
+    </span>
+    <br />
+   
+    <span>
+        1) La duración de la terapia será de 10 entrevistas, la cual se podrá extender dos sesiones más en caso de que se vea necesario, entendiéndose que al remitir el/los problemas antes, no será necesario cumplimentar las 10.
+    </span>
+    <span>
+        2) Tanto el cliente como el terapeuta podrán finalizar la terapia en el momento que lo consideren pertinentes.
+    </span>
+    <span>
+        3) El cliente se compromete a aceptar las condiciones de trabajo que su terapeuta le proponga en lo tocante a duración de la entrevista, intervalo entre sesiones, trabajo en equipo, honorarios, tareas, etc.
+    </span>
+    <span>
+        4) De proceder a la grabación en vídeo o en audio de las entrevistas, el cliente será informado, suscribiendo un contrato específico con el centro que reglamente el uso de dicho material registrado.
+    </span>
+    <span>
+        5) El centro se compromete a guardar una estricta reserva sobre cualquier cosa que el cliente hable con su terapeuta.
+    </span>
+    <span>
+        6) El cliente se compromete a responder a un cuestionario que en 6 meses después de finalizar las terapias en este centro se le remitirá, con el objeto de evaluar su estado y de finalizar la terapia en este centro se le remitirá con objeto de evaluar su estado y nuestros métodos. Dicho cuestionario tiene una finalidad de investigación.
+    </span>
+    <span>
+        7) El centro se compromete a enviar un mensaje de confirmación de su cita como recordatorio, el cliente se compromete a confirmar dicha cita, en caso de que no se obtenga una respuesta de confirmación se dejará libre ese horario.
+    </span>
+    <span>
+        8) El tiempo de tolerancia para llegar a tu cita es de 15 minutos después de la hora acordada, posterior a ese tiempo la cita se le agendará nuevamente a disponibilidad de agenda.
+    </span> <br /> <br /> <br />
+
+    <div class="grid-3p">
+        <span>
+            @{
+                if (string.IsNullOrEmpty(empleado))
+                {
+                    empleado = "Lic. Karla Vanessa Ibarra Hernández";
+                }
+
+            } @empleado </span><br /><span>Nombre y firma del paciente</span>
+        <span>@texto</span><br /><span>  </span><span>C.P. @cedula</span>
+
+    </div>
+</div>
+<div class="page-break"></div>
+<div class="grid-3">
+    <h4 class="section">HISTORIA CLÍNICA</h4><br />
+    <div class="img-header"><img src="css/appoinment/assets/images/kavaheader.jpg" width="100%%" alt="header" /></div>
+</div>
+<div id="exp-hist" class="card">
+
+</div>
+@* <SfTab Height="Syncfusion.Blazor.Navigations.HeightStyles.Content"
     ShowCloseButton = "false" HeaderPlacement="Syncfusion.Blazor.Navigations.HeaderPosition.Top">
     <TabItems>
         <TabItem>
             <HeaderTemplate><div>DATOS DEL PACIENTE</div></HeaderTemplate>
             <ContentTemplate>
-                <div class="card grid-2">
-                    <div><label>Nombre:</label><span>@paciente.NombreCompleto</span></div>
-                    <div><label>Sexo:</label><span>@paciente.Sexo</span></div>
-                    <div><label>Edad:</label><span>@paciente.Edad</span></div>
-                    <div><label>Fecha de nacimiento:</label><span>@Fmt(paciente.FechaNacimiento)</span></div>
-                    <div><label>Domicilio:</label><span>@paciente.Domicilio</span></div>
-                    <div><label>Teléfono:</label><span>@paciente.Telefono</span></div>
-                    <div><label>Estado civil:</label><span>@paciente.EstadoCivil</span></div>
-                    <div><label>Último grado de estudios:</label><span>@paciente.UltimoGradoEstudios</span></div>
-                    <div><label>Ocupación:</label><span>@expediente.Ocupacion</span></div>
-                    <div><label>¿Ha asistido antes a terapia?</label><span>@(expediente.AsistioTerapiaAntes ? "Sí" : "No")</span></div>
-                    <div><label>Vive con (H/M):</label><span>@($"{expediente.ViveConHombres} / {expediente.ViveConMujeres}")</span></div>
-                </div>
-                </div>
+                
+                
+
+                <TabItem>
+                    <HeaderTemplate><div>Consentimiento / Contrato</div></HeaderTemplate>
+                    <ContentTemplate>
+                        <div class="card">
+                            <p class="muted">
+                                Condiciones de trabajo terapéutico, confidencialidad, grabaciones con consentimiento,
+                                tolerancia de llegada y recordatorio/confirmación de cita, entre otros puntos que el paciente acepta con su firma.
+                            </p>
+                            <div class="grid-2">
+                                <div><label>Fecha de consentimiento:</label><span>@Fmt(expediente.Consentimiento.Fecha)</span></div>
+                                <div><label>Terapeuta:</label><span>@expediente.Consentimiento.Terapeuta</span></div>
+                                <div><label>Cédula:</label><span>@expediente.Consentimiento.CedulaProfesional</span></div>
+                            </div> 
+                            <SfAccordion ExpandMode="ExpandMode.Single">
+                                
+                            </SfAccordion>
+                        </div>
+                    </ContentTemplate>
+                </TabItem>
             </ContentTemplate>
         </TabItem>
     </TabItems>
 </SfTab>
+ *@
 @code {
 
     [Parameter] public string PacienteId { get; set; }
-    string paciente;
-    protected override async Task OnInitializedAsync(){
-        var pac = await pacienteService.GetPacienteById(PacienteId);
-        paciente = pac.PacienteNombre;
-    }
+    string paciente; FormularioExp pac = new FormularioExp(); EmpleadosModel employee = new EmpleadosModel(); private List<EstudiosModel> estudios = new List<EstudiosModel>();
+    string empleado; string texto; string cedula;
 
+    protected override async Task OnInitializedAsync()
+    {
+        var user = await pacienteService.GetPacienteById(PacienteId);
+        pac = await pacienteService.GetFormularioById(user.ExpedienteObjectId);
+
+        (empleado,texto, cedula) =await GetPiscoName(user.PsicoObjectId);
+    }
+    private async Task<(string nombre,string especialidad,string Cedula)> GetPiscoName(string id)
+    {
+        string namepsico;
+        employee = await empleadoService.GetEmpleadoByIdAsync(id);
+        var estudiopsico = await empleadoService.GetEstudioWithPosgradosByIdAsync(employee.EstudiosObjectId);
+        string prefijo;
+        string esp;
+        string cedula = estudiopsico.Cedula ?? "";
+        if (estudiopsico.Posgrados?.Any() == true)
+        {
+            prefijo = string.Join(", ", estudiopsico.Posgrados.Select(p => p.Abrv?.ToUpperInvariant()).Where(a => !string.IsNullOrWhiteSpace(a)));
+            esp = string.Join(", ", estudiopsico.Posgrados.Select(p => p.Nombre?.ToUpperInvariant()).Where(a => !string.IsNullOrWhiteSpace(a)));
+        }
+        else
+        {
+            prefijo = estudiopsico.Abrv ?? "";
+            esp = estudiopsico.Nombre ?? "";
+        }
+
+
+        namepsico = !string.IsNullOrWhiteSpace(prefijo) ? $"{prefijo} {employee.NombreCompleto} " : $"{employee.NombreCompleto}";
+
+        if(cedula.Length < 3)
+        {
+            namepsico = "Lic. Karla Vanessa Ibarra Hernández";
+            esp = "Psicologa y Terapeuta";
+            cedula = "0523010247";
+        }
+
+        return (namepsico, esp,cedula);
+    }
+    private static string Fmt(DateTime? dt) =>
+        dt is null ? "—" : dt.Value.ToString("dd MMM yyyy", new CultureInfo("es-MX"));
 }
+<style>
+    /* wwwroot/css/expediente.css (inclúyelo en tu layout) */
+.exp-head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:14px}
+.title{margin:0} .subtitle{font-weight:600}
+.meta{font-size:.85rem;color:#777}
+.section{margin:18px 0 8px}
+.card{background:#fff;border:1px solid #eee;border-radius:12px;padding:14px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+
+    .grid-3p {
+        display: grid;
+        grid-template-columns: 1fr .7fr 1fr;
+        gap: 10px;
+        padding: 14px
+    }
+.span-2{grid-column:1 / -1}
+label{font-weight:600;margin-right:6px}
+.pre{white-space:pre-wrap;margin:0}
+.muted{color:#666}
+.recs{margin:8px 0 0}
+.sig{margin-top:16px}
+.exp-loading,.exp-empty{padding:24px}
+.img-header{align-content:flex-end;}
+
+</style>
