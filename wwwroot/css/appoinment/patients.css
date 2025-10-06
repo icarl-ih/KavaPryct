@@ -18,7 +18,7 @@
             .planner-patient-wrapper header .add-patient .e-icon-add {
                 padding: 9px 0 10px 20px;
                 font-size: 10px;
-                color: #7575ff;
+                color: #7c4266;
             }
 
                 .planner-patient-wrapper header .add-patient .e-icon-add::before {
@@ -28,7 +28,7 @@
             .planner-patient-wrapper header .add-patient .add-patient-label {
                 font-weight: 600;
                 font-size: 13px;
-                color: #7575ff;
+                color: #7c4266;
                 letter-spacing: 0.39px;
                 padding: 5px;
             }
@@ -56,7 +56,7 @@
     }
 
         .planner-patient-wrapper .patients-detail-wrapper .patient-display .e-grid .e-gridcontent tr.e-row td.e-rowcell .patient-name {
-            color: #7575ff;
+            color: #7c4266;
             cursor: pointer;
         }
 
@@ -102,7 +102,7 @@
         }
 
             .e-dialog.e-edit-dialog .e-dlg-content .grid-edit-dialog .field-row.history-row label {
-                color: #7575ff !important;
+                color: #7c4266 !important;
             }
 
             .e-dialog.e-edit-dialog .e-dlg-content .grid-edit-dialog .field-row.history-row .history-content {

@@ -34,7 +34,7 @@
             }
 
             .doctor-details-container header .doctor-detail .edit-details {
-                background-color: #7575ff;
+                background-color: #7c4266;
             }
 
             .doctor-details-container header .doctor-detail .delete-details {
@@ -181,7 +181,7 @@
                         margin: auto 0;
                         font-weight: 500;
                         font-size: 13px;
-                        color: #7575ff;
+                        color: #7c4266;
                         letter-spacing: 0.39px;
                         padding: 0 10px;
                         cursor: pointer;
@@ -249,8 +249,8 @@
         }
 
             .break-hour-dialog .e-dlg-content .break-hour-days .day-button .e-btn {
-                background: #7575ff;
-                border-color: #7575ff;
+                background: #7c4266;
+                border-color: #7c4266;
                 height: 32px;
                 width: 32px;
             }

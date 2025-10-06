@@ -1,5 +1,5 @@
 ﻿.e-btn.e-primary {
-    background-color: #7575ff !important;
+    background-color: #7c4266 !important;
     border-color: #4242ff !important;
 }
 
@@ -75,14 +75,14 @@
 
 .e-input-group.e-input-focus:not(.e-success):not(.e-warning):not(.e-error):not(.e-disabled),
 .e-input-group.e-control-wrapper.e-input-focus:not(.e-success):not(.e-warning):not(.e-error):not(.e-disabled) {
-    border-color: #7575ff !important;
+    border-color: #7c4266 !important;
 }
 
 .e-input-group:active:not(.e-warning):not(.e-error):not(.e-disabled),
 .e-input-group.e-control-wrapper:active:not(.e-warning):not(.e-error):not(.e-disabled) {
-    border-color: #7575ff !important;
+    border-color: #7c4266 !important;
 }
 
 .e-dropdownbase .e-list-item.e-active {
-    background-color: #7575ff !important;
+    background-color: #7c4266 !important;
 }

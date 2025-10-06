@@ -84,112 +84,112 @@
 
 .sfimage-button::before {
     content: '\e702';
-    color: #7575ff;
+    color: #7c4266;
 }
 
 .sfimage-schedule::before {
     content: '\e709';
-    color: #7575ff;
+    color: #7c4266;
 }
 
 .sfimage-chart::before {
     content: '\e906';
-    color: #7575ff;
+    color: #7c4266;
 }
 
 .sfimage-card::before {
     content: '\e713';
-    color: #7575ff;
+    color: #7c4266;
 }
 
 .sfimage-sidebar::before {
     content: '\e705';
-    color: #7575ff;
+    color: #7c4266;
 }
 
 .sfimage-autocomplete::before {
     content: '\e70b';
-    color: #7575ff;
+    color: #7c4266;
 }
 
 .sfimage-datepicker::before {
     content: '\e90d';
-    color: #7575ff;
+    color: #7c4266;
 }
 
 .sfimage-timepicker::before {
     content: '\e927';
-    color: #7575ff;
+    color: #7c4266;
 }
 
 .sfimage-dialog::before {
     content: '\e90e';
-    color: #7575ff;
+    color: #7c4266;
 }
 
 .sfimage-dropdownlist::before {
     content: '\e70a';
-    color: #7575ff;
+    color: #7c4266;
 }
 
 .sfimage-grid::before {
     content: '\e913';
-    color: #7575ff;
+    color: #7c4266;
 }
 
 .sfimage-checkbox::before {
     content: '\e707';
-    color: #7575ff;
+    color: #7c4266;
 }
 
 .sfimage-numerictextbox::before {
     content: '\e72a';
-    color: #7575ff;
+    color: #7c4266;
 }
 
 .sfimage-radiobutton::before {
     content: '\e727';
-    color: #7575ff;
+    color: #7c4266;
 }
 
 .sfimage-listview::before {
     content: '\e917';
-    color: #7575ff;
+    color: #7c4266;
 }
 
 .sfimage-treeview::before {
     content: '\e92b';
-    color: #7575ff;
+    color: #7c4266;
 }
 
 .sfimage-textboxes::before {
     content: '\e919';
-    color: #7575ff;
+    color: #7c4266;
 }
 
 .sfimage-toast::before {
     content: '\e716';
-    color: #7575ff;
+    color: #7c4266;
 }
 
 .sf-icon-skeleton::before {
     content: '\e904';
-    color: #7575ff;
+    color: #7c4266;
 }
 
 .sf-icon-appbar::before {
     content: "\e900";
-    color: #7575ff;
+    color: #7c4266;
 }
 
 .sf-icon-predefineddialogs::before {
     content: "\e901";
-    color: #7575ff;
+    color: #7c4266;
 }
 
 .sf-icon-message::before {
     content: "\e903";
-    color: #7575ff;
+    color: #7c4266;
 }
 
 .control-icon {

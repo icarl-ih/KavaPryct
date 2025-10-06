@@ -351,7 +351,7 @@
     .add-doctor .e-icon-add {
         padding: 10px 0 10px 5px;
         font-size: 10px;
-        color: #7575ff;
+        color: #7c4266;
     }
 
         .add-doctor .e-icon-add::before {
@@ -361,7 +361,7 @@
     .add-doctor .add-doctor-text {
         font-weight: 500;
         font-size: 10px;
-        color: #7575ff;
+        color: #7c4266;
         letter-spacing: 0.3px;
         padding: 10px 5px;
     }

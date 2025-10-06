@@ -736,7 +736,7 @@ else
 
         switch ((EstatusCita)c.StatusCitaId)
         {
-            case Services.EstatusCita.Asignada: return ("#7575ff", "#363675", "#FFFFFF", false);
+            case Services.EstatusCita.Asignada: return ("#7c4266", "#7c4266", "#FFFFFF", false);
             case Services.EstatusCita.Inasistencia: return ("#7B8089","3C3E42", "#FFFFFF", false);
             case Services.EstatusCita.Cancelada: return ("#FF2A04","#661102", "#FFFFFF", true);
             case Services.EstatusCita.Confirmada: return ("#1a4c62", "#64D9FF", "#FFFFFF", false);
@@ -752,7 +752,7 @@ else
         return s switch
         {
 
-            Services.EstatusCita.Asignada => ("#7575ff", "#363675", "#FFFFFF", false),
+            Services.EstatusCita.Asignada => ("#7c4266", "#363675", "#FFFFFF", false),
             Services.EstatusCita.Confirmada => ("#1a4c62", "#64D9FF", "#FFFFFF", false),
             Services.EstatusCita.ReAgendada => ("#FFAF3D","#664618" ,"#664618", false),
             Services.EstatusCita.Cancelada => ("#FF2A04","#661102", "#FFFFFF", false),

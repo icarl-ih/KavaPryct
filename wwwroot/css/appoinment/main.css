@@ -8,7 +8,7 @@
         box-shadow: 0 3px 7px 0 rgba(117, 117, 255, 0.30);
         width: 80px;
         height: 80px;
-        border-radius: 50%;
+        border-radius: 20%;
         margin: auto;
     }
 
@@ -73,7 +73,7 @@
     }
 
     #plannerSiderBar .sidebar-item.active, #plannerSiderBar .sidebar-item.active:hover {
-        background-color: #7575ff;
+        background-color: #7c4266;
         color: #fff;
     }
 
@@ -84,7 +84,7 @@
     }
 
 .planner-header .e-appbar.custom-appbar {
-    background: #7575ff !important;
+    background: #7c4266 !important;
     height: 50px;
     display: flex;
 }
@@ -205,7 +205,7 @@ header .module-title .title {
 }
 
 header .module-title .underline {
-    background: #7575ff;
+    background: #7c4266;
     border-radius: 5px;
     width: 52px;
     height: 4px;

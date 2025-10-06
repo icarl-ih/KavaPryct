@@ -19,7 +19,7 @@
             .doctors-wrapper header .add-doctor .e-icon-add {
                 padding: 9px 0 10px 20px;
                 font-size: 10px;
-                color: #7575ff;
+                color: #7c4266;
             }
 
                 .doctors-wrapper header .add-doctor .e-icon-add::before {
@@ -29,7 +29,7 @@
             .doctors-wrapper header .add-doctor .add-doctor-label {
                 font-weight: 600;
                 font-size: 13px;
-                color: #7575ff;
+                color: #7c4266;
                 letter-spacing: 0.39px;
                 padding: 5px;
             }
@@ -69,11 +69,11 @@
 
                 .doctors-wrapper .specialization-detail-wrapper .specialist-display .specialist-item:hover {
                     cursor: pointer;
-                    box-shadow: 0px 1px 4px 1px #7575ff;
+                    box-shadow: 0px 1px 4px 1px #7c4266;
                 }
 
                 .doctors-wrapper .specialization-detail-wrapper .specialist-display .specialist-item:focus, .doctors-wrapper .specialization-detail-wrapper .specialist-display .specialist-item:active {
-                    border-color: #7575ff;
+                    border-color: #7c4266;
                 }
 
                 .doctors-wrapper .specialization-detail-wrapper .specialist-display .specialist-item .specialist-image {
