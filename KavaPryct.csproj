@@ -61,8 +61,8 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<MauiIcon Include="Resources\AppIcon\kavaicon.png" Color="White" ForegroundScale="0.5" Condition="'$(TargetFramework)'=='net9.0-android'" />
-		<MauiIcon Include="Resources\AppIcon\kavaicon.png" Condition="'$(TargetFramework)'=='net9.0-windows10.0.19041.0'" />
+		<MauiIcon Include="Resources\AppIcon\icon1.png" Color="White" ForegroundScale="0.5" Condition="'$(TargetFramework)'=='net9.0-android'" />
+		<MauiIcon Include="Resources\AppIcon\icon1.png" Condition="'$(TargetFramework)'=='net9.0-windows10.0.19041.0'" />
 		<MauiSplashScreen Include="Resources\Splash\ihs.png" Color="White" />
 		<MauiImage Include="Resources\Images\*" />
 		<MauiImage Update="Resources\Images\dotnet_bot.svg" BaseSize="168,208" />
