@@ -118,7 +118,7 @@ namespace KavaPryct.Services
 
         public async Task<List<ExpenseData>> GetAllTransactionsAsync()
         {
-            var response = await _http.GetAsync("/classes/Balance");
+            var response = await _http.GetAsync("/classes/Balance?limit=1000");
             response.EnsureSuccessStatusCode();
 
             var json = await response.Content.ReadAsStringAsync();
