@@ -206,10 +206,15 @@
         {
             this.isDevice = await JSRuntime.InvokeAsync<bool>("checkBrowserDevice");
             this.onDocumentClick = this.isDevice;
+            var AccesCode = await Updater.GetAccesCodeAsync();
+            if(!string.IsNullOrEmpty(AccesCode))
+            {
+                App.AccessCode = AccesCode;
+            }
             // Evita checar muchas veces: ejemplo, 1 vez por día
             var last = Preferences.Get("last_update_check", DateTime.MinValue);
             if (last.Date == DateTime.Today) return;
-
+            
             string platform = DeviceInfo.Platform == DevicePlatform.Android ? "android" : "windows";
             var result = await Updater.CheckAsync(platform);
 

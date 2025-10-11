@@ -11,6 +11,7 @@
 @using System.Reflection
 @using System.ComponentModel.DataAnnotations
 @using System.ComponentModel
+@using Syncfusion.Blazor.Popups
 @using Syncfusion.Blazor.SplitButtons
 @using Microsoft.AspNetCore.Components.Rendering
 
@@ -141,7 +142,7 @@
     }
 </style>
 
-@if (isDataLoaded)
+@if (isDataLoaded && Validate)
 {
     <div class="expense-page">
         <div class='exp-content-container'>
@@ -277,6 +278,37 @@
 @*         <FilterMenu @ref="FilterRef"></FilterMenu>*@
            <TransactDialog @ref="DialogRef" OnSaved="HandleSaved" OnCancel="HandleCancel"></TransactDialog>
     </div>
+}else if(isDataLoaded && !Validate)
+{
+    <div id="dlg-content">
+    <Syncfusion.Blazor.Popups.SfDialogProvider />
+    <div id="dialogTarget">
+        <SfDialog CssClass="transact-dialog" Width="80%" IsModal="true">
+            <ChildContent>
+                <DialogTemplates>
+                    <Header>ACCESO</Header>
+                </DialogTemplates>
+
+                <div class="dlg-content">
+                    <div class="otp-container">
+                        <label>Password OTP Input</label>
+                        <!-- ENLACE BIDIRECCIONAL -->
+                        <SfOtpInput @bind-Value="Value"
+                                    Type="OtpInputType.Password"
+                                    HtmlAttributes="@(new Dictionary<string, object> { { "aria-label", "Enter ACCES CODE" } })">
+                        </SfOtpInput>
+                    </div>
+                </div>
+
+                <!-- PASAR EL MÉTODO (no invocarlo con paréntesis) -->
+                <DialogButtons>
+                    <DialogButton Content="ACCEDER" IsPrimary="true" OnClick="ValidateAcces"></DialogButton>
+                </DialogButtons>
+            </ChildContent>
+        </SfDialog>
+    </div>
+</div>
+
 }
 else
 {
@@ -294,9 +326,11 @@ else
 }
 
 
+
 @code {
     private DateTime minDate = DateTime.Today.AddMonths(-1);
     private DateTime maxDate = DateTime.Today;
+    private string Value;
     private RenderFragment<object> FooterTotalTemplate => (context) =>
     {
         return (RenderTreeBuilder builder) =>
@@ -347,6 +381,22 @@ else
     private MessageSeverity currentSeverity = MessageSeverity.Info;
     private string SfMessageText;
     // (Opcional) si quieres reaccionar a cada cambio del rango
+    private void ValidateAcces(MouseEventArgs args)
+    {
+        
+        // Validaciones claras y salida temprana
+        if (string.IsNullOrWhiteSpace(Value) || string.IsNullOrWhiteSpace(App.AccessCode))
+        {
+            isDataLoaded = false;
+            Validate = false;
+            return;
+        }
+
+        Validate = App.AccessCode == Value;
+        isDataLoaded = true;
+
+
+    }
     private void OnRangeChanged(RangePickerEventArgs<DateTime?> e)
     {
         RangeStart = e.StartDate;
@@ -375,6 +425,7 @@ else
 
     // Estado UI
     private bool isDataLoaded = false;
+    private bool Validate = false;
     private string SearchValue = string.Empty;
     private string color = "#f7f9ff";       // color de fondo del encabezado
     private string visibility = "block";     // mostrar/ocultar cabecera

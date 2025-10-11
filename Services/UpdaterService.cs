@@ -14,6 +14,16 @@ namespace KavaPryct.Services
         private readonly AppSettings _appSetting = new AppSettings();
         public UpdaterService(HttpClient httpClient) => _http = httpClient;
 
+        public async Task<string> GetAccesCodeAsync()
+        {
+            var url = $"https://parseapi.back4app.com/classes/CodeAcces";
+            var json = await _http.GetStringAsync(url);
+            using var doc = JsonDocument.Parse(json);
+            var arr = doc.RootElement.GetProperty("results");
+            if (arr.GetArrayLength() == 0) return "";
+            var o = arr[0];
+            return o.GetProperty("AccessCode").GetString() ?? null;
+        }
         public async Task<AppVersionInfo?> GetLatestAsync(string platform)
         {
             var url = $"https://parseapi.back4app.com/classes/AppVersion?where={Uri.EscapeDataString($@"{{""platform"":""{platform}""}}")}&order=-versionCode&limit=1";
@@ -88,7 +98,7 @@ namespace KavaPryct.Services
 
         public async Task<UpdateCheckResult> CheckAsync(string platform)
         {
-            var latest = await GetLatestAsync(platform);
+            var latest = await  GetLatestAsync(platform);
 
             var currentVersionStr = AppInfo.Current?.VersionString ?? VersionTracking.CurrentVersion;
             var currentBuildStr = AppInfo.Current?.BuildString ?? VersionTracking.CurrentBuild;
@@ -136,7 +146,12 @@ namespace KavaPryct.Services
     //    public string? Notes { get; set; }
     //    public string? FileUrl { get; set; }
     //}
-    public record AppVersionInfo
+    public record AccessCodeInfo
+    {
+        public string Code { get; init; }
+    }
+    
+public record AppVersionInfo
     {
         public string Platform { get; init; }
         public int VersionCode { get; init; }

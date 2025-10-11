@@ -907,6 +907,8 @@ else
     public async void OnActionComplete(ActionEventArgs<CitasModel> args)
     {
         List<ExpenseData>datas= await   transactionService.GetAllTransactionsAsync();
+        List<PacienteModel> pacientes = await PacienteService.GetAllPacientesAsync();
+        var ActualPac = new PacienteModel();
         var newpac = new PacienteModel();
         var citaCrtd = new ParseResult();
         var Actualtran = new ExpenseData();
@@ -916,17 +918,23 @@ else
 
             foreach (var c in args.AddedRecords)
             {
+                ActualPac = pacientes.Where(p => p.ObjectId == c.PacienteObjectId || p.PacienteNombre == c.PacienteNombre).FirstOrDefault();
                 if(c.StatusCitaId == 10)
                 {
-                    if(c.PacienteObjectId == null)
+                    if(ActualPac is null)
                     {
                         var pac = await CreatePacModel(c);
                         newpac = await PacienteService.CreatePacienteAsync(pac);
                         c.PacienteObjectId = newpac.ObjectId;
                     }
+                    else
+                    {
+                        c.PacienteObjectId = ActualPac.ObjectId;
+                    }
                     if(c.ObjectId != null)
                     {
                         Actualtran = datas.Where(d => d.citaObjectId == c.ObjectId).FirstOrDefault();
+
                     }
                     else
                     {
@@ -994,13 +1002,19 @@ else
             }  
             foreach(var c in args.ChangedRecords)
             {
+                ActualPac = pacientes.Where(p => p.ObjectId == c.PacienteObjectId || p.PacienteNombre == c.PacienteNombre).FirstOrDefault();
+
                 if (c.StatusCitaId == 10)
                 {
-                    if (PacienteSeleccionadoId == null)
+                    if (ActualPac is null)
                     {
                         var pac = await CreatePacModel(c);
                         newpac = await PacienteService.CreatePacienteAsync(pac);
                         c.PacienteObjectId = newpac.ObjectId;
+                    }
+                    else
+                    {
+                        c.PacienteObjectId = ActualPac.ObjectId;
                     }
                     if(c.ObjectId != null)
                     {
