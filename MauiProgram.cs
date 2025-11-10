@@ -1,22 +1,10 @@
 ﻿using AppointmentPlanner.Data;
 using ExpenseTracker.Service;
-using ExpenseTracker.Service;         // CommonService
-using KavaPryct;                      // tu namespace de App
 using KavaPryct.Services;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging;
-using Microsoft.Maui;
-using Microsoft.Maui.Controls.Hosting;
-using Microsoft.Maui.Hosting;
 using Microsoft.Maui.LifecycleEvents;
-using Microsoft.Maui.Networking;     // IConnectivity
-using Syncfusion.Blazor;
 using Syncfusion.Blazor;
 using Syncfusion.Blazor.Popups;
-using System;
-using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Net.Http.Headers;
 
 namespace KavaPryct
@@ -93,6 +81,14 @@ namespace KavaPryct
                 client.DefaultRequestHeaders.Add("X-Parse-REST-API-Key", settings.RestApiKey);
                 client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
                 return new UpdaterService(client);
+            });
+            builder.Services.AddScoped<DedupeRemoteService>(sp =>
+            {
+                var client = new HttpClient { BaseAddress = new Uri(settings.ParseBaseUrl) };
+                client.DefaultRequestHeaders.Add("X-Parse-Application-Id", settings.ApplicationId);
+                client.DefaultRequestHeaders.Add("X-Parse-REST-API-Key", settings.RestApiKey);
+                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                return new DedupeRemoteService(client);
             });
 
             // (si usas estos, mantén también)

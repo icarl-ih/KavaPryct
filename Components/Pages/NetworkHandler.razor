@@ -1,0 +1,234 @@
+﻿@using KavaPryct.Services
+@using Syncfusion.Blazor.Notifications
+@implements IAsyncDisposable
+
+
+@*Variant="MessageVariant.Outlined"*@
+<SfMessage Severity="@currentSeverity" ShowCloseIcon="true"  Visible="isMsgVisible">@SfMessageText</SfMessage>
+
+@code {
+    /// <summary>
+    /// Propiedades
+    /// </summary>
+    private bool isMsgVisible = false;
+    private MessageSeverity currentSeverity = MessageSeverity.Info;
+    private string SfMessageText;
+
+    private Task? _watchSignalTask;
+    private CancellationTokenSource? _sigCts;
+    private readonly TimeSpan _pollEvery = TimeSpan.FromSeconds(5); // frecuencia de chequeo
+    private const int LowBarsThreshold = 3; // 0–1 barras = señal baja
+
+    protected override Task OnInitializedAsync()
+    {
+        StartWatchSignal();
+        return base.OnInitializedAsync();
+    }
+
+    protected override Task OnAfterRenderAsync(bool firstRender)
+    {
+        // Si prefieres iniciarlo aquí en vez de OnInitialized, quita StartWatchSignal() anterior.
+        if (firstRender)
+            StartWatchSignal();
+        return base.OnAfterRenderAsync(firstRender);
+    }
+    private void StartWatchSignal()
+    {
+        // Evitar lanzar duplicados
+        if (_watchSignalTask != null && !_watchSignalTask.IsCompleted)
+            return;
+
+        // Cancelar y limpiar si hubiera uno anterior
+        _sigCts?.Cancel();
+        _sigCts?.Dispose();
+
+        _sigCts = new CancellationTokenSource();
+        _watchSignalTask = Task.Run(() => WatchSignalAsync(_sigCts.Token));
+    }
+    private void StopWatchSignal()
+    {
+        try
+        {
+            _sigCts?.Cancel();
+        }
+        catch { /* ignore */ }
+        finally
+        {
+            _sigCts?.Dispose();
+            _sigCts = null;
+        }
+    }
+    public async ValueTask DisposeAsync()
+    {
+        // Cancelar y esperar la tarea del watcher de forma segura
+        try
+        {
+            _sigCts?.Cancel();
+        }
+        catch { /* ignorar */ }
+
+        try
+        {
+            if (_watchSignalTask != null)
+            {
+                // Esperar la terminación de la tarea, capturando excepciones
+                await _watchSignalTask.ConfigureAwait(false);
+            }
+        }
+        catch (OperationCanceledException OCex) { }
+        catch (Exception ex)
+        {
+            // Registrar si quieres
+        }
+        finally
+        {
+            _sigCts?.Dispose();
+            _sigCts = null;
+            _watchSignalTask = null;
+        }
+    }
+
+    private async Task WatchSignalAsync(CancellationToken ct)
+    {
+        // Protección: que _pollEvery sea válido
+        if (_pollEvery <= TimeSpan.Zero) throw new ArgumentException("_pollEvery must be > 0");
+
+        try
+        {
+            using var timer = new PeriodicTimer(_pollEvery);
+            while (await timer.WaitForNextTickAsync(ct).ConfigureAwait(false))
+            {
+                try
+                {
+                    // Llamadas a servicios — manejar excepciones internas por separado
+                    var sig = CommonService.GetSignalInfo();           // barras: 0..4 o null
+                    var online = await CommonService.IsInternetReachableAsync(ct).ConfigureAwait(false);
+
+                    bool lowSignal = (sig?.Bars != null && sig.Bars.Value <= LowBarsThreshold)
+                                     || (sig?.Bars == null && !online);
+
+                    if (!online)
+                    {
+                        currentSeverity = MessageSeverity.Info;
+                        SfMessageText = "Sin Internet. Trabajando en modo Offline.";
+                        isMsgVisible = true;
+                    }
+                    else if (lowSignal)
+                    {
+                        currentSeverity = MessageSeverity.Warning;
+                        SfMessageText = BuildLowSignalText(sig);
+                        isMsgVisible = true;
+                    }
+                    else
+                    {
+                        if (isMsgVisible) isMsgVisible = false;
+
+                        
+                    }
+
+                    // actualizar UI en el hilo del UI
+                    await InvokeAsync(StateHasChanged).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException OCex) when (ct.IsCancellationRequested)
+                {
+                    // cierre ordenado, salir del bucle externo
+                    break;
+                }
+                catch (Exception exInner)
+                {
+                    // Registrar excepción pero no salir del bucle
+                    // opcional: esperar un poco antes de reintentar para evitar spin rápido en caso de fallo recurrente
+                    await Task.Delay(TimeSpan.FromSeconds(2), ct).ContinueWith(t => { });
+                }
+            }
+        }
+        catch (OperationCanceledException OCex)
+        {
+           
+            // cierre normal — opcional: log
+        }
+        catch (Exception ex)
+        {
+            // registrar excepción inesperada que ha interrumpido el watcher
+        }
+    }
+    // private async Task WatchSignalAsync(CancellationToken ct)
+    // {
+    //     try
+    //     {
+    //         var timer = new PeriodicTimer(_pollEvery);
+    //         while (await timer.WaitForNextTickAsync(ct))
+    //         {
+    //             var sig = CommonService.GetSignalInfo();           // Bars: 0..4 (Android y Windows normalizado)
+    //             var online = await CommonService.IsInternetReachableAsync(ct);
+
+    //             // Definición de “señal baja”:
+    //             // - barras 0..LowBarsThreshold  => baja
+    //             // - barras null pero sin Internet => baja
+    //             bool lowSignal = (sig.Bars.HasValue && sig.Bars.Value <= LowBarsThreshold)
+    //                              || (!sig.Bars.HasValue && !online);
+
+    //             if (!online)
+    //             {
+    //                 currentSeverity = MessageSeverity.Info;
+    //                 SfMessageText = "Sin Internet. Trabajando en modo Offline.";
+    //                 isMsgVisible = true;
+    //                 App.IsOnline = (int)EstatusRed.Offline;
+
+    //             }
+    //             else if (lowSignal)
+    //             {
+    //                 currentSeverity = MessageSeverity.Warning;
+    //                 SfMessageText = BuildLowSignalText(sig);
+    //                 isMsgVisible = true; App.IsOnline = (int)EstatusRed.LowSignal;
+    //             }
+    //             else
+    //             {
+    //                 // Buena señal y online → ocultar
+    //                 if (isMsgVisible)
+    //                     isMsgVisible = false;
+
+    //                 if (App.EstatusInsp == (int)EstatusIns.Pendiente) await inicio.WebEstatus(InSvc);
+    //                 if (App.EstatusOT == (int)EstatusOT.PendienteEnvio) 
+    //                 { 
+    //                     App.EstatusOT = (int)EstatusOT.EnviandoTrabajo; 
+    //                     await inicio.WebOTstts(OTsvc, App.idOT, App.LastStatusOT); 
+    //                 }
+    //                 App.IsOnline = (int)EstatusRed.Online;
+    //             }
+                
+    //             await InvokeAsync(StateHasChanged);
+    //         }
+    //     }
+    //     catch (OperationCanceledException OCex) 
+    //     { 
+    //         await LogService.LogErrorAsync(OCex); /* cierre normal */ 
+    //     }
+    // }
+    private static string BuildLowSignalText(SignalInfo? sig)
+    {
+        // Ejemplos:
+        // Wi-Fi “MiRed” — señal baja (1/4 barras, −70 dBm)
+        // Celular — señal baja (0/4 barras)
+        var transport = sig.Transport switch
+        {
+            NetTransport.Wifi => "Wi-Fi",
+            NetTransport.Cellular => "Celular",
+            NetTransport.Ethernet => "Ethernet",
+            _ => "Red"
+        };
+
+        var name = !string.IsNullOrWhiteSpace(sig.Extra) ? $" “{sig.Extra}”" : string.Empty;
+        var bars = sig.Bars.HasValue ? $"{sig.Bars} barras" : "señal desconocida";
+        var rssi = sig.RssiDbm.HasValue ? $", {sig.RssiDbm} dBm" : string.Empty;
+
+        return $"{transport}{name} — señal baja ({bars}{rssi}). Pueden ocurrir lentitudes o fallos.";
+    }
+
+    // public void Dispose()
+    // {
+    //     _sigCts?.Cancel();
+    //     _sigCts?.Dispose();
+    // }
+
+}

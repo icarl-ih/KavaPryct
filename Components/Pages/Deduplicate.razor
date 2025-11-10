@@ -1,0 +1,36 @@
+﻿@page "/dedup"
+@using KavaPryct.Services
+@inject DedupeRemoteService Dedupe
+
+@code {
+    bool DryRun = true;
+    bool Busy;
+    string Message;
+
+    async Task OnRun()
+    {
+        Busy = true; Message = "";
+        try
+        {
+            var r = await Dedupe.RunAsync(DryRun);
+            Message = $"OK\nDryRun: {r.DryRun}\nEscaneados: {r.PatientsScanned}\n" +
+                      $"Grupos: {r.Groups}\nKept: {r.PatientsKept}\n" +
+                      $"Eliminados: {r.PatientsDeleted}\n" +
+                      $"Citas reasignadas: {r.CitasReasignadas}\n" +
+                      $"Snapshots actualizadas: {r.CitasSnapshotsActualizadas}";
+        }
+        catch (Exception ex)
+        {
+            Message = "Error: " + ex.Message;
+        }
+        finally { Busy = false; }
+    }
+}
+<h3>Deduplicar Pacientes</h3>
+<label><input type="checkbox" @bind="DryRun" /> Dry Run</label>
+<button @onclick="OnRun" disabled="@Busy">@(Busy ? "Ejecutando..." : "Ejecutar")</button>
+
+@if (!string.IsNullOrEmpty(Message))
+{
+    <pre>@Message</pre>
+}

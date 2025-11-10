@@ -7,6 +7,7 @@
 @using Syncfusion.Blazor.Notifications
 @using System.Globalization
 @inject UpdaterService Updater
+@inject NavigationManager Nav
 
 <div class="about-wrap">
     <div class="about-card shadow-smooth">
@@ -78,6 +79,8 @@
             </div>
         </div>
 
+        <SfButton OnClick="Goto">Deduplicar Pacientes</SfButton>
+
         <div class="divider"></div>
 
         <div class="about-footer">
@@ -113,7 +116,7 @@
     string platformLabel = "Windows";
     string currentVersion = "—";
     string currentBuild = "—";
-   Services.UpdateStatus status = Services.UpdateStatus.UpToDate;
+    Services.UpdateStatus status = Services.UpdateStatus.UpToDate;
     string statusText = "Al día";
 
     protected override async Task OnInitializedAsync()
@@ -157,9 +160,9 @@
         }
 
         StateHasChanged();
-        
+
     }
-    
+
     private async Task CheckAgain()
     {
         await RefreshLatestAsync();
@@ -177,6 +180,10 @@
     {
         if (!string.IsNullOrWhiteSpace(url))
             await Launcher.Default.OpenAsync(url);
+    }
+    private async Task Goto()
+    {
+        Nav.NavigateTo("/dedup", replace: true);
     }
 
 }

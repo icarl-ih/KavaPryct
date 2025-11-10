@@ -27,7 +27,6 @@
 @implements IDisposable
 
 @* ----------------------------- UI ----------------------------- *@
-<SfMessage Severity="@currentSeverity" Visible="isMsgVisible">@SfMessageText</SfMessage>
 @if (isDataLoaded)
 {
     <div class="planner-calendar">
@@ -78,22 +77,13 @@
                                 }
                                 <div class="e-editor">
                                     <div class="e-row">
-                                        <div class="e-col-3">
-                                            <SfCheckBox TValue="bool"
-                                                        Label="Paciente nuevo"
-                                                        Checked="@NuevoPaciente"
-                                                        CheckedChanged="@((bool v) => OnNuevoPacienteChanged(v, c))">
-                                            </SfCheckBox>
-                                        </div>
-                                        @if (!NuevoPaciente)
-                                        {
-                                            <div class="e-col-6">
-                                                <label>Selecciona paciente</label>
-                                                <SfDropDownList TItem="PacienteModel" TValue="string"
+                                            <SfDropDownList TItem="PacienteModel" TValue="string"
                                                                 DataSource="@PacientesDS"
-                                                                Placeholder="Buscar paciente..."
+                                                                Placeholder="Buscar Paciente"
+                                                                FloatLabelType="FloatLabelType.Auto"
                                                                 AllowFiltering="true"
                                                                 PopupHeight="260px"
+                                                                Width="100%"
                                                                 ShowClearButton="true"
                                                                 @bind-Value="PacienteSeleccionadoId">
                                                     <DropDownListFieldSettings Text="PacienteNombre" Value="ObjectId" />
@@ -111,10 +101,16 @@
                                                             </div>
                                                         </ValueTemplate>
                                                     </DropDownListTemplates>
-                                                </SfDropDownList>
-                                                <span>ID: @c.PacienteObjectId</span>
-                                            </div>
-                                        }
+                                            </SfDropDownList>
+                                            <SfCheckBox TValue="bool"
+                                                        Label="Paciente nuevo"
+                                                        Checked="@NuevoPaciente"
+                                                        CheckedChanged="@((bool v) => OnNuevoPacienteChanged(v, c))">
+                                            </SfCheckBox>
+                                        <div class="e-col-3">
+                                            
+                                        </div>
+                                        
 
                                         <div class="e-col-6">
                                             <label>Nombre completo</label>
@@ -241,7 +237,7 @@
                                     </div>
                                     <div class="e-row e-justify-content-end e-mt-2">
                                         <button class="e-btn e-secondary e-small" @onclick="() => AbrirReagendar(c)">Reagendar</button>
-                                         <button class="e-btn e-success e-small e-ml-2" @onclick="() => MarcarConfirmar(c)">Pagar y Cerrar</button>
+                                         <button class="e-btn e-success e-small e-ml-2" @onclick="() => MarcarConfirmar(c)">Pagar </button>
                                    </div>
                                 </div>
                                 
@@ -268,7 +264,7 @@
                         </ScheduleResources>
                         @* Sombreado de break del terapeuta activo (si tu modelo de horarios lo provee) *@
                         
-                        <ScheduleSpecialTimeRegions>
+                        @* <ScheduleSpecialTimeRegions>
                             @if (semanaHoras is not null)
                             {
                                 @foreach (var h in semanaHoras)
@@ -283,7 +279,7 @@
                                     }
                                 }
                             }
-                        </ScheduleSpecialTimeRegions>
+                        </ScheduleSpecialTimeRegions> *@
 
                         <ScheduleViews>
                             <ScheduleView Option="@View.Day"></ScheduleView>
@@ -447,7 +443,7 @@ else
             <SfSkeleton Shape="Syncfusion.Blazor.Notifications.SkeletonType.Rectangle" Height="780px" Width="90%"></SfSkeleton><br />
         </div>
         <div class="activities-skeleton">
-            @for (int i = 0; i < 10; i++)
+            @for (int i = 0; i < 3; i++)
             {
                 <SfSkeleton Shape="Syncfusion.Blazor.Notifications.SkeletonType.Rectangle" Height="3%" Width="80%"></SfSkeleton>
                 <br />
@@ -629,172 +625,174 @@ else
 
 
     #region CICLO DE VIDA 
-    protected override async Task OnInitializedAsync()
-    {
-        CommonService.OnlineStatusChanged += HandleOnlineChanged;
-        // Arranca el sondeo de intensidad de señal
-        _sigCts = new CancellationTokenSource();
-        _ = WatchSignalAsync(_sigCts.Token);
-        // Config calendario desde tu servicio
-        sceduleView = (View)Enum.Parse(typeof(View), Service.CalendarSettings.CurrentView as string);
-        currentDate = Service.StartDate;
-        viewInterval = Service.CalendarSettings.Interval;
-        calendarDayOfWeek = Service.CalendarSettings.FirstDayOfWeek;
-        resourceColorField = Service.CalendarSettings.BookingColor;
-        startHour = Service.CalendarSettings.Calendar.Start;
-        endHour = Service.CalendarSettings.Calendar.End;
-
-        // Empleados (terapeutas)
-        resourceDataSource = await EmployeService.GetAllPsicosAsync();
-        resourceGroup = new[] { "Terapeutas" };
-        await LoadData();
-
-    }
-    private void HandleOnlineChanged(object? sender, bool online)
-    {
-        isDataLoaded = online;
-        isMsgVisible = !online;
-        if (!online)
+        protected override async Task OnInitializedAsync()
         {
-            SfMessageText = "Sin Conexión a Internet";
-            currentSeverity = MessageSeverity.Error;
+            // CommonService.OnlineStatusChanged += HandleOnlineChanged;
+            // // Arranca el sondeo de intensidad de señal
+            // _sigCts = new CancellationTokenSource();
+            // _ = WatchSignalAsync(_sigCts.Token);
+            // Config calendario desde tu servicio
+            sceduleView = (View)Enum.Parse(typeof(View), Service.CalendarSettings.CurrentView as string);
+            currentDate = Service.StartDate;
+            viewInterval = Service.CalendarSettings.Interval;
+            calendarDayOfWeek = Service.CalendarSettings.FirstDayOfWeek;
+            resourceColorField = Service.CalendarSettings.BookingColor;
+            startHour = Service.CalendarSettings.Calendar.Start;
+            endHour = Service.CalendarSettings.Calendar.End;
+
+            // Empleados (terapeutas)
+            resourceDataSource = await EmployeService.GetAllPsicosAsync();
+            resourceGroup = new[] { "Terapeutas" };
+            await LoadData();
+
         }
+        // private void HandleOnlineChanged(object? sender, bool online)
+        // {
+        //     isDataLoaded = online;
+        //     isMsgVisible = !online;
+        //     if (!online)
+        //     {
+        //         SfMessageText = "Sin Conexión a Internet";
+        //         currentSeverity = MessageSeverity.Error;
+        //     }
 
 
-        InvokeAsync(StateHasChanged);
-    }
-    private async Task WatchSignalAsync(CancellationToken ct)
-    {
-        try
+        //     InvokeAsync(StateHasChanged);
+        // }
+        // private async Task WatchSignalAsync(CancellationToken ct)
+        // {
+        //     try
+        //     {
+        //         var timer = new PeriodicTimer(_pollEvery);
+        //         while (await timer.WaitForNextTickAsync(ct))
+        //         {
+        //             var sig = CommonService.GetSignalInfo();           // Bars: 0..4 (Android y Windows normalizado)
+        //             var online = await CommonService.IsInternetReachableAsync(ct);
+
+        //             // Definición de “señal baja”:
+        //             // - barras 0..LowBarsThreshold  => baja
+        //             // - barras null pero sin Internet => baja
+        //             bool lowSignal = (sig.Bars.HasValue && sig.Bars.Value <= LowBarsThreshold)
+        //                              || (!sig.Bars.HasValue && !online);
+
+        //             if (!online)
+        //             {
+        //                 currentSeverity = MessageSeverity.Info;
+        //                 SfMessageText = "Conexión a Internet fallando. Algunas acciones pueden funcionar con error.";
+        //                 isMsgVisible = true;
+        //             }
+        //             else if (lowSignal)
+        //             {
+        //                 currentSeverity = MessageSeverity.Warning;
+        //                 SfMessageText = BuildLowSignalText(sig);
+        //                 isMsgVisible = true;
+        //             }
+        //             else
+        //             {
+        //                 // Buena señal y online → ocultar
+        //                 if (isMsgVisible)
+        //                     isMsgVisible = false;
+        //             }
+
+        //             await InvokeAsync(StateHasChanged);
+        //         }
+        //     }
+        //     catch (OperationCanceledException) { /* cierre normal */ }
+        // }
+
+        // private static string BuildLowSignalText(SignalInfo sig)
+        // {
+        //     // Ejemplos:
+        //     // Wi-Fi “MiRed” — señal baja (1/4 barras, −70 dBm)
+        //     // Celular — señal baja (0/4 barras)
+        //     var transport = sig.Transport switch
+        //     {
+        //         NetTransport.Wifi => "Wi-Fi",
+        //         NetTransport.Cellular => "Celular",
+        //         NetTransport.Ethernet => "Ethernet",
+        //         _ => "Red"
+        //     };
+
+        //     var name = !string.IsNullOrWhiteSpace(sig.Extra) ? $" “{sig.Extra}”" : string.Empty;
+        //     var bars = sig.Bars.HasValue ? $"{sig.Bars}/4 barras" : "barras desconocidas";
+        //     var rssi = sig.RssiDbm.HasValue ? $", {sig.RssiDbm} dBm" : string.Empty;
+
+        //     return $"{transport}{name} — señal baja ({bars}{rssi}). Pueden ocurrir lentitudes o fallos.";
+        // }
+
+        protected override async Task OnAfterRenderAsync(bool firstRender)
         {
-            var timer = new PeriodicTimer(_pollEvery);
-            while (await timer.WaitForNextTickAsync(ct))
+            if (firstRender)
             {
-                var sig = CommonService.GetSignalInfo();           // Bars: 0..4 (Android y Windows normalizado)
-                var online = await CommonService.IsInternetReachableAsync(ct);
-
-                // Definición de “señal baja”:
-                // - barras 0..LowBarsThreshold  => baja
-                // - barras null pero sin Internet => baja
-                bool lowSignal = (sig.Bars.HasValue && sig.Bars.Value <= LowBarsThreshold)
-                                 || (!sig.Bars.HasValue && !online);
-
-                if (!online)
-                {
-                    currentSeverity = MessageSeverity.Info;
-                    SfMessageText = "Conexión a Internet fallando. Algunas acciones pueden funcionar con error.";
-                    isMsgVisible = true;
-                }
-                else if (lowSignal)
-                {
-                    currentSeverity = MessageSeverity.Warning;
-                    SfMessageText = BuildLowSignalText(sig);
-                    isMsgVisible = true;
-                }
-                else
-                {
-                    // Buena señal y online → ocultar
-                    if (isMsgVisible)
-                        isMsgVisible = false;
-                }
-
-                await InvokeAsync(StateHasChanged);
+                await LoadData();
             }
         }
-        catch (OperationCanceledException) { /* cierre normal */ }
-    }
-
-    private static string BuildLowSignalText(SignalInfo sig)
-    {
-        // Ejemplos:
-        // Wi-Fi “MiRed” — señal baja (1/4 barras, −70 dBm)
-        // Celular — señal baja (0/4 barras)
-        var transport = sig.Transport switch
+        private static (string bg,string bc, string fg, bool strike) GetStatusColor(CitasModel c)
         {
-            NetTransport.Wifi => "Wi-Fi",
-            NetTransport.Cellular => "Celular",
-            NetTransport.Ethernet => "Ethernet",
-            _ => "Red"
-        };
 
-        var name = !string.IsNullOrWhiteSpace(sig.Extra) ? $" “{sig.Extra}”" : string.Empty;
-        var bars = sig.Bars.HasValue ? $"{sig.Bars}/4 barras" : "barras desconocidas";
-        var rssi = sig.RssiDbm.HasValue ? $", {sig.RssiDbm} dBm" : string.Empty;
+            switch ((EstatusCita)c.StatusCitaId)
+            {
+                case Services.EstatusCita.Asignada: return ("#7c4266", "#7c4266", "#FFFFFF", false);
+                case Services.EstatusCita.Inasistencia: return ("#7B8089","3C3E42", "#FFFFFF", false);
+                case Services.EstatusCita.Cancelada: return ("#FF2A04","#661102", "#FFFFFF", true);
+                case Services.EstatusCita.Confirmada: return ("#1a4c62", "#64D9FF", "#FFFFFF", false);
+                case Services.EstatusCita.ReAgendada: return ("#FFAF3D","#664618" ,"#664618", false);
+                case Services.EstatusCita.Asistencia: return ("#005A00", "#005A00", "#FFFFFF", false);
+                default: return ("#7B8089","3C3E42", "#FFFFFF", false);
 
-        return $"{transport}{name} — señal baja ({bars}{rssi}). Pueden ocurrir lentitudes o fallos.";
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            await LoadData();
+            }
         }
-    }
-    private static (string bg,string bc, string fg, bool strike) GetStatusColor(CitasModel c)
-    {
-
-        switch ((EstatusCita)c.StatusCitaId)
+        private static (string bg, string bc, string fg, bool strike) GetStatusColorsByEnum(EstatusCita s)
         {
-            case Services.EstatusCita.Asignada: return ("#7c4266", "#7c4266", "#FFFFFF", false);
-            case Services.EstatusCita.Inasistencia: return ("#7B8089","3C3E42", "#FFFFFF", false);
-            case Services.EstatusCita.Cancelada: return ("#FF2A04","#661102", "#FFFFFF", true);
-            case Services.EstatusCita.Confirmada: return ("#1a4c62", "#64D9FF", "#FFFFFF", false);
-            case Services.EstatusCita.ReAgendada: return ("#FFAF3D","#664618" ,"#664618", false);
-            case Services.EstatusCita.Asistencia: return ("#005A00", "#005A00", "#FFFFFF", false);
-            default: return ("#7B8089","3C3E42", "#FFFFFF", false);
+            // Reutiliza los mismos colores que usas en GetStatusColors
+            return s switch
+            {
 
+                Services.EstatusCita.Asignada => ("#7c4266", "#363675", "#FFFFFF", false),
+                Services.EstatusCita.Confirmada => ("#1a4c62", "#64D9FF", "#FFFFFF", false),
+                Services.EstatusCita.ReAgendada => ("#FFAF3D","#664618" ,"#664618", false),
+                Services.EstatusCita.Cancelada => ("#FF2A04","#661102", "#FFFFFF", false),
+                Services.EstatusCita.Asistencia => ("#005A00", "#005A00", "#FFFFFF", false),
+                Services.EstatusCita.Inasistencia => ("#7B8089","3C3E42", "#FFFFFF", false),
+                _ => ("#7B8089","3C3E42", "#FFFFFF", false),
+            };
         }
-    }
-    private static (string bg, string bc, string fg, bool strike) GetStatusColorsByEnum(EstatusCita s)
-    {
-        // Reutiliza los mismos colores que usas en GetStatusColors
-        return s switch
-        {
+        private record LegendItem(string Text, string Bg, string Bc, bool Strike);
 
-            Services.EstatusCita.Asignada => ("#7c4266", "#363675", "#FFFFFF", false),
-            Services.EstatusCita.Confirmada => ("#1a4c62", "#64D9FF", "#FFFFFF", false),
-            Services.EstatusCita.ReAgendada => ("#FFAF3D","#664618" ,"#664618", false),
-            Services.EstatusCita.Cancelada => ("#FF2A04","#661102", "#FFFFFF", false),
-            Services.EstatusCita.Asistencia => ("#005A00", "#005A00", "#FFFFFF", false),
-            Services.EstatusCita.Inasistencia => ("#7B8089","3C3E42", "#FFFFFF", false),
-            _ => ("#7B8089","3C3E42", "#FFFFFF", false),
-        };
-    }
-    private record LegendItem(string Text, string Bg, string Bc, bool Strike);
-
-    private IEnumerable<LegendItem> Legend =>
-        new[]
+        private IEnumerable<LegendItem> Legend =>
+            new[]
+            {
+            (Services.EstatusCita.Confirmada,  "Confirmada"),
+            (Services.EstatusCita.Asignada,    "Asignada"),
+            (Services.EstatusCita.ReAgendada,  "Reagendada"),
+            (Services.EstatusCita.Cancelada,   "Cancelada"),
+            (Services.EstatusCita.Asistencia,  "Asistencia"),
+            (Services.EstatusCita.Inasistencia,"Inasistencia"),
+            }
+            .Select(t =>
+            {
+                var (bg, bc,fg, strike) = GetStatusColorsByEnum(t.Item1);
+                return new LegendItem(t.Item2, bg, bc, strike);
+            });
+    
+    
+        private async Task LoadData()
         {
-        (Services.EstatusCita.Confirmada,  "Confirmada"),
-        (Services.EstatusCita.Asignada,    "Asignada"),
-        (Services.EstatusCita.ReAgendada,  "Reagendada"),
-        (Services.EstatusCita.Cancelada,   "Cancelada"),
-        (Services.EstatusCita.Asistencia,  "Asistencia"),
-        (Services.EstatusCita.Inasistencia,"Inasistencia"),
+            // Trae todas las citas inicialmente (sin filtro)
+            var citas = await CitasService.GetAllCitasAsync();
+            scheduleEventData = citas?.Where(c=>c.StatusCitaId != 2).OrderBy(c => c.StartLocal).ToList() ?? new();
+
+            // Waiting list = todas con StatusCitaId == 1
+            RefreshWaitingListFromCurrent(citas);
+
+            // Sin terapeuta seleccionado al inicio
+            empleadoActivo = null;
+            horasEmpleadoActivo = null;
+            semanaHoras = null;
+
+            isDataLoaded = true;
+            StateHasChanged();
         }
-        .Select(t =>
-        {
-            var (bg, bc,fg, strike) = GetStatusColorsByEnum(t.Item1);
-            return new LegendItem(t.Item2, bg, bc, strike);
-        });
-    private async Task LoadData()
-    {
-        // Trae todas las citas inicialmente (sin filtro)
-        var citas = await CitasService.GetAllCitasAsync();
-        scheduleEventData = citas?.Where(c=>c.StatusCitaId != 2).OrderBy(c => c.StartLocal).ToList() ?? new();
-
-        // Waiting list = todas con StatusCitaId == 1
-        RefreshWaitingListFromCurrent(citas);
-
-        // Sin terapeuta seleccionado al inicio
-        empleadoActivo = null;
-        horasEmpleadoActivo = null;
-        semanaHoras = null;
-
-        isDataLoaded = true;
-        StateHasChanged();
-    }
     #endregion
 
 
@@ -904,6 +902,7 @@ else
         {(int)MetodosPago.Tarjeta,"Tarjeta"},
     };
     public static string GetDisplay(int id) => Display.TryGetValue(id, out var name) ? name : id.ToString();
+    
     public async void OnActionComplete(ActionEventArgs<CitasModel> args)
     {
         List<ExpenseData>datas= await   transactionService.GetAllTransactionsAsync();
@@ -1406,9 +1405,9 @@ else
     {
         scheduleObj = null;
         ddlObj = null;
-        CommonService.OnlineStatusChanged -= HandleOnlineChanged;
-        _sigCts?.Cancel();
-        _sigCts?.Dispose();
+@*         CommonService.OnlineStatusChanged -= HandleOnlineChanged;
+         _sigCts?.Cancel();
+        _sigCts?.Dispose();*@
 
     }
 }

@@ -18,7 +18,7 @@ namespace KavaPryct.Services
 
         public async Task<List<PacienteModel>> GetAllPacientesAsync()
         {   
-            var response = await _http.GetAsync("/classes/Pacientes");
+            var response = await _http.GetAsync("/classes/Pacientes?limit=10000");
             response.EnsureSuccessStatusCode();
 
             var json = await response.Content.ReadAsStringAsync();

@@ -18,7 +18,7 @@ namespace KavaPryct.Services
 
         public async Task<List<EmpleadosModel>> GetAllEmpleadosAsync()
         {
-            var response = await _http.GetAsync("classes/Empleados");
+            var response = await _http.GetAsync("classes/Empleados?limit=10000");
             response.EnsureSuccessStatusCode();
 
             var json = await response.Content.ReadAsStringAsync();
@@ -60,7 +60,7 @@ namespace KavaPryct.Services
         }
 
         public async Task<List<EstudiosModel>> GetEstudiosAllAsync() {             
-            var response = await _http.GetAsync("classes/Estudios");
+            var response = await _http.GetAsync("classes/Estudios?limit=10000");
             response.EnsureSuccessStatusCode();
             var json = await response.Content.ReadAsStringAsync();
             var result = JsonSerializer.Deserialize<ParseResponse<EstudiosModel>>(json);
