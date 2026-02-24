@@ -46,6 +46,7 @@ namespace KavaPryct.Services
         Especialidad = 0,
         Maestria = 1,
         Doctorado = 2
+
     }
 
     public enum TipoPaciente

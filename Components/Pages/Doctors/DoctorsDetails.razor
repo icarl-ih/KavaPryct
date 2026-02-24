@@ -9,7 +9,11 @@
 @using Syncfusion.Blazor.DropDowns
 @using Syncfusion.Blazor.Inputs
 @using Syncfusion.Blazor.Popups
+@using Syncfusion.Blazor.BarcodeGenerator
+@inject IJSRuntime JS
 @inject SfDialogService DialogService
+@inject EmpleadoRemoteService EmployeService
+
 @inject NavigationManager UriHelper
 @implements IDisposable;
 
@@ -19,52 +23,101 @@
         <div class="detail-header-title">
             <span class="back-icon icon-previous" @onclick="@onBackIconClick"></span>
             <div class="module-title">
-                <div class='title'>DOCTOR DETAILS</div>
+                <div class='title'>Employees Details</div>
                 <div class='underline'></div>
             </div>
         </div>
         <div class='doctor-detail'>
             <SfButton Disabled="@((activeData != null) ? false : true)" CssClass="e-small delete-details" @onclick="@onDoctorDelete">Delete</SfButton>
-            <SfButton Disabled="@((activeData != null) ? false : true)" CssClass="e-small edit-details" @onclick="@onDoctorEdit">Edit</SfButton>
-        </div>
+@*             <SfButton Disabled="@((activeData != null) ? false : true)" CssClass="e-small edit-details" @onclick="@onDoctorEdit">Edit</SfButton>
+ *@        </div>
     </header>
     @if (activeData != null) { 
-    <div class="active-doctor">
-        @* <div class="active-doctor-image">
-            <img class="value" src="css/appoinment/assets/images/@(activeData.Text).png" alt="doctor" />
-            <span class='availability @(activeData.Availability)'></span>
-        </div> *@
-        <div class="active-doctor-info">
-            <div class="basic-detail info-field-container">
-                <div class="name">@((activeEstudio.Posgrados?.Any() ?? false)? string.Join(", ",activeEstudio.Posgrados.Select(ps=>ps.Abrv.ToUpperInvariant())):activeEstudio.Abrv) @activeData.NombreCorto</div>
-                <div class="education">@(activeEstudio.Nombre != null ? activeEstudio.Nombre.ToUpper(): "")</div>
-            </div>
-            <div class="speciality-detail info-field-container">
-                <div class="label-text">Specialization</div>
-                <div class="specialization">@getSpecializationText</div>
-            </div>
-            
-            <div class="work-availability info-field-container">
-                <div class="label-text">Availability</div>
-                <div class="available-days">@getAvailability</div>
-            </div>
-            <div class="contact-info info-field-container">
-                <div class="label-text">Mobile</div>
-                <div class="mobile">@activeData.Telefono</div>
-            </div>
-        </div>
-        @* <div class="work-days-container">
-            <div class="work-days-content">
-                <div class='work-day-item'>
-                    @foreach (var data in activeData.WorkDays)
-                    {
-                        <div class="day-name">@(data.Day.Substring(0, 1).ToUpper())@data.Day.Substring(1)</div>
-                        <div class="day-break-hours @(data.State)">@(getBreakDetails(data))</div>
-                    }
+        <div>
+            @* <div class="active-doctor-image">
+                <img class="value" src="css/appoinment/assets/images/@(activeData.Text).png" alt="doctor" />
+                <span class='availability @(activeData.Availability)'></span>
+            </div> *@
+            @* <div class="active-doctor-info">
+                <div class="basic-detail info-field-container">
+                    @* <div class="name">@((activeEstudio.Posgrados?.Any() ?? false)? string.Join(", ",activeEstudio.Posgrados.Select(ps=>ps.Abrv.ToUpperInvariant())):activeEstudio.Abrv) @activeData.NombreCorto</div>
+                    <div class="education">@(activeEstudio.Nombre != null ? activeEstudio.Nombre.ToUpper(): "")</div> 
                 </div>
-            </div>
-        </div> *@
-    </div>
+                <div class="speciality-detail info-field-container">*@
+                    @* <div class="label-text">Specialization</div>
+                    <div class="specialization">@getSpecializationText</div> 
+                </div>
+            
+                <div class="work-availability info-field-container">
+                    <div class="label-text">Availability</div>
+                    <div class="available-days">@getAvailability</div>
+                </div>
+                <div class="contact-info info-field-container">
+                    <div class="label-text">Mobile</div>
+                    <div class="mobile">@activeData.Telefono</div>
+                </div>
+            </div> *@
+
+            
+                <div class="card p-3 shadow-sm">
+
+                    <h4>@activeData.NombreCompleto</h4>
+                    <hr />
+                    <p><strong>ID:</strong> @activeData.ObjectId</p>
+                   
+                    
+                    
+                    <p><strong>Puesto:</strong> @((Services.RolEmpleo)activeData.RolEmpleo) </p>
+
+                    <p><strong>Nivel de Estudios:</strong> @getSpecializationText</p>
+
+                    <hr />
+
+                    <div class="text-center mt-3">
+
+                        <SfBarcodeGenerator @ref="barcodeRef"
+                                            Width="250px"
+                                            Height="120px"
+                                            Type="BarcodeType.Code128"
+                                            Value="@activeData.ObjectId.ToString()"
+                                            BackgroundColor="#FFFFFF"
+                                            ForeColor="#7c4266 ">
+
+                            <BarcodeGeneratorDisplayText Text="@activeData.ObjectId.ToString()"
+                                                         Alignment="Alignment.Center"
+                                                         Position="TextPosition.Bottom"
+                                                         Visibility="true">
+                            </BarcodeGeneratorDisplayText>
+
+                        </SfBarcodeGenerator>
+
+                        <div class="mt-3">
+                            <SfButton CssClass="e-primary"
+                                      IconCss="e-icons e-download"
+                                      OnClick="DescargarCodigo">
+                                Descargar Código
+                            </SfButton>
+                        </div>
+
+                    </div>
+
+                </div>
+            
+            
+           
+            
+                @* <div class="work-days-container">
+                <div class="work-days-content">
+                    <div class='work-day-item'>
+                        @foreach (var data in activeData.WorkDays)
+                        {
+                            <div class="day-name">@(data.Day.Substring(0, 1).ToUpper())@data.Day.Substring(1)</div>
+                            <div class="day-break-hours @(data.State)">@(getBreakDetails(data))</div>
+                        }
+                    </div>
+                </div>
+            </div> *@
+        </div>
     }
 </div>
 
@@ -125,7 +178,7 @@
                             <DropDownListEvents TItem="KeyValuePair<int,string>" TValue="int"
                                                 ValueChange="EstudiosChanged" />
                         </SfDropDownList>
-@*                         <SfTextBox CssClass='e-field' Placeholder='Education' FloatLabelType="@FloatLabelType.Always" @bind-Value="@doctorEditModel.Education"></SfTextBox>*@
+                         @* <SfTextBox CssClass='e-field' Placeholder='Education' FloatLabelType="@FloatLabelType.Always" @bind-Value="@doctorEditModel.e"></SfTextBox> *@
                  </div>
                     @if (doctorEditModel.EstudiosLast != 0)
                     {
@@ -259,7 +312,8 @@
         </EditForm>
     </ChildContent>
 </SfDialog>
-}
+} 
+
 
 @code{
 
@@ -277,6 +331,15 @@
     private EmpleadosModel activeData { get; set; }
     private string getSpecializationText { get; set; }
     private string getAvailability { get; set; }
+    SfBarcodeGenerator? barcodeRef;string platform = "";
+
+    private void DescargarCodigo()
+    {
+        if (barcodeRef != null)
+        {
+            barcodeRef.Export($"{activeData.NombreCorto}_{activeData.ObjectId}", BarcodeExportType.PNG);
+        }
+    }
 
     private List<KeyValuePair<int, string>> RolEmpleo =>
     Enum.GetValues(typeof(RolEmpleo)).Cast<RolEmpleo>()
@@ -297,18 +360,37 @@
 
     protected override async Task OnInitializedAsync()
     {
-        activeData = await Service.GetDoctorDetails(Id);
-        activeData = (activeData == null) ? await Service.GetDoctorDetails(activeData.ObjectId) : activeData;
-        var activeEstudio = await Service.GetSpecialization(activeData.EstudiosObjectId);
-        getSpecializationText = activeEstudio.Posgrados.Select(ps => ps.Nombre).ToString();
+        var psico = await EmployeService.GetEmpleadoByIdAsync(Id);
+        activeData = psico;
+        var activeEstudio = await EmployeService.GetEstudioWithPosgradosByIdAsync(psico.EstudiosObjectId);
+        //(Services.RolEmpleo)activeData.RolEmpleo
 
-        this.specializationData = Service.Specializations;
-        this.experienceData = Service.Experience;
-        this.dutyTimingsData = Service.DutyTimings;
+        string prefijo;
+        if (activeEstudio.Posgrados?.Any() == true)
+
+            prefijo = string.Join(", ", activeEstudio.Posgrados.Select(p => p.Nombre?.ToUpperInvariant()).Where(a => !string.IsNullOrWhiteSpace(a)));
+        else
+            prefijo = activeEstudio.Nombre ?? "";
+
+
+        var idEspecialidad = activeEstudio.Posgrados.FirstOrDefault()?.Id;
+        if (idEspecialidad == null)
+        {
+            idEspecialidad = activeEstudio.Id;
+            getSpecializationText = $"{(Services.UltimoGradoEstudios)idEspecialidad} - {prefijo}";
+
+            return;
+        }
+        platform = DeviceInfo.Platform == DevicePlatform.Android ? "android" : "windows";
+        getSpecializationText = $"{(Services.Especialidad)idEspecialidad} - {prefijo}";
+
+        // this.specializationData = Service.Specializations;
+        // this.experienceData = Service.Experience;
+        // this.dutyTimingsData = Service.DutyTimings;
     }
     private void onBackIconClick(Microsoft.AspNetCore.Components.Web.MouseEventArgs args)
     {
-        UriHelper.NavigateTo("doctors/");
+        UriHelper.NavigateTo("/psicos");
     }
 
     private string getBreakDetails(WorkDay data)
@@ -354,7 +436,8 @@
 
     private void onDoctorEdit(Microsoft.AspNetCore.Components.Web.MouseEventArgs args)
     {
-        // editVisible = true;
+        editVisible = true;
+        doctorEditModel = activeData;
         // doctorEditModel.Name = activeData.Name;
         // doctorEditModel.Text = activeData.Text;
         // doctorEditModel.Id = activeData.Id;
